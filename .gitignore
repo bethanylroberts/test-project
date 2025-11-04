@@ -1,0 +1,25 @@
+# Data files
+data/
+reports/
+logs/
+
+# MATLAB
+*.asv
+*.m~
+slprj/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+*.code-workspace
+
+# Database
+*.db
+*.sqlite
+
+# Secrets
+config/db_config.m
+*.env
