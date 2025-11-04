@@ -129,18 +129,20 @@ classdef Connection < handle
             tf = obj.is_open && isopen(obj.conn);
         end
         
-        function result = execute(obj, sql_query)
+        function execute(obj, sql_query)
             % EXECUTE Execute SQL query without returning results
+            % Use for INSERT, UPDATE, DELETE, CREATE TABLE, etc.
             %
             % Example:
             %   conn.execute('DELETE FROM Master WHERE FILEID = ''TEST''')
+            %   conn.execute('CREATE TABLE test (id INT)')
             
             if ~obj.isOpen()
                 error('Database connection is not open');
             end
             
             try
-                result = execute(obj.conn, sql_query);
+                execute(obj.conn, sql_query);  % No return value
                 obj.log('debug', sprintf('Executed: %s', sql_query));
             catch ME
                 obj.log('error', sprintf('Query failed: %s', ME.message));
