@@ -352,19 +352,19 @@ F098027_validation_20250115_143025.html
 - [ ] Set up logging infrastructure
   - [X] Install/integrate logging toolbox in `lib/`
   - [ ] Create `config/logging_config.m`
-  - [ ] Test basic logging functionality
+  - [X] Test basic logging functionality
 - [ ] Create database connection framework
   - [X] `src/+narwc/+db/Connection.m`
-  - [ ] `config/db_config.m` (template)
-  - [ ] Test database connection
+  - [X] `config/db_config.m` (template)
+  - [X] Test database connection
 - [ ] Create basic utility functions
   - [ ] `src/+narwc/+utils/coordinate_utils.m`
   - [ ] `src/+narwc/+utils/date_utils.m`
   - [ ] `src/+narwc/+utils/table_utils.m`
 - [ ] Set up testing framework
-  - [ ] Create test runner script
-  - [ ] Set up test fixtures directory
-- [ ] Write initial README.md with setup instructions
+  - [X] Create test runner script
+  - [X] Set up test fixtures directory
+- [X] Write initial README.md with setup instructions
 
 **Deliverable**: Working project skeleton with database connectivity
 

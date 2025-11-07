@@ -23,14 +23,14 @@ function msg = log(tag,varargin)
     cval = 1+double(log_level>=RED_LEVEL);   
 
     % Edit this to build log message
-    % msg = sprintf("[%s][%s] %s\n",datetime, pad(tag,8), sprintf(varargin{:}));
+    msg = sprintf("[%s][%s] %s\n",datetime, pad(tag,8), sprintf(varargin{:}));
 
     % Include calling function in log if needed
-    stack = dbstack('-completenames');
-    calling_func = stack(3).name;
-    func_line = stack(3).line;
-    caller = stack(end).name;
-    msg = sprintf("[%s][%s] (%s:%d)\t%s\n",datetime, pad(tag,8), calling_func, func_line, sprintf(varargin{:}));
+    % stack = dbstack('-completenames');
+    % calling_func = stack(3).name;
+    % func_line = stack(3).line;
+    % caller = stack(end).name;
+    % msg = sprintf("[%s][%s] (%s:%d)\t%s\n",datetime, pad(tag,8), calling_func, func_line, sprintf(varargin{:}));
 
 
     % NOTE: (un)comment to change behavior. Commenting is faster than branching
