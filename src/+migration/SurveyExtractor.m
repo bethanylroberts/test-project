@@ -163,7 +163,7 @@ classdef SurveyExtractor < handle
                 % Progress update
                 elapsed = toc(start_time);
                 completion_pct = (rows_processed / line_count) * 100;
-                obj.logger.info(sprintf('  Progress: %d/%d rows (%.1f%%) - %.1f minutes elapsed', ...
+                obj.logger.info(sprintf('  Progress: %d/%d rows (%.1f\%) - %.1f minutes elapsed', ...
                     rows_processed, line_count, completion_pct, elapsed/60));
                 
                 % Move to next chunk
