@@ -101,15 +101,12 @@ classdef SurveyProcessor < handle
             
             obj.steps = containers.Map();
             
-            % Import the steps package to access functions
-            import narwc.processing.steps.*
-            
-            % Register each step
-            obj.steps('remove_duplicates') = @remove_duplicates;
-            obj.steps('standardize_coordinates') = @standardize_coordinates;
-            obj.steps('standardize_species_codes') = @standardize_species_codes;
-            obj.steps('flag_outliers') = @flag_outliers;
-            obj.steps('calculate_derived_fields') = @calculate_derived_fields;
+            % Register each step with full path
+            obj.steps('remove_duplicates') = @narwc.processing.steps.remove_duplicates;
+            obj.steps('standardize_coordinates') = @narwc.processing.steps.standardize_coordinates;
+            obj.steps('standardize_species_codes') = @narwc.processing.steps.standardize_species_codes;
+            obj.steps('flag_outliers') = @narwc.processing.steps.flag_outliers;
+            obj.steps('calculate_derived_fields') = @narwc.processing.steps.calculate_derived_fields;
         end
         
         function config = defaultConfig(obj)

@@ -15,14 +15,6 @@ classdef ChangeTracker < handle
     methods
         function recordChange(obj, step, row, field, old_value, new_value, description)
             % RECORDCHANGE Record a single change
-            %
-            % Inputs:
-            %   step - Processing step name
-            %   row - Row number(s) affected
-            %   field - Field name (optional)
-            %   old_value - Original value (optional)
-            %   new_value - New value (optional)
-            %   description - Description of change
             
             if nargin < 4
                 field = '';
@@ -45,26 +37,21 @@ classdef ChangeTracker < handle
             obj.changes(idx).new_value = new_value;
             obj.changes(idx).description = description;
             
-            % Update step stats
+            % Update step stats - count number of rows affected
+            num_rows = length(row);
             if obj.step_stats.isKey(step)
-                obj.step_stats(step) = obj.step_stats(step) + length(row);
+                obj.step_stats(step) = obj.step_stats(step) + num_rows;
             else
-                obj.step_stats(step) = length(row);
+                obj.step_stats(step) = num_rows;
             end
         end
         
+           
         function recordDeletion(obj, step, rows, description)
             % RECORDDELETION Record row deletions
-            % Records one change entry per row for accurate counting
+            % Records as single change event but counts all affected rows
             
-            if isscalar(rows)
-                obj.recordChange(step, rows, 'ROW', 'deleted', '', description);
-            else
-                % Record each row separately for accurate change counting
-                for i = 1:length(rows)
-                    obj.recordChange(step, rows(i), 'ROW', 'deleted', '', description);
-                end
-            end
+            obj.recordChange(step, rows, 'ROW', 'deleted', '', description);
         end
 
         function recordModification(obj, step, row, field, old_val, new_val)
@@ -91,10 +78,25 @@ classdef ChangeTracker < handle
         end
         
         function count = getChangeCount(obj, step)
-            % GETCHANGECOUNT Count changes by step
+            % GETCHANGECOUNT Count of change entries (not affected rows)
             
             if nargin < 2
                 count = length(obj.changes);
+            else
+                changes = obj.getChanges(step);
+                count = length(changes);
+            end
+        end
+        
+        function count = getAffectedRowCount(obj, step)
+            % GETAFFECTEDROWCOUNT Count of affected rows across all changes
+            
+            if nargin < 2
+                % Count all affected rows
+                count = 0;
+                for i = 1:length(obj.changes)
+                    count = count + length(obj.changes(i).row);
+                end
             else
                 if obj.step_stats.isKey(step)
                     count = obj.step_stats(step);

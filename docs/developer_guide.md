@@ -375,7 +375,7 @@ F098027_validation_20250115_143025.html
 
 ### 1.1 Legacy Data Analysis
 - [ ] Document legacy CSV structure and quirks
-- [ ] Identify all unique FILEID values (surveys)
+- [X] Identify all unique FILEID values (surveys)
 - [ ] Create data quality assessment
 - [ ] Document special cases and edge cases
 
