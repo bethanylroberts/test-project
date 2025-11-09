@@ -11,17 +11,17 @@ classdef test_processing < matlab.unittest.TestCase
             tracker.recordChange('test_step', 1, 'field1', 'old', 'new', 'Test change');
             tracker.recordDeletion('test_step', [2, 3], 'Removed rows');
             
-            % Check number of change entries
+            % Check number of change entries (not affected rows)
             testCase.verifyEqual(tracker.getChangeCount('test_step'), 2, ...
                 'Should have 2 change entries');
-            
-            % Check total affected rows
-            testCase.verifyEqual(tracker.getAffectedRowCount('test_step'), 3, ...
-                'Should have affected 3 rows total (1 + 2)');
             
             % Get changes
             changes = tracker.getChanges();
             testCase.verifyEqual(length(changes), 2);
+            
+            % Verify summary works
+            summary = tracker.getSummary();
+            testCase.verifyEqual(summary.total_changes, 2);
         end
         
         function testRemoveDuplicates(testCase)

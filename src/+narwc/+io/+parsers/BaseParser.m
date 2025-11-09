@@ -70,76 +70,13 @@ classdef (Abstract) BaseParser < handle
     
     methods (Static)
         function fields = getStandardFieldsStatic()
-            fields = cell(55, 1);
-            fields{1} = 'ALT';
-            fields{2} = 'ANGLEL';
-            fields{3} = 'ANGLER';
-            fields{4} = 'ANHEAD';
-            fields{5} = 'BEAUFORT';
-            fields{6} = 'BEHAV1';
-            fields{7} = 'BEHAV2';
-            fields{8} = 'BEHAV3';
-            fields{9} = 'BEHAV4';
-            fields{10} = 'BEHAV5';
-            fields{11} = 'BEHAV6';
-            fields{12} = 'BEHAV7';
-            fields{13} = 'BEHAV8';
-            fields{14} = 'BEHAV9';
-            fields{15} = 'BEHAV10';
-            fields{16} = 'BEHAV11';
-            fields{17} = 'BEHAV12';
-            fields{18} = 'BEHAV13';
-            fields{19} = 'BEHAV14';
-            fields{20} = 'BEHAV15';
-            fields{21} = 'BLOCK';
-            fields{22} = 'CLOUD';
-            fields{23} = 'CONFIDNC';
-            fields{24} = 'DAY';
-            fields{25} = 'DDSOURCE';
-            fields{26} = 'EVENTNO';
-            fields{27} = 'FILEID';
-            fields{28} = 'GLAREL';
-            fields{29} = 'GLARER';
-            fields{30} = 'HEADING';
-            fields{31} = 'IDREL';
-            fields{32} = 'IDSOURCE';
-            fields{33} = 'LAT_DD';
-            fields{34} = 'LEGNO';
-            fields{35} = 'LEGSTAGE';
-            fields{36} = 'LEGTYPE';
-            fields{37} = 'LONG_DD';
-            fields{38} = 'MONTH';
-            fields{39} = 'NUMBER';
-            fields{40} = 'NUMCALF';
-            fields{41} = 'PHOTOS';
-            fields{42} = 'PLATFORM';
-            fields{43} = 'S_LAT';
-            fields{44} = 'S_LONG';
-            fields{45} = 'S_TIME';
-            fields{46} = 'SIGHTNO';
-            fields{47} = 'SPECCODE';
-            fields{48} = 'STRATUM';
-            fields{49} = 'STRIP';
-            fields{50} = 'SURFTEMP';
-            fields{51} = 'TAXCODE';
-            fields{52} = 'TIME';
-            fields{53} = 'VISIBLTY';
-            fields{54} = 'WX';
-            fields{55} = 'YEAR';
+            % GETSTANDARDFIELDSSTATIC Get standard field names
+            fields = narwc.db.FieldDefinitions.getFieldNames();
         end
         
         function is_numeric = isNumericField(field_name)
-            numeric_list = {'ALT', 'ANGLEL', 'ANGLER', 'ANHEAD', 'BEAUFORT', ...
-                'BEHAV1', 'BEHAV2', 'BEHAV3', 'BEHAV4', 'BEHAV5', ...
-                'BEHAV6', 'BEHAV7', 'BEHAV8', 'BEHAV9', 'BEHAV10', ...
-                'BEHAV11', 'BEHAV12', 'BEHAV13', 'BEHAV14', 'BEHAV15', ...
-                'CLOUD', 'CONFIDNC', 'DAY', 'EVENTNO', 'GLAREL', 'GLARER', ...
-                'HEADING', 'IDREL', 'LAT_DD', 'LEGNO', 'LEGSTAGE', ...
-                'LEGTYPE', 'LONG_DD', 'MONTH', 'NUMBER', 'NUMCALF', ...
-                'PHOTOS', 'PLATFORM', 'S_LAT', 'S_LONG', 'SIGHTNO', ...
-                'SURFTEMP', 'TAXCODE', 'VISIBLTY', 'YEAR'};
-            
-            is_numeric = ismember(field_name, numeric_list);
+            % ISNUMERICFIELD Check if field should be numeric
+            is_numeric = narwc.db.FieldDefinitions.isNumeric(field_name);
         end
     end
 end

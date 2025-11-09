@@ -73,7 +73,7 @@ classdef ParserFactory
             
             parsers = {
                 'StandardFormat'
-                'LegacyFormat'
+                'TabDeliminatedFormat'
                 'NEAQFormat'
                 % TODO: Add more as implemented
             };

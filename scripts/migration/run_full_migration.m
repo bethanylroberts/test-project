@@ -1,10 +1,11 @@
 % RUN_FULL_MIGRATION Run complete migration workflow (Steps 1-3)
     
 csv_file = 'data/legacy/original_csv/RUSS_24_VALID.CSV';
-overwrite   = false;
+overwrite   = true;
 validate    = true;
 sample_size = inf;
 chunk_size  = 10000;
+pause_on_steps = false;
     
 fprintf('=======================================================\n');
 fprintf('         NARWC Database Migration - Full Workflow      \n');
@@ -20,9 +21,12 @@ try
         'Overwrite', overwrite, ...
         'ChunkSize', chunk_size);
     
-    fprintf('\nPress any key to continue to Step 2...\n');
-    pause;
-    
+
+    if pause_on_steps
+        fprintf('\nPress any key to continue to Step 2...\n');
+        pause;
+    end
+
     % Step 2: Upload
     fprintf('\nSTEP 2 OF 3: Uploading to database...\n');
     fprintf('-------------------------------------------------------\n');
@@ -30,8 +34,10 @@ try
         'Overwrite', overwrite, ...
         'Validate', validate);
     
-    fprintf('\nPress any key to continue to Step 3...\n');
-    pause;
+    if pause_on_steps
+        fprintf('\nPress any key to continue to Step 3...\n');
+        pause;
+    end
     
     % Step 3: Validate
     fprintf('\nSTEP 3 OF 3: Validating migration...\n');

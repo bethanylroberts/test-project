@@ -103,10 +103,6 @@ classdef BatchConverter < handle
         
         function [success, category] = uploadSurvey(obj, survey_data, options)
             % UPLOADSURVEY Upload a single survey
-            %
-            % Outputs:
-            %   success - True if uploaded successfully
-            %   category - 'processed', 'skipped', or 'failed'
             
             arguments
                 obj
@@ -162,6 +158,9 @@ classdef BatchConverter < handle
                     delete_query = sprintf("DELETE FROM Master WHERE FILEID = '%s'", survey_id);
                     obj.connection.execute(delete_query);
                 end
+                
+                % **NEW: Convert data types for database compatibility**
+                survey_data = narwc.io.DataTypeConverter().prepareForUpload(survey_data);
                 
                 % Upload new data
                 obj.connection.insert('Master', survey_data);

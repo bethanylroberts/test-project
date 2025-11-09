@@ -30,7 +30,7 @@ classdef test_parsers < matlab.unittest.TestCase
             testCase.verifyFalse(narwc.io.parsers.BaseParser.isNumericField('SPECCODE'));
         end
         
-        function testStandardFormatDetection(testCase)
+        function testTabDeliminatedFormatDetection(testCase)
             % Test format detection without creating parser
             
             % Create tab-delimited file with standard header
@@ -38,31 +38,31 @@ classdef test_parsers < matlab.unittest.TestCase
             writetable(data, testCase.test_file, 'Delimiter', '\t', 'FileType', 'text');
             
             % Test detection
-            confidence = narwc.io.parsers.StandardFormat.detectFormat(testCase.test_file);
+            confidence = narwc.io.parsers.TabDeliminatedFormat.detectFormat(testCase.test_file);
             % Lower threshold since mock data may not have all 55 fields
             testCase.verifyGreaterThan(confidence, 0.1, ...
                 'Should detect some standard fields');
         end
         
-        function testLegacyFormatDetection(testCase)
+        function testStandardFormatDetection(testCase)
             % Test legacy format detection
             
             % Create comma-delimited file
             data = TestFixtures.generate_mock_survey(3);
             writetable(data, testCase.test_file, 'Delimiter', ',', 'FileType', 'text');
             
-            confidence = narwc.io.parsers.LegacyFormat.detectFormat(testCase.test_file);
+            confidence = narwc.io.parsers.StandardFormat.detectFormat(testCase.test_file);
             testCase.verifyGreaterThan(confidence, 0);
         end
         
-        function testStandardFormatParsing(testCase)
+        function testTabDeliminatedFormatParsing(testCase)
             % Test actual parsing
             
             data = TestFixtures.generate_mock_survey(5);
             writetable(data, testCase.test_file, 'Delimiter', '\t', 'FileType', 'text');
             
             try
-                parser = narwc.io.parsers.StandardFormat(testCase.test_file);
+                parser = narwc.io.parsers.TabDeliminatedFormat(testCase.test_file);
                 [parsed, metadata] = parser.read();
                 
                 testCase.verifyEqual(height(parsed), 5);
@@ -78,7 +78,7 @@ classdef test_parsers < matlab.unittest.TestCase
             % Test reader with explicit format hint
             
             data = TestFixtures.generate_mock_survey(5);
-            writetable(data, testCase.test_file, 'Delimiter', '\t', 'FileType', 'text');
+            writetable(data, testCase.test_file, 'Delimiter', ',', 'FileType', 'text');
             
             try
                 reader = narwc.io.SurveyReader(testCase.test_file, 'FormatHint', 'StandardFormat');
