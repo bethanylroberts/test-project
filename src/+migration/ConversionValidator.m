@@ -170,6 +170,7 @@ classdef ConversionValidator < handle
                 
                 % Compare key fields
                 if validation.csv_rows == validation.db_rows
+                    % TODO: confirm key field decisions 
                     key_fields = {'EVENTNO', 'LAT_DD', 'LONG_DD', 'YEAR', 'MONTH', 'DAY'};
                     
                     if check_all_fields

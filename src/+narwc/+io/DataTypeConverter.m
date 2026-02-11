@@ -5,29 +5,46 @@ classdef DataTypeConverter
     %   data = narwc.io.DataTypeConverter.prepareForUpload(data);
     
     methods (Static)
-        function data = prepareForUpload(data)
-            % PREPAREFORUPLOAD Convert data types for database compatibility
-            
-            % Get field definitions from central location
-            string_fields = narwc.db.FieldDefinitions.getStringFields();
-            numeric_fields = narwc.db.FieldDefinitions.getNumericFields();
-            
-            % Convert string fields to cell arrays of char
-            for i = 1:length(string_fields)
-                field = string_fields{i};
-                if ismember(field, data.Properties.VariableNames)
-                    data.(field) = narwc.io.DataTypeConverter.ensureCellStr(data.(field));
-                end
-            end
-            
-            % Convert numeric fields to double
-            for i = 1:length(numeric_fields)
-                field = numeric_fields{i};
-                if ismember(field, data.Properties.VariableNames)
-                    data.(field) = narwc.io.DataTypeConverter.ensureDouble(data.(field));
-                end
+
+    function data = prepareForUpload(data)
+        % PREPAREFORUPLOAD Convert data types for database compatibility
+        
+        % Get field definitions from central location
+        string_fields = narwc.db.FieldDefinitions.getStringFields();
+        numeric_fields = narwc.db.FieldDefinitions.getNumericFields();
+        
+        % Convert string fields to cell arrays of char
+        for i = 1:length(string_fields)
+            field = string_fields{i};
+            if ismember(field, data.Properties.VariableNames)
+                data.(field) = narwc.io.DataTypeConverter.ensureCellStr(data.(field));
             end
         end
+        
+        % Convert numeric fields to double
+        for i = 1:length(numeric_fields)
+            field = numeric_fields{i};
+            if ismember(field, data.Properties.VariableNames)
+                data.(field) = narwc.io.DataTypeConverter.ensureDouble(data.(field));
+            end
+        end
+        
+        % Convert NaN to missing (SQL NULL) for all numeric fields
+        for i = 1:length(numeric_fields)
+            field = numeric_fields{i};
+            if ismember(field, data.Properties.VariableNames)
+                data.(field) = standardizeMissing(data.(field), NaN);
+            end
+        end
+        
+        % Convert empty strings to missing (SQL NULL) for all string fields
+        for i = 1:length(string_fields)
+            field = string_fields{i};
+            if ismember(field, data.Properties.VariableNames)
+                data.(field) = standardizeMissing(data.(field), {''});
+            end
+        end
+    end
         
         function out = ensureCellStr(in)
             % ENSURECELLSTR Convert to cell array of char

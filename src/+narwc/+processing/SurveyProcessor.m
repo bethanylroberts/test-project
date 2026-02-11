@@ -106,7 +106,8 @@ classdef SurveyProcessor < handle
             obj.steps('standardize_coordinates') = @narwc.processing.steps.standardize_coordinates;
             obj.steps('standardize_species_codes') = @narwc.processing.steps.standardize_species_codes;
             obj.steps('flag_outliers') = @narwc.processing.steps.flag_outliers;
-            obj.steps('calculate_derived_fields') = @narwc.processing.steps.calculate_derived_fields;
+            % FIXME: add later
+            % obj.steps('calculate_derived_fields') = @narwc.processing.steps.calculate_derived_fields;
         end
         
         function config = defaultConfig(obj)

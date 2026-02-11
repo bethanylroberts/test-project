@@ -10,10 +10,15 @@ function coordinate_rules(data, collector, config)
     %   collector = narwc.validation.ErrorCollector();
     %   narwc.validation.rules.coordinate_rules(data, collector);
     
-    if nargin < 3
-        config = default_config();
+    % Get default config from centralized source
+    if nargin < 3 || isempty(config)
+        full_config = get_config('validation');
+        config = full_config.coordinates;
+    elseif isfield(config, 'coordinates')
+        % Config passed is the full validation config - extract coordinates
+        config = config.coordinates;
     end
-    
+
     % Validate latitude
     if ismember('LAT_DD', data.Properties.VariableNames)
         validate_latitude(data, collector, config);

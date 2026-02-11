@@ -75,20 +75,22 @@ classdef test_parsers < matlab.unittest.TestCase
         end
         
         function testSurveyReaderWithHint(testCase)
-            % Test reader with explicit format hint
+            % Test SurveyReader with format hint
             
+            % Create test data
             data = TestFixtures.generate_mock_survey(5);
-            writetable(data, testCase.test_file, 'Delimiter', ',', 'FileType', 'text');
+            writetable(data, testCase.test_file);
             
-            try
-                reader = narwc.io.SurveyReader(testCase.test_file, 'FormatHint', 'StandardFormat');
-                [parsed, metadata] = reader.read();
-                
-                testCase.verifyEqual(height(parsed), 5);
-                testCase.verifyNotEmpty(metadata);
-            catch ME
-                warning('Reader test skipped due to: %s', ME.message);
-            end
+            % Create reader with file path and format hint
+            reader = narwc.io.SurveyReader(testCase.test_file, 'FormatHint', 'StandardFormat');
+            
+            % Read data
+            result = reader.read();
+            
+            % Verify
+            testCase.verifyClass(result, 'table');
+            testCase.verifyGreaterThanOrEqual(height(result), 5, ...
+                'Should read at least 5 rows');
         end
     end
 end

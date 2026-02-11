@@ -15,15 +15,15 @@ classdef SurveyValidator < handle
         function obj = SurveyValidator(config)
             % SURVEYVALIDATOR Constructor
             
-            if nargin < 1
-                obj.config = obj.defaultConfig();
-            else
-                obj.config = config;
-                % TODO: impliment custom configs with options
-            end
-            
             obj.logger = logging.Logger('narwc.validation.SurveyValidator');
             obj.collector = narwc.validation.ErrorCollector();
+            
+            if nargin < 1 || isempty(config)
+                obj.config = obj.defaultConfig();
+            else
+                % Merge provided config with defaults
+                obj.config = obj.mergeConfig(obj.defaultConfig(), config);
+            end
         end
         
         function [is_valid, results] = validate(obj, data)
@@ -33,7 +33,7 @@ classdef SurveyValidator < handle
             %   data - Table with survey data
             %
             % Outputs:
-            %   is_valid - True if no errors found
+            %   is_valid - True if no errors (and no warnings unless allowed)
             %   results - Struct with validation results
             
             obj.logger.info('Starting validation...');
@@ -48,9 +48,20 @@ classdef SurveyValidator < handle
             results.info = obj.collector.getErrors('info');
             results.summary = obj.collector.getSummary();
             
-            % Determine if valid (no errors, warnings are OK)
-            is_valid = results.summary.errors == 0;
-            % TODO: make warnings an option
+            % Add detailed error information
+            results.error_details = obj.formatErrorDetails();
+            
+            % Determine if valid based on config
+            has_errors = results.summary.errors > 0;
+            has_warnings = results.summary.warnings > 0;
+            
+            if has_errors && ~obj.config.allow_errors
+                is_valid = false;
+            elseif has_warnings && ~obj.config.allow_warnings
+                is_valid = false;
+            else
+                is_valid = true;
+            end
             
             % Log summary
             obj.logger.info(sprintf('Validation complete: %d errors, %d warnings', ...
@@ -64,47 +75,137 @@ classdef SurveyValidator < handle
         function runValidationRules(obj, data)
             % RUNVALIDATIONRULES Execute all validation rules
             
+            % Required fields (database NOT NULL constraints)
+            if obj.config.validate_required_fields
+                obj.logger.debug('Validating required fields...');
+                narwc.validation.rules.required_fields(data, obj.collector);
+            end
+            
             % Coordinate validation
             if obj.config.validate_coordinates
                 obj.logger.debug('Validating coordinates...');
-                narwc.validation.rules.coordinate_rules(data, obj.collector, obj.config);
+                narwc.validation.rules.coordinate_rules(data, obj.collector);
             end
             
-            % TODO: Add more rule calls here as you implement them
-            % narwc.validation.rules.temporal_rules(data, obj.collector, obj.config);
-            % narwc.validation.rules.species_rules(data, obj.collector, obj.config);
-            % etc.
+            % Date and time validation
+            if obj.config.validate_datetime
+                obj.logger.debug('Validating date/time fields...');
+                narwc.validation.rules.datetime_rules(data, obj.collector);
+            end
+            
+            % Species validation
+            if obj.config.validate_species
+                obj.logger.debug('Validating species fields...');
+                narwc.validation.rules.species_rules(data, obj.collector);
+            end
+            
+            % Environmental conditions validation
+            if obj.config.validate_environmental
+                obj.logger.debug('Validating environmental fields...');
+                narwc.validation.rules.environmental_rules(data, obj.collector);
+            end
+            
+            % Beaufort scale
+            if obj.config.validate_beaufort
+                obj.logger.debug('Validating Beaufort scale...');
+                narwc.validation.rules.beaufort_rules(data, obj.collector);
+            end
 
-            % TODO: add some method for running and batch running custom rules
+            % Behavioral validation
+            if obj.config.validate_behavioral
+                obj.logger.debug('Validating behavioral fields...');
+                narwc.validation.rules.behavioral_rules(data, obj.collector);
+            end
+            
+            % Foreign key validation (PLATFORM, PHOTOS, CONTRIB, etc.)
+            if obj.config.validate_foreign_keys
+                obj.logger.debug('Validating foreign key fields...');
+                narwc.validation.rules.foreign_key_rules(data, obj.collector);
+            end
 
         end
         
-        function config = defaultConfig(obj)
-            % DEFAULTCONFIG Default validation configuration
+        function details = formatErrorDetails(obj)
+            % FORMATERRORDETAILS Format errors for display
+            % Format: [SEVERITY] FIELD: message (rows X)
             
-            % Which validations to run
+            details = cell(0);
+            
+            % Get errors
+            errors = obj.collector.getErrors('error');
+            for i = 1:length(errors)
+                err = errors(i);
+                if isfield(err, 'row') && ~isempty(err.row)
+                    details{end+1} = sprintf('[ERROR] %s: %s (rows %s)', ...
+                        err.field, err.message, mat2str(err.row)); %#ok<AGROW>
+                else
+                    details{end+1} = sprintf('[ERROR] %s: %s', err.field, err.message); %#ok<AGROW>
+                end
+            end
+            
+            % Get warnings
+            warnings = obj.collector.getErrors('warning');
+            for i = 1:length(warnings)
+                wrn = warnings(i);
+                if isfield(wrn, 'row') && ~isempty(wrn.row)
+                    details{end+1} = sprintf('[WARNING] %s: %s (rows %s)', ...
+                        wrn.field, wrn.message, mat2str(wrn.row)); %#ok<AGROW>
+                else
+                    details{end+1} = sprintf('[WARNING] %s: %s', wrn.field, wrn.message); %#ok<AGROW>
+                end
+            end
+        end
+    end
+    
+    methods (Access = private)
+        function config = defaultConfig(~)
+            % DEFAULTCONFIG Default validation configuration
+            %
+            % Uses centralized config and adds validation flags
+            
+            % Get validation config from centralized source
+            try
+                config = get_config('validation');
+            catch
+                % Fallback if get_config not available
+                config = struct();
+            end
+            
+            % Add validation flags (which rules to run)
+            config.validate_required_fields = true;
             config.validate_coordinates = true;
-            config.validate_temporal = true;
+            config.validate_datetime = true;
             config.validate_species = true;
+            config.validate_environmental = true;
+            config.validate_beaufort = true;
             config.validate_behavioral = true;
             config.validate_platform = true;
+            config.validate_foreign_keys = true;
             
-            % Coordinate ranges (North Atlantic Right Whale habitat)
-            config.lat_min = -90;
-            config.lat_max = 90;
-            config.lon_min = -180;
-            config.lon_max = 180;
-            config.survey_lat_min = 35;
-            config.survey_lat_max = 50;
-            config.survey_lon_min = -75;
-            config.survey_lon_max = -60;
+            % Override flags - allow upload despite issues
+            config.allow_errors = false;    % If true, errors won't block upload
+            config.allow_warnings = false;  % If true, warnings won't block upload
+        end
+        
+        function merged = mergeConfig(obj, base, override)
+            % MERGECONFIG Merge override config into base config
             
-            % Temporal ranges
-            config.min_year = 1970;
-            config.max_year = year(datetime('today'));
+            merged = base;
             
-            % Other settings
-            config.check_land = false;
+            if isempty(override)
+                return;
+            end
+            
+            fields = fieldnames(override);
+            for i = 1:length(fields)
+                field = fields{i};
+                if isstruct(override.(field)) && isfield(base, field) && isstruct(base.(field))
+                    % Recursively merge nested structs
+                    merged.(field) = obj.mergeConfig(base.(field), override.(field));
+                else
+                    merged.(field) = override.(field);
+                end
+            end
         end
     end
 end

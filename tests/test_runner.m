@@ -25,8 +25,20 @@ function results = test_runner(test_type, options)
     
     fprintf('\n=== NARWC Database Project Test Runner ===\n\n');
     
-    % Get test directory
+    % Get test directory and project root
     test_dir = fileparts(mfilename('fullpath'));
+    project_root = fileparts(test_dir);
+    
+    % Ensure required paths are available for all tests
+    config_dir = fullfile(project_root, 'config');
+    src_dir = fullfile(project_root, 'src');
+    
+    if ~contains(path, config_dir)
+        addpath(config_dir);
+    end
+    if ~contains(path, src_dir)
+        addpath(genpath(src_dir));
+    end
     
     % Build test suite based on type
     switch test_type
@@ -63,7 +75,6 @@ function results = test_runner(test_type, options)
     if options.Coverage
         try
             import matlab.unittest.plugins.CodeCoveragePlugin
-            src_dir = fullfile(fileparts(test_dir), 'src');
             runner.addPlugin(CodeCoveragePlugin.forFolder(src_dir, ...
                 'IncludingSubfolders', true));
             fprintf('Code coverage enabled for src/ directory\n');

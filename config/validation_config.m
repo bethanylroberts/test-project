@@ -2,6 +2,8 @@ function config = validation_config()
     % VALIDATION_CONFIG Configuration for validation rules
 
     % TODO: likely need a different config for porting the DB vs normal curation
+    % FIXME: I do not think this is being used at all adding an error to pop if anything calls it
+    error("Unexpected call of validation config")
     
     %% Coordinate validation
     config.coordinates.lat_range = [-90, 90];
