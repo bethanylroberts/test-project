@@ -295,6 +295,11 @@ function validate_speccode(data, collector, config, is_sighting)
     %   2. Not empty for sighting records
     %   3. Valid code in lookup table (if available)
     %   4. No invalid characters
+
+    % Skip validation if column is empty or all missing
+    if isempty(data.SPECCODE) || all(ismissing(data.SPECCODE))
+        return;
+    end
     
     if ~(iscellstr(data.SPECCODE) || isstring(data.SPECCODE) || ischar(data.SPECCODE))
         collector.addError('SPECCODE', [], ...

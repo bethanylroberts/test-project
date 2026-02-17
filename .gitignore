@@ -2,6 +2,7 @@
 data/
 reports/
 logs/
+pub/
 
 # MATLAB
 *.asv
