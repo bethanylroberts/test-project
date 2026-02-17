@@ -267,32 +267,56 @@ function numeric_values = convert_to_numeric(values)
     end
 end
 
+
 function report_invalid_values(collector, field_name, table_name, values, invalid_mask, invalid_idx)
     % REPORT_INVALID_VALUES Add error to collector for invalid values
+    %
+    % Reports the first few invalid rows and values, noting if more exist.
+    
+    MAX_ROWS_TO_REPORT = 5;
+    MAX_VALUES_TO_SHOW = 5;
     
     invalid_values = values(invalid_mask);
+    total_invalid_rows = length(invalid_idx);
     
-    % Get unique invalid values for message
+    % Limit rows reported
+    if total_invalid_rows > MAX_ROWS_TO_REPORT
+        reported_idx = invalid_idx(1:MAX_ROWS_TO_REPORT);
+        rows_note = sprintf(' (+%d more rows)', total_invalid_rows - MAX_ROWS_TO_REPORT);
+    else
+        reported_idx = invalid_idx;
+        rows_note = '';
+    end
+    
+    % Get unique invalid values (preserve order of first occurrence)
     if isnumeric(invalid_values)
-        unique_invalid = unique(invalid_values(~isnan(invalid_values)));
-        if length(unique_invalid) <= 5
+        valid_values = invalid_values(~isnan(invalid_values));
+        unique_invalid = unique(valid_values, 'stable');
+        
+        if length(unique_invalid) <= MAX_VALUES_TO_SHOW
             invalid_str = mat2str(unique_invalid(:)');
         else
-            invalid_str = sprintf('%s ... (%d unique values)', ...
-                mat2str(unique_invalid(1:3)'), length(unique_invalid));
+            invalid_str = sprintf('%s ... (+%d more values)', ...
+                mat2str(unique_invalid(1:MAX_VALUES_TO_SHOW)'), ...
+                length(unique_invalid) - MAX_VALUES_TO_SHOW);
         end
     else
-        unique_invalid = unique(string(invalid_values));
-        unique_invalid = unique_invalid(~ismissing(unique_invalid));
-        if length(unique_invalid) <= 5
+        str_values = string(invalid_values);
+        str_values = str_values(~ismissing(str_values));
+        unique_invalid = unique(str_values, 'stable');
+        
+        if length(unique_invalid) <= MAX_VALUES_TO_SHOW
             invalid_str = strjoin(unique_invalid, ', ');
         else
-            invalid_str = sprintf('%s ... (%d unique values)', ...
-                strjoin(unique_invalid(1:3), ', '), length(unique_invalid));
+            invalid_str = sprintf('%s ... (+%d more values)', ...
+                strjoin(unique_invalid(1:MAX_VALUES_TO_SHOW), ', '), ...
+                length(unique_invalid) - MAX_VALUES_TO_SHOW);
         end
     end
     
-    collector.addError(field_name, invalid_idx, ...
-        sprintf('%s contains invalid value(s) not in %s lookup table: %s', ...
-            field_name, upper(table_name), invalid_str), 'error');
+    % Build message
+    msg = sprintf('%s contains invalid value(s) not in %s lookup table: %s%s', ...
+        field_name, upper(table_name), invalid_str, rows_note);
+    
+    collector.addError(field_name, reported_idx, msg, 'error');
 end

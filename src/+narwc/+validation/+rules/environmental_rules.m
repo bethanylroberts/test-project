@@ -31,37 +31,12 @@ function environmental_rules(data, collector, config)
         validate_surftemp(data, collector, config);
     end
     
-    % Validate glare
-    if ismember('GLAREL', data.Properties.VariableNames)
-        validate_glare(data, collector, 'GLAREL', config);
-    end
-    if ismember('GLARER', data.Properties.VariableNames)
-        validate_glare(data, collector, 'GLARER', config);
-    end
-    
-    % Validate weather code
-    if ismember('WX', data.Properties.VariableNames)
-        validate_wx(data, collector, config);
-    end
+    % FIXME: no longer needed. Look up table fixes this 
+    % % Validate weather code
+    % if ismember('WX', data.Properties.VariableNames)
+    %     validate_wx(data, collector, config);
+    % end
 end
-
-% FIXME: Look up table fixes this, but this is wrong
-% function validate_cloud(data, collector, config)
-%     % Validate cloud cover (0-8 oktas)
-    
-%     non_null_idx = find(~isnan(data.CLOUD) & ~ismissing(data.CLOUD));
-    
-%     if isempty(non_null_idx)
-%         return;
-%     end
-    
-%     invalid_idx = non_null_idx(~ismember(data.CLOUD(non_null_idx), config.cloud_values));
-    
-%     if ~isempty(invalid_idx)
-%         collector.addError('CLOUD', invalid_idx, ...
-%             'CLOUD must be 0-8 (oktas)', 'error');
-%     end
-% end
 
 function validate_visibility(data, collector, config)
     % Validate visibility
@@ -74,7 +49,8 @@ function validate_visibility(data, collector, config)
                 'VISIBLTY cannot be negative', 'error');
         end
     end
-    
+    % FIXME: visibility should be limited to only a few negative numbers based on oldviz lookup table
+
     % Warn for unusual values
     too_high = find(data.VISIBLTY > config.visibility_max);
     if ~isempty(too_high)
@@ -103,36 +79,20 @@ function validate_surftemp(data, collector, config)
     end
 end
 
-function validate_glare(data, collector, field_name, config)
-    % Validate glare level (0-3 typically)
+% FIXME: not needed. Look up table fixes this
+% function validate_wx(data, collector, config)
+%     % Validate weather code (1-char)
     
-    non_null_idx = find(~isnan(data.(field_name)) & ~ismissing(data.(field_name)));
-    
-    if isempty(non_null_idx)
-        return;
-    end
-    
-    invalid_idx = non_null_idx(~ismember(data.(field_name)(non_null_idx), config.glare_values));
-    
-    if ~isempty(invalid_idx)
-        collector.addError(field_name, invalid_idx, ...
-            sprintf('%s must be 0-3', field_name), 'error');
-    end
-end
-
-function validate_wx(data, collector, config)
-    % Validate weather code (1-char)
-    
-    if iscellstr(data.WX) || isstring(data.WX)
-        too_long = cellfun(@length, data.WX) > 1;
-        invalid_idx = find(too_long);
+%     if iscellstr(data.WX) || isstring(data.WX)
+%         too_long = cellfun(@length, data.WX) > 1;
+%         invalid_idx = find(too_long);
         
-        if ~isempty(invalid_idx)
-            collector.addError('WX', invalid_idx, ...
-                'WX must be 1 character', 'error');
-        end
-    end
-end
+%         if ~isempty(invalid_idx)
+%             collector.addError('WX', invalid_idx, ...
+%                 'WX must be 1 character', 'error');
+%         end
+%     end
+% end
 
 function config = default_config()
     % Default configuration for environmental validation
@@ -141,7 +101,7 @@ function config = default_config()
     config.cloud_values = 0:8;  % Oktas
     config.visibility_max = 50;  % km or nm
     config.visibility_allow_negative = true;
+    % FIXME: only legacy surveys should be allowed to be negative
     config.surftemp_min = -2;  % °C (freezing point of seawater)
     config.surftemp_max = 35;  % °C (warm tropical waters)
-    config.glare_values = 0:3;  % None to severe
 end
