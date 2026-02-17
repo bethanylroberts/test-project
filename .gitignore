@@ -24,3 +24,5 @@ Thumbs.db
 # Secrets
 config/db_config.m
 *.env
+config/local/db_config_local.m
+.history/
