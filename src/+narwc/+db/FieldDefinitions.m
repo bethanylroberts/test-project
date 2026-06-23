@@ -7,6 +7,8 @@ classdef FieldDefinitions
 
     % header = "ALT,ANHEAD,BEAUFORT,BEHAV1,BEHAV2,BEHAV3,BEHAV4,BEHAV5,BEHAV6,BEHAV7,BEHAV8,BEHAV9,BEHAV10,BEHAV11,BEHAV12,BEHAV13,BEHAV14,BEHAV15,,CLOUD,CONFIDNC,DAY,DDSOURCE,EVENTNO,FILEID,GLAREL,GLARER,HEADING,IDREL,IDSOURCE,LAT_DD,LEGNO,LEGSTAGE,LEGTYPE,LONG_DD,MONTH,NUMBER,NUMCALF,PHOTOS,PLATFORM,,,,SIGHTNO,SPECCODE,,,,TAXCODE,TIME,VISIBLTY,WX,YEAR,,";
     
+    % FIXME: move this code to the parser for standard format
+    % - best case, get this information from the database
     
     methods (Static)
         function fields = getAll()

@@ -6,6 +6,9 @@ classdef StandardFormat < narwc.io.parsers.BaseParser
     % This format has 55 columns with a specific order that differs from
     % the database schema. This parser reads the CSV in its native order
     % and remaps to the database field order.
+
+    % FIXME: seperate the standard and legacy even though they are the same.
+    % That may change later. I think the re-map method below is the major difference.
     
     properties (Constant)
         FORMAT_NAME = 'Standard NARWC Format'

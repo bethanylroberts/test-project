@@ -5,6 +5,13 @@ classdef SurveyExtractor < handle
     % Usage:
     %   extractor = migration.SurveyExtractor('legacy_data.csv');
     %   extractor.extractAll('output_dir');
+    % 
+    % 2026 russ.shomberg@marineacoustics.com
+
+    % FIXME: this is likely too much abstraction as it is only used by a single
+    % script from the migration scripts and will not be used more than a handful
+    % of times. There may be a generic need to extract individual surveys in
+    % some capacity. In that case, the fildid column would need to be specified.
     
     properties (Access = private)
         legacy_file
@@ -70,43 +77,43 @@ classdef SurveyExtractor < handle
             rows_processed = 0;
             survey_map = containers.Map('KeyType', 'char', 'ValueType', 'double');
             
-            current_start = 2;  % Skip header
+            % TODO: skipping header should be an option
+            current_chunk_start = 2;  % Skip header
             
-            while current_start <= line_count
+            while current_chunk_start <= line_count
                 chunk_counter = chunk_counter + 1;
-                
-                % Calculate end row for this chunk
-                current_end = min(current_start + obj.chunk_size - 1, line_count);
+                current_chunk_end = min(current_chunk_start + obj.chunk_size - 1, line_count);
                 
                 % Update import options for this chunk
-                import_opts.DataLines = [current_start, current_end];
+                import_opts.DataLines = [current_chunk_start, current_chunk_end];
                 
-                obj.logger.info(sprintf('Processing chunk %d (rows %d to %d)', ...
-                    chunk_counter, current_start, current_end));
+                obj.logger.info(sprintf('Processing chunk %d (rows %d to %d)', ...  % FIXME: remove sprintf if not needed
+                    chunk_counter, current_chunk_start, current_chunk_end));
                 
-                % Read chunk
                 try
                     data_chunk = readtable(obj.legacy_file, import_opts);
                     
                     if ~istable(data_chunk)
                         obj.logger.error('Chunk read returned non-table type');
-                        current_start = current_end + 1;
+                        current_chunk_start = current_chunk_end + 1;
                         continue;
                     end
                     
                 catch ME
-                    obj.logger.error(sprintf('Failed to read chunk: %s', ME.message));
-                    current_start = current_end + 1;
+                    % FIXME: need to deal with an unread chunk. Can't just skip
+                    obj.logger.error(sprintf('Failed to read chunk: %s', ME.message));  % FIXME: remove sprintf if not needed
+                    current_chunk_start = current_chunk_end + 1;
                     continue;
                 end
                 
                 % Get number of rows
-                num_rows = height(data_chunk);
+                num_rows = height(data_chunk);  % FIXME: should equal obj.chunk_size
                 rows_processed = rows_processed + num_rows;
                 
                 if num_rows == 0
+                    % NOTE: this should never happen?
                     obj.logger.warning('Empty chunk, moving to next');
-                    current_start = current_end + 1;
+                    current_chunk_start = current_chunk_end + 1;
                     continue;
                 end
                 
@@ -116,6 +123,7 @@ classdef SurveyExtractor < handle
                 % Remove empty/missing FILEIDs
                 unique_fileids = unique_fileids(~ismissing(unique_fileids));
                 unique_fileids = unique_fileids(strlength(unique_fileids) > 0);
+                % FIXME: empty / missing FILEIDs are significant errors if it occurs
                 
                 obj.logger.info(sprintf('  Found %d unique surveys in this chunk', ...
                     length(unique_fileids)));
@@ -125,8 +133,8 @@ classdef SurveyExtractor < handle
                     current_fileid = unique_fileids{idx};
                     
                     % Sanitize filename
-                    safe_fileid = narwc.utils.sanitize_filename(char(current_fileid));
-                    output_filepath = fullfile(output_dir, [safe_fileid '.csv']);
+                    sanitized_fileid = narwc.utils.sanitize_filename(char(current_fileid));
+                    output_filepath = fullfile(output_dir, [sanitized_fileid '.csv']);
                     
                     % Get rows for this survey
                     row_mask = strcmp(data_chunk.FILEID, current_fileid);
@@ -135,28 +143,31 @@ classdef SurveyExtractor < handle
                     try
                         % Write to file
                         if exist(output_filepath, 'file')
-                            % Append without header
-                            % FIXME: this keeps 
+                            % Append without header  
+                            % TODO: need to confirm that the folder was clean to
+                            % start. Otherwise, this is potentially appending to
+                            % an old file from a previous run
                             obj.logger.debug(sprintf('  Appending to: %s', output_filepath));
                             writetable(survey_data, output_filepath, ...
                                 'WriteMode', 'append', 'WriteVariableNames', false);
                         else
                             % Write with header (first time)
                             writetable(survey_data, output_filepath);
-                            obj.logger.info(sprintf('  Created: %s', safe_fileid));
+                            obj.logger.info(sprintf('  Created: %s', sanitized_fileid));
                         end
                         
                         % Track statistics
                         survey_row_count = height(survey_data);
-                        if isKey(survey_map, safe_fileid)
-                            survey_map(safe_fileid) = survey_map(safe_fileid) + survey_row_count;
+                        if isKey(survey_map, sanitized_fileid)
+                            survey_map(sanitized_fileid) = survey_map(sanitized_fileid) + survey_row_count;
                         else
-                            survey_map(safe_fileid) = survey_row_count;
+                            survey_map(sanitized_fileid) = survey_row_count;
                         end
                         
                     catch ME
+                        % FIXME: need to do something with this error
                         obj.logger.error(sprintf('  Failed to write %s: %s', ...
-                            safe_fileid, ME.message));
+                            sanitized_fileid, ME.message));
                     end
                 end
                 
@@ -167,10 +178,10 @@ classdef SurveyExtractor < handle
                     rows_processed, line_count, completion_pct, elapsed/60));
                 
                 % Move to next chunk
-                current_start = current_end + 1;
+                current_chunk_start = current_chunk_end + 1;
                 
                 % Clear data to free memory
-                clear data_chunk survey_data;
+                clear data_chunk survey_data;   % ???: is this necessary?
             end
             
             % Write summary
@@ -195,7 +206,7 @@ classdef SurveyExtractor < handle
         
         function line_count = countLines(obj)
             % COUNTLINES Count total lines in file
-            
+            % TODO: make this a generic function. Use it in the validate csv lines script as well
             fid = fopen(obj.legacy_file, 'r');
             line_count = 0;
             while ~feof(fid)
@@ -249,6 +260,8 @@ classdef SurveyExtractor < handle
             
             % Use the static method from LegacyFormat parser
             import_opts = narwc.io.parsers.StandardFormat.createImportOptions();
+            % TODO: currently using the standard format for the legacy format,
+            % but this should be separated in case of future changes to the standard format.
         end
 
     end

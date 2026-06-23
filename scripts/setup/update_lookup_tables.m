@@ -48,6 +48,8 @@ try
     end
     
     fprintf('\nLookup tables updated successfully!\n');
+
+% TODO: add catch statement
     
 finally
     % Always close connection

@@ -3,11 +3,13 @@ classdef DataTypeConverter
     %
     % Usage:
     %   data = narwc.io.DataTypeConverter.prepareForUpload(data);
-    
+
     methods (Static)
 
     function data = prepareForUpload(data)
         % PREPAREFORUPLOAD Convert data types for database compatibility
+
+        % NOTE: prepare for upload gets called by BatchConverter
         
         % Get field definitions from central location
         string_fields = narwc.db.FieldDefinitions.getStringFields();

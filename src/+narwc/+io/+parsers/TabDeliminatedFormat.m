@@ -2,6 +2,8 @@ classdef TabDeliminatedFormat < narwc.io.parsers.BaseParser
     % TABDELIMINATEDFORMAT Parser for standard NARWC format
     %
     % Alternative standard format is tab-delimited with all 55 fields in standard order
+
+    % FIXME: DELETE, this does not exist, was just for testing
     
     properties (Constant)
         FORMAT_NAME = 'Standard NARWC Format'

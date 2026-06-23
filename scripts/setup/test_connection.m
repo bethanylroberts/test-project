@@ -1,8 +1,13 @@
 function test_connection()
     % TEST_CONNECTION Simple database connection test
+    % 
+    % Simple script used test if the database connection is working. This should
+    % be run immediately after startup to ensure the connection is working
+    % properly.
     %
-    % Usage:
-    %   test_connection()
+    % Usage: test_connection()
+    % 
+    % 2026 russ.shomberg@marineacoustics.com
     
     fprintf('=== Database Connection Test ===\n\n');
     

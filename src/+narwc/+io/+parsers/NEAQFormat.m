@@ -5,6 +5,8 @@ classdef NEAQFormat < narwc.io.parsers.BaseParser
     %
     % Example of how other formats can have different column orders
     % and still map to the standard database schema
+
+    % FIXME: this just a template. I need to fill it in
     
     properties (Constant)
         FORMAT_NAME = 'NEAQ Format'

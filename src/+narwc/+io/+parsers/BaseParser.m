@@ -1,5 +1,7 @@
 classdef (Abstract) BaseParser < handle
-    % BASEPARSER Abstract base class for all survey format parsers
+    % BASE PARSER Abstract base class for all survey format parsers
+
+    % TODO: go through all parsers
     
     properties (Access = protected)
         file_path

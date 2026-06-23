@@ -4,6 +4,8 @@ classdef SummaryStatistics < handle
     % Usage:
     %   report = narwc.reports.SummaryStatistics(survey_data, survey_id);
     %   report.generate('summary.md');
+
+    % NOTE: only used by test_reports
     
     properties (Access = private)
         data

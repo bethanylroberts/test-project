@@ -4,23 +4,31 @@ classdef BatchConverter < handle
     % Usage:
     %   converter = migration.BatchConverter(conn);
     %   converter.uploadFromFolder('data/legacy/surveys/pending');
+    % 
+    % 2026 russ.shomberg@marineacoustics.com
+
+    % FIXME: batchconverter.m is in the wrong location. 
+    %  - This class is going to be used for general uploads rather than just the
+    %    migration. 
+    %  - make sure it is sufficiently generic
     
     properties (Access = private)
-        connection
-        logger
-        stats
-        base_dir
-        error_log_file
+        connection  % connection to database
+        logger      % from custom logging toolbox
+        stats       % ???
+        base_dir    % location of standard folder structure
+        error_log_file  % error log
     end
     
     methods
         function obj = BatchConverter(connection, base_dir)
-            % BATCHCONVERTER Constructor
+            % BATCH CONVERTER Constructor
             
             obj.connection = connection;
             obj.logger = logging.Logger('migration.BatchConverter');
             
             if nargin < 2
+                % FIXME: just pop an error
                 obj.base_dir = 'data/legacy/surveys';
             else
                 obj.base_dir = base_dir;
@@ -32,8 +40,9 @@ classdef BatchConverter < handle
         end
         
         function ensureDirectories(obj)
-            % ENSUREDIRECTORIES Create necessary directories
+            % ENSURE DIRECTORIES Create necessary directories
             
+            % FIXME: pending has to exist or we do not know where the files are
             dirs = {'pending', 'processed', 'failed', 'skipped'};
             for i = 1:length(dirs)
                 dir_path = fullfile(obj.base_dir, dirs{i});
@@ -44,7 +53,7 @@ classdef BatchConverter < handle
         end
         
         function initializeErrorLog(obj)
-            % INITIALIZEERRORLOG Create/reset error log file
+            % INITIALIZE ERROR LOG Create/reset error log file
             
             failed_dir = fullfile(obj.base_dir, 'failed');
             obj.error_log_file = fullfile(failed_dir, '_errors.log');
@@ -56,6 +65,7 @@ classdef BatchConverter < handle
                 return;
             end
             
+            % TODO: move log file handling into the logging toolbox
             fprintf(fid, 'Migration Error Log\n');
             fprintf(fid, '===================\n');
             fprintf(fid, 'Started: %s\n', char(datetime('now')));
@@ -68,14 +78,18 @@ classdef BatchConverter < handle
         
         function uploadFromFolder(obj, options)
             % UPLOADFROMFOLDER Upload all surveys from pending folder
+            % 
+            % This is the main logic function for this class. It validates and
+            % then updates each survey in a folder
             %
-            % Inputs:
-            %   options - Name-value pairs:
-            %       'Overwrite' - Overwrite existing data (default: false)
-            %       'Validate' - Validate before upload (default: true)
-            %       'StopOnError' - Stop on first error (default: false)
-            %       'AllowWarnings' - Upload despite warnings (default: false)
-            %       'AllowErrors' - Upload despite errors (default: false)
+            % Inputs: options - Name-value pairs: 'Overwrite' - Overwrite
+            %   existing data (default: false) 'Validate' - Validate before
+            %       upload (default: true) 'StopOnError' - Stop on first error
+            %       (default: false) 'AllowWarnings' - Upload despite warnings
+            %       (default: false) 'AllowErrors' - Upload despite errors
+            %       (default: false)
+
+            % NOTE: this is primarily a loop that runs obj.uploadSurvey with this same options
             
             arguments
                 obj
@@ -87,43 +101,41 @@ classdef BatchConverter < handle
             end
             
             pending_dir = fullfile(obj.base_dir, 'pending');
-            
-            % Get list of CSV files
-            files = dir(fullfile(pending_dir, '*.csv'));
+            pending_survey_files = dir(fullfile(pending_dir, '*.csv'));
             
             % Remove summary file if present
-            files = files(~strcmp({files.name}, '_split_summary.txt'));
+            % NOTE: this should not be an issue since it is a txt not a csv
+            pending_survey_files = pending_survey_files(~strcmp({pending_survey_files.name}, '_split_summary.txt'));
+            % TODO: add tracking for multiple runs
             
-            obj.logger.info(sprintf('Found %d surveys to upload', length(files)));
+            obj.logger.info(sprintf('Found %d surveys to upload', length(pending_survey_files)));   % FIXME: remove sprintf if not necessary
             obj.resetStats();
             
-            for i = 1:length(files)
-                file_path = fullfile(files(i).folder, files(i).name);
+            for idx = 1:length(pending_survey_files)
+                survey_file_path = fullfile(pending_survey_files(idx).folder, pending_survey_files(idx).name);
                 
-                fprintf('[%d/%d] Processing %s...\n', i, length(files), files(i).name);
+                fprintf('[%d/%d] Processing %s...\n', idx, length(pending_survey_files), pending_survey_files(idx).name);   % FIXME: use logger
                 
                 try
-                    % Read survey data
-                    survey_data = readtable(file_path);
+                    survey_data = readtable(survey_file_path);
                     
-                    % Upload
                     [success, category] = obj.uploadSurvey(survey_data, ...
-                        'Overwrite', options.Overwrite, ...
-                        'Validate', options.Validate, ...
-                        'AllowWarnings', options.AllowWarnings, ...
-                        'AllowErrors', options.AllowErrors);
-                    
+                        'Overwrite',        options.Overwrite, ...
+                        'Validate',         options.Validate, ...
+                        'AllowWarnings',    options.AllowWarnings, ...
+                        'AllowErrors',      options.AllowErrors);
+
                     % Move file to appropriate folder
-                    obj.moveFile(file_path, category);
+                    obj.moveFile(survey_file_path, category);
                     
                 catch ME
                     obj.logger.error(sprintf('Error processing %s: %s', ...
-                        files(i).name, ME.message));
+                        pending_survey_files(idx).name, ME.message));
                     
-                    obj.logError(files(i).name, ME, 'File processing error');
+                    obj.logError(pending_survey_files(idx).name, ME, 'File processing error');
                     
                     obj.stats.failed = obj.stats.failed + 1;
-                    obj.moveFile(file_path, 'failed');
+                    obj.moveFile(survey_file_path, 'failed');
                     
                     if options.StopOnError
                         obj.logger.error('Stopping due to error');
@@ -138,28 +150,37 @@ classdef BatchConverter < handle
         
         function [success, category] = uploadSurvey(obj, survey_data, options)
             % UPLOADSURVEY Upload a single survey
+            % 
+            % This includes the validation steps, which generate errors and
+            % warnings to determine if the survey should be uploaded
+
+            % FIXME: obj.uploadSurvey should be a generic function in the `narwc` toolbox
             
             arguments
                 obj
-                survey_data table
-                options.Overwrite logical = false
-                options.Validate logical = true
-                options.AllowWarnings logical = false
-                options.AllowErrors logical = false
+                survey_data     table
+                options.Overwrite       logical = false
+                options.Validate        logical = true
+                options.AllowWarnings   logical = false
+                options.AllowErrors     logical = false
             end
             
+            % TODO: check is_standard_format else break
+
             % Get survey ID
             if ismember('FILEID', survey_data.Properties.VariableNames)
                 survey_id = survey_data.FILEID{1};
             else
                 error('No FILEID found in survey data');
+                % NOTE: only possible if the survey is the wrong format
             end
             
-            obj.logger.info(sprintf('Uploading survey: %s (%d records)', ...
-                survey_id, height(survey_data)));
-            
             % Validate if requested
-            if options.Validate
+            if options.Validate % FIXME: refactor to avoid nesting
+
+                obj.logger.info(sprintf('Validating survey: %s (%d records)', ...
+                                survey_id, height(survey_data)));         
+
                 % Create validator config with override options
                 validator_config = struct();
                 validator_config.allow_warnings = options.AllowWarnings;
@@ -196,12 +217,15 @@ classdef BatchConverter < handle
                     return;
                 end
             end
+
+            obj.logger.info(sprintf('Uploading survey: %s (%d records)', ...    % TODO: remove sprintf if not needed
+                survey_id, height(survey_data)));                
             
             % Check if exists
             exists = obj.surveyExists(survey_id);
             
             if exists && ~options.Overwrite
-                obj.logger.info(sprintf('%s already exists in database, skipping', survey_id));
+                obj.logger.info(sprintf('%s already exists in database, skipping', survey_id));     % TODO: remove sprintf if not needed
                 obj.stats.skipped = obj.stats.skipped + 1;
                 success = true;
                 category = 'skipped';
@@ -214,19 +238,30 @@ classdef BatchConverter < handle
                     obj.logger.info(sprintf('Deleting existing records for %s', survey_id));
                     delete_query = sprintf("DELETE FROM Master WHERE FILEID = '%s'", survey_id);
                     obj.connection.execute(delete_query);
+
+                    % FIXME: deleting old data to overwrite potentially creates
+                    % an issue where an error then prevents the new upload. In
+                    % that case, the old data is now removed, and the new data
+                    % is not added. We need to save and re-upload the old data
+                    % if there is an error or else wait to delete it until
+                    % successfully uploaded. Both create potential failure
+                    % modes.
+                    %  - [ ] check if SQL has an undo that can help with this
+
                 end
                 
                 % Convert data types for database compatibility
                 survey_data = narwc.io.DataTypeConverter().prepareForUpload(survey_data);
-                
+                % FIXME: should check format instead. Everything should already be in the correct format
+
                 % Upload new data
-                obj.connection.insert('Master', survey_data);
+                obj.connection.insert('Master', survey_data);   % FIXME: convert to option with default as master
                 
                 if exists
-                    obj.logger.info(sprintf('✓ Updated %s', survey_id));
+                    obj.logger.info(sprintf('Updated %s', survey_id));
                     obj.stats.updated = obj.stats.updated + 1;
                 else
-                    obj.logger.info(sprintf('✓ Uploaded %s', survey_id));
+                    obj.logger.info(sprintf('Uploaded %s', survey_id));
                     obj.stats.uploaded = obj.stats.uploaded + 1;
                 end
                 
@@ -234,10 +269,13 @@ classdef BatchConverter < handle
                 category = 'processed';
                 
             catch ME
-                obj.logger.error(sprintf('✗ Failed to upload %s: %s', ...
+                obj.logger.error(sprintf('Failed to upload %s: %s', ...
                     survey_id, ME.message));
                 
                 obj.logError(survey_id, ME, 'Database upload error');
+
+                % TODO: handle the overwrite issue if there is a failure to
+                % upload new data
                 
                 obj.stats.failed = obj.stats.failed + 1;
                 success = false;
@@ -253,14 +291,18 @@ classdef BatchConverter < handle
             %   exception - MException object or struct with message/identifier
             %   error_type - Description of error type
             %   extra_info - (optional) Additional information to log
+
+            % FIXME: can we include some of this in the logging toolbox 
             
             if nargin < 4
+                % ???: when would this occur? Can I delete it?
                 error_type = 'Unknown error';
             end
             
             try
                 fid = fopen(obj.error_log_file, 'a');
                 if fid == -1
+                    % ???: is this the behavior I want
                     return;  % Silently fail if can't open log
                 end
                 
@@ -277,6 +319,7 @@ classdef BatchConverter < handle
                     if isfield(exception, 'stack') && ~isempty(exception.stack)
                         fprintf(fid, 'Location: %s (line %d)\n', ...
                             exception.stack(1).name, exception.stack(1).line);
+                        % TODO: replace line with eventno? or add
                     end
                 else
                     fprintf(fid, 'Error: %s\n', exception.message);
@@ -284,11 +327,13 @@ classdef BatchConverter < handle
                     if ~isempty(exception.stack)
                         fprintf(fid, 'Location: %s (line %d)\n', ...
                             exception.stack(1).name, exception.stack(1).line);
+                        % TODO: replace line with eventno? or add
                     end
                 end
                 
                 % Write extra info if provided (e.g., validation results)
                 if nargin >= 5 && ~isempty(extra_info)
+                    % ???: does this functionality ever get used?
                     if isstruct(extra_info) && isfield(extra_info, 'summary')
                         fprintf(fid, 'Validation Details:\n');
                         fprintf(fid, '  Errors: %d\n', extra_info.summary.errors);
@@ -351,11 +396,14 @@ classdef BatchConverter < handle
                 
             catch
                 % Silently fail
+                % ???: is this the behavior I want?
             end
         end
         
         function moveFile(obj, source_path, category)
-            % MOVEFILE Move file to appropriate category folder
+            % MOVE FILE Move file to appropriate category folder
+
+            % FIXME: this method name is not very good, or does not need to be a method
             
             [~, filename, ext] = fileparts(source_path);
             dest_dir = fullfile(obj.base_dir, category);
@@ -375,6 +423,7 @@ classdef BatchConverter < handle
             query = sprintf("SELECT COUNT(*) as cnt FROM Master WHERE FILEID = '%s'", ...
                 survey_id);
             result = obj.connection.fetch(query);
+            % TODO: add functionality to return results as well for if we need to overwrite
             exists = result.cnt > 0;
         end
         

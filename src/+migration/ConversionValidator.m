@@ -1,13 +1,21 @@
 classdef ConversionValidator < handle
-    % CONVERSIONVALIDATOR Validate migration from CSV to database
+    % CONVERSION VALIDATOR Validate migration from CSV to database
+    % 
+    % This is for validating the legacy conversion after the migration has been
+    % completed
     %
-    % Usage:
-    %   validator = migration.ConversionValidator(connection);
-    %   results = validator.validate(csv_file);
+    % Usage: validator = migration.ConversionValidator(connection); results =
+    %   validator.validate(csv_file);
+    % 
+    % 2026 russ.shomberg@marineacoustics.com
+
+    % FIXME: DELETE I do not think this get used anywhere
+
+    % TODO: check and refactor this code
     
     properties (Access = private)
-        connection
-        logger
+        connection  % database connection
+        logger      % logging toolbox logger
     end
     
     methods
@@ -18,7 +26,7 @@ classdef ConversionValidator < handle
             obj.logger = logging.Logger('migration.ConversionValidator');
         end
         
-        function results = validate(obj, csv_file, options)
+        function results = validate(obj, survey_file, options)
             % VALIDATE Validate migration
             %
             % Inputs:
@@ -32,15 +40,15 @@ classdef ConversionValidator < handle
             
             arguments
                 obj
-                csv_file char
-                options.SampleSize double = inf
-                options.CheckAllFields logical = false
+                survey_file char
+                options.SampleSize double = inf         % TODO: remove this option?
+                options.CheckAllFields logical = false  % TODO: remove this option?
             end
             
             obj.logger.info('Starting migration validation...');
             
             results = struct();
-            results.csv_file = csv_file;
+            results.survey_file = survey_file;
             results.validation_time = datetime('now');
             results.issues = {};
             
@@ -53,7 +61,7 @@ classdef ConversionValidator < handle
             % Get survey list from CSV
             % FIXME: get from folder?
             obj.logger.info('Reading CSV to get survey list...');
-            extractor = migration.SurveyExtractor(csv_file);
+            extractor = migration.SurveyExtractor(survey_file);
             csv_data = obj.readCSVFull(extractor);
             csv_surveys = unique(csv_data.FILEID);
             csv_surveys = csv_surveys(~ismissing(csv_surveys) & strlength(csv_surveys) > 0);
@@ -238,7 +246,7 @@ classdef ConversionValidator < handle
             % CREATESUMMARY Create text summary
             
             summary = sprintf('\n=== Migration Validation Summary ===\n\n');
-            summary = [summary sprintf('CSV File: %s\n', results.csv_file)];
+            summary = [summary sprintf('CSV File: %s\n', results.survey_file)];
             summary = [summary sprintf('Validation Time: %s\n\n', char(results.validation_time))];
             
             summary = [summary sprintf('Survey Counts:\n')];
