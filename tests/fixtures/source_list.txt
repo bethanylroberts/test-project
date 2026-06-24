@@ -17,9 +17,7 @@
 #   pos 8   : preserved from source (if present)
 #
 # Run with:
-#   anonymize_surveys('/path/to/source/surveys', ...
-#                     'tests/fixtures/source_list.txt', ...
-#                     '../narwc_fixtures_manifest.txt')
+#   anonymize_surveys('data/legacy/surveys/processed', 'tests/fixtures/source_list.txt', '../narwc_fixtures_manifest.txt')
 #
 # The manifest path MUST be outside the repository. The recommended location
 # is one directory above the repo root: ../narwc_fixtures_manifest.txt
