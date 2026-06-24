@@ -1,0 +1,26 @@
+# NARWC fixture source list
+#
+# Format: source_fileid,test_fileid,description
+#
+# source_fileid  - FILEID as it appears in the production survey CSV filename
+#                  (without .csv extension)
+# test_fileid    - Synthetic FILEID to use in the anonymized fixture.
+#                  Should start with 'T' so test data is obviously synthetic.
+# description    - Optional free-text description (may contain commas if quoted,
+#                  but plain text is easier)
+#
+# Lines starting with '#' are ignored. Blank lines are ignored.
+#
+# Example entries (all commented out):
+#
+# a123456,T001,Aerial survey — Gulf of Maine
+# f789012,T002,Pop-up aerial survey — Great South Channel
+# o345678,T003,Opportunistic sightings batch
+#
+# Run with:
+#   anonymize_surveys('/path/to/source/surveys', ...
+#                     'tests/fixtures/source_list.txt', ...
+#                     '../narwc_fixtures_manifest.txt')
+#
+# The manifest path MUST be outside the repository. The recommended location
+# is one directory above the repo root: ../narwc_fixtures_manifest.txt
