@@ -4,6 +4,16 @@ classdef test_upload_guardrail < matlab.unittest.TestCase
     % These tests do not require a database connection. The guardrail check
     % fires before any DB call, so a mock connection object is sufficient.
 
+    methods (TestClassSetup)
+        function setupPaths(testCase) %#ok<MANU>
+            here = fileparts(mfilename('fullpath'));
+            fixtures_path = fullfile(fileparts(here), 'fixtures');
+            if ~contains(path, fixtures_path)
+                addpath(fixtures_path);
+            end
+        end
+    end
+
     methods (Test)
 
         function testUploadSurveyRejectsTestFileid(testCase)
@@ -98,35 +108,4 @@ data = table( ...
 end
 
 
-% =========================================================================
-% Mock connection — satisfies the interface BatchConverter calls
-% =========================================================================
-
-classdef MockConnection < handle
-    properties
-        fetch_call_count  = 0
-        insert_call_count = 0
-        is_open           = true
-    end
-
-    methods
-        function result = fetch(obj, ~)
-            obj.fetch_call_count = obj.fetch_call_count + 1;
-            result = table(0, 'VariableNames', {'cnt'});
-        end
-
-        function execute(~, ~)
-        end
-
-        function insert(obj, ~, ~)
-            obj.insert_call_count = obj.insert_call_count + 1;
-        end
-
-        function tf = isOpen(obj)
-            tf = obj.is_open;
-        end
-
-        function close(~)
-        end
-    end
-end
+% MockConnection is defined in tests/fixtures/MockConnection.m
