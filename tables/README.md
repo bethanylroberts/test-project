@@ -1,0 +1,1 @@
+These CSV files are snapshots exported from the production SQL database via scripts/setup/update_lookup_tables.m. They are committed to enable validation rule development and testing on machines without DB access. They may drift from the live database; treat the database as authoritative. Refresh by running update_lookup_tables.m in the opposite direction (DB → CSV).
