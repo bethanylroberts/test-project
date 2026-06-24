@@ -5,7 +5,7 @@ classdef SurveyValidator < handle
     %   validator = narwc.validation.SurveyValidator();
     %   [is_valid, results] = validator.validate(data);
 
-    % NOTE: used by BatchConverter, this is the workhorse of the processing
+    % NOTE: used by BatchUploader, this is the workhorse of the processing
     % since I only really want to check validation, and then hand it back to the
     % user to fix
     

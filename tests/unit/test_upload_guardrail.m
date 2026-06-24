@@ -1,5 +1,5 @@
 classdef test_upload_guardrail < matlab.unittest.TestCase
-    % TEST_UPLOAD_GUARDRAIL Verify BatchConverter rejects test-fixture FILEIDs.
+    % TEST_UPLOAD_GUARDRAIL Verify BatchUploader rejects test-fixture FILEIDs.
     %
     % These tests do not require a database connection. The guardrail check
     % fires before any DB call, so a mock connection object is sufficient.
@@ -19,7 +19,7 @@ classdef test_upload_guardrail < matlab.unittest.TestCase
         function testUploadSurveyRejectsTestFileid(testCase)
             % uploadSurvey must refuse a survey whose FILEID has 'T' in position 2.
             conn = MockConnection();
-            converter = migration.BatchConverter(conn, tempdir());
+            converter = narwc.ingestion.BatchUploader(conn, tempdir());
 
             data = make_survey('aT11282');
 
@@ -41,7 +41,7 @@ classdef test_upload_guardrail < matlab.unittest.TestCase
             %  separate from the guardrail — so we only check the guardrail did not
             %  set success=false before the DB call is reached.)
             conn = MockConnection();
-            converter = migration.BatchConverter(conn, tempdir());
+            converter = narwc.ingestion.BatchUploader(conn, tempdir());
 
             data = make_survey('a111282');
 
@@ -70,7 +70,7 @@ classdef test_upload_guardrail < matlab.unittest.TestCase
             writetable(data, fullfile(pending_dir, 'fT00007.csv'));
 
             conn = MockConnection();
-            converter = migration.BatchConverter(conn, base_dir);
+            converter = narwc.ingestion.BatchUploader(conn, base_dir, 'LegacyMode', true);
             converter.uploadFromFolder('Validate', false);
 
             stats = converter.getStats();

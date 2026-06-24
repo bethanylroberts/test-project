@@ -9,7 +9,7 @@ classdef DataTypeConverter
     function data = prepareForUpload(data)
         % PREPAREFORUPLOAD Convert data types for database compatibility
 
-        % NOTE: prepare for upload gets called by BatchConverter
+        % NOTE: prepare for upload gets called by BatchUploader
         
         % Get field definitions from central location
         string_fields = narwc.db.FieldDefinitions.getStringFields();

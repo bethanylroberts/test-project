@@ -1,10 +1,10 @@
 classdef test_characterization_batch < matlab.unittest.TestCase
-    % TEST_CHARACTERIZATION_BATCH Characterization tests for BatchConverter and
+    % TEST_CHARACTERIZATION_BATCH Characterization tests for BatchUploader and
     % SurveyValidator.
     %
     % Two separate concerns:
     %
-    %   1. BatchConverter guardrail path: uploadFromFolder must reject all
+    %   1. BatchUploader guardrail path: uploadFromFolder must reject all
     %      T-FILEID fixtures before any DB call is attempted.
     %
     %   2. SurveyValidator smoke test: validate() must run to completion on a
@@ -38,7 +38,7 @@ classdef test_characterization_batch < matlab.unittest.TestCase
     end
 
     % =====================================================================
-    % BatchConverter guardrail
+    % BatchUploader guardrail
     % =====================================================================
 
     methods (Test)
@@ -61,7 +61,7 @@ classdef test_characterization_batch < matlab.unittest.TestCase
                      fullfile(pending_dir, 'HT63070.csv'));
 
             conn = MockBatchConn();
-            converter = migration.BatchConverter(conn, base_dir);
+            converter = narwc.ingestion.BatchUploader(conn, base_dir, 'LegacyMode', true);
             converter.uploadFromFolder('Validate', false);
 
             stats = converter.getStats();
@@ -93,7 +93,7 @@ classdef test_characterization_batch < matlab.unittest.TestCase
                      fullfile(pending_dir, 'fT00157.csv'));
 
             conn = MockBatchConn();
-            converter = migration.BatchConverter(conn, base_dir);
+            converter = narwc.ingestion.BatchUploader(conn, base_dir, 'LegacyMode', true);
             converter.uploadFromFolder('Validate', false);
 
             testCase.verifyEqual(conn.fetch_call_count, 0, ...

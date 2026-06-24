@@ -75,6 +75,11 @@ classdef test_characterization_extractor < matlab.unittest.TestCase
             out1 = readtable(fullfile(testCase.output_dir, 'aT11110.csv'));
             out2 = readtable(fullfile(testCase.output_dir, 'fT00157.csv'));
 
+            % Expected counts are data rows only (readtable consumes the
+            % header written by extractAll, so height() == data rows).
+            % The extractor skips line 1 of the combined file as its header,
+            % so buildCombined must write the combined file with a header row
+            % or the first data row is lost.
             testCase.verifyEqual(height(out1), 328, ...
                 'Row count mismatch for aT11110');
             testCase.verifyEqual(height(out2), 61, ...
@@ -114,34 +119,34 @@ classdef test_characterization_extractor < matlab.unittest.TestCase
     methods (Access = private)
 
         function combined_file = buildCombined(testCase, filenames)
-            % Read fixture CSVs (which have headers) and write a headerless
-            % combined CSV.  StandardFormat.createImportOptions uses
-            % DataLines=[1,Inf] (no header), so the combined file must not
-            % have a header row.  The fixture columns are already in
-            % CSV_FIELD_ORDER so no reordering is needed.
+            % Read fixture CSVs (each with a header row) and write a combined
+            % CSV that also includes a header row.  SurveyExtractor.extractAll
+            % always starts reading from line 2 (hardcoded "skip header"), so
+            % the combined file must have a real header at line 1 or the first
+            % data row will be silently dropped.  The fixture columns are
+            % already in CSV_FIELD_ORDER so no reordering is needed.
             %
-            % Note: BLOCK is coerced to cell-of-string before vertcat because
-            % readtable infers the type per file — files with only empty BLOCK
-            % values produce a numeric column; files with 'MC'/'MN' produce a
-            % cell column.  Vertcat fails when the types differ.  The underlying
-            % per-file type inference is a known latent bug (see PROJECT_STATUS.md).
+            % readtable infers column types per-file from observed values.
+            % All-empty columns become double; on R2021a+ text-valued columns
+            % become string instead of cell.  Any column whose class diverges
+            % across input tables will cause vertcat to fail.  We detect and
+            % coerce all such columns to cell-of-char before combining.  The
+            % underlying type-inference issue is documented in PROJECT_STATUS.md.
 
             tables = cell(numel(filenames), 1);
             for k = 1:numel(filenames)
                 tables{k} = readtable(fullfile(testCase.fixture_dir, filenames{k}));
             end
 
-            % Normalize BLOCK: if any table has a cell/string BLOCK column,
-            % coerce all-numeric BLOCK columns to empty cell-of-string.
-            vars = tables{1}.Properties.VariableNames;
-            if ismember('BLOCK', vars)
-                has_string_block = any(cellfun( ...
-                    @(t) iscell(t.BLOCK) || isstring(t.BLOCK), tables));
-                if has_string_block
+            % Coerce any variable whose class diverges across tables to cell-of-char.
+            var_names = tables{1}.Properties.VariableNames;
+            for v = 1:numel(var_names)
+                col = var_names{v};
+                classes = cellfun(@(t) class(t.(col)), tables, 'UniformOutput', false);
+                if numel(unique(classes)) > 1
                     for k = 1:numel(tables)
-                        if isnumeric(tables{k}.BLOCK)
-                            tables{k}.BLOCK = repmat({''}, height(tables{k}), 1);
-                        end
+                        tables{k}.(col) = ...
+                            test_characterization_extractor.toCell(tables{k}.(col));
                     end
                 end
             end
@@ -152,7 +157,26 @@ classdef test_characterization_extractor < matlab.unittest.TestCase
             end
 
             combined_file = [tempname '.csv'];
-            writetable(combined, combined_file, 'WriteVariableNames', false);
+            writetable(combined, combined_file, 'WriteVariableNames', true);
+        end
+
+    end
+
+    methods (Static, Access = private)
+
+        function c = toCell(col)
+            % Coerce a table column to cell-of-char for vertcat compatibility.
+            % string arrays (R2021a+ readtable default) and numeric arrays
+            % (all-empty columns inferred as double) are both converted to a
+            % cell array of char; existing cell columns pass through unchanged.
+            if isstring(col)
+                col(ismissing(col)) = "";
+                c = cellstr(col);
+            elseif isnumeric(col)
+                c = repmat({''}, size(col));
+            else
+                c = col;
+            end
         end
 
     end

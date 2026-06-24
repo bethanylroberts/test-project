@@ -40,5 +40,5 @@ with position 2 set to `T`:
 
 Position 2 = `T` is the canonical marker for synthetic fixture data.
 Real contributor codes in the production database never use `T`.
-`BatchConverter.uploadSurvey()` rejects any FILEID with position 2 = `T`
+`narwc.ingestion.BatchUploader.uploadSurvey()` rejects any FILEID with position 2 = `T`
 before attempting a database write.

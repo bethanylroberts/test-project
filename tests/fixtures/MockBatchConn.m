@@ -1,5 +1,5 @@
 classdef MockBatchConn < handle
-    % MOCKBATCHCONN Minimal connection stub for BatchConverter guardrail tests.
+    % MOCKBATCHCONN Minimal connection stub for BatchUploader guardrail tests.
     properties
         fetch_call_count  = 0
         insert_call_count = 0
