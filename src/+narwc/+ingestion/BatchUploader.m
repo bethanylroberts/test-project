@@ -274,30 +274,40 @@ classdef BatchUploader < handle
                 return;
             end
 
+            % Save AutoCommit state so the connection can be safely reused
+            % after this operation, regardless of outcome.
+            prev_auto_commit = obj.connection.getAutoCommit();
+
+            % Attempt to begin a transaction.  If the driver does not support
+            % transactions, log a warning and fall back to the old non-atomic
+            % behaviour so the operation can still proceed.
+            txn_ok = false;
             try
-                % Delete existing if overwriting
+                obj.connection.beginTransaction();
+                txn_ok = true;
+            catch txn_err
+                obj.logger.warning(sprintf( ...
+                    '%s: driver does not support transactions, proceeding non-atomically: %s', ...
+                    survey_id, txn_err.message));
+            end
+
+            try
+                % Delete existing rows before inserting new ones (overwrite path).
                 if exists
                     obj.logger.info(sprintf('Deleting existing records for %s', survey_id));
                     delete_query = sprintf("DELETE FROM %s WHERE FILEID = '%s'", obj.table_name, survey_id);
                     obj.connection.execute(delete_query);
-
-                    % FIXME: deleting old data to overwrite potentially creates
-                    % an issue where an error then prevents the new upload. In
-                    % that case, the old data is now removed, and the new data
-                    % is not added. We need to save and re-upload the old data
-                    % if there is an error or else wait to delete it until
-                    % successfully uploaded. Both create potential failure
-                    % modes.
-                    %  - [ ] check if SQL has an undo that can help with this
-
                 end
 
                 % Convert data types for database compatibility
                 survey_data = narwc.io.DataTypeConverter().prepareForUpload(survey_data);
-                % FIXME: should check format instead. Everything should already be in the correct format
 
                 % Upload new data
                 obj.connection.insert(obj.table_name, survey_data);
+
+                if txn_ok
+                    obj.connection.commit();
+                end
 
                 if exists
                     obj.logger.info(sprintf('Updated %s', survey_id));
@@ -311,17 +321,35 @@ classdef BatchUploader < handle
                 category = 'processed';
 
             catch ME
-                obj.logger.error(sprintf('Failed to upload %s: %s', ...
-                    survey_id, ME.message));
-
-                obj.logError(survey_id, ME, 'Database upload error');
-
-                % TODO: handle the overwrite issue if there is a failure to
-                % upload new data
+                if txn_ok
+                    try
+                        obj.connection.rollback();
+                    catch
+                    end
+                    stage = 'insert';
+                    if exists
+                        stage = 'delete/insert';
+                    end
+                    obj.logger.error(sprintf( ...
+                        '%s: upload failed at %s stage — prior data preserved via rollback: %s', ...
+                        survey_id, stage, ME.message));
+                    obj.logError(survey_id, ME, ...
+                        'Database upload error (rolled back; prior data preserved)');
+                else
+                    obj.logger.error(sprintf('Failed to upload %s: %s', ...
+                        survey_id, ME.message));
+                    obj.logError(survey_id, ME, ...
+                        'Database upload error (non-atomic; data may be partial)');
+                end
 
                 obj.stats.failed = obj.stats.failed + 1;
                 success = false;
                 category = 'failed';
+            end
+
+            % Restore AutoCommit state whether the operation succeeded or failed.
+            if txn_ok
+                obj.connection.setAutoCommit(prev_auto_commit);
             end
         end
 

@@ -49,7 +49,7 @@ classdef test_characterization_extractor < matlab.unittest.TestCase
 
             combined = testCase.buildCombined({'aT11110.csv', 'fT00157.csv'});
 
-            extractor = migration.SurveyExtractor(combined);
+            extractor = narwc.ingestion.SurveyExtractor(combined);
             extractor.extractAll(testCase.output_dir, 'Overwrite', true);
 
             testCase.verifyTrue( ...
@@ -69,7 +69,7 @@ classdef test_characterization_extractor < matlab.unittest.TestCase
 
             combined = testCase.buildCombined({'aT11110.csv', 'fT00157.csv'});
 
-            extractor = migration.SurveyExtractor(combined);
+            extractor = narwc.ingestion.SurveyExtractor(combined);
             extractor.extractAll(testCase.output_dir, 'Overwrite', true);
 
             out1 = readtable(fullfile(testCase.output_dir, 'aT11110.csv'));
@@ -91,7 +91,7 @@ classdef test_characterization_extractor < matlab.unittest.TestCase
 
             combined = testCase.buildCombined({'aT11110.csv', 'fT00157.csv'});
 
-            extractor = migration.SurveyExtractor(combined);
+            extractor = narwc.ingestion.SurveyExtractor(combined);
             extractor.extractAll(testCase.output_dir, 'Overwrite', true);
 
             out1 = readtable(fullfile(testCase.output_dir, 'aT11110.csv'));
@@ -106,7 +106,7 @@ classdef test_characterization_extractor < matlab.unittest.TestCase
 
             combined = testCase.buildCombined({'aT11110.csv', 'fT00157.csv'});
 
-            extractor = migration.SurveyExtractor(combined);
+            extractor = narwc.ingestion.SurveyExtractor(combined);
             extractor.extractAll(testCase.output_dir, 'Overwrite', true);
 
             testCase.verifyTrue( ...

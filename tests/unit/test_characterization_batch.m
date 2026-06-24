@@ -181,4 +181,127 @@ classdef test_characterization_batch < matlab.unittest.TestCase
 
     end
 
+    % =====================================================================
+    % Transaction behaviour
+    % =====================================================================
+
+    methods (Test)
+
+        function testGuardrailFiresBeforeTransaction(testCase)
+            % When uploadFromFolder processes only T-FILEID files the
+            % guardrail must fire before any DB call, including
+            % beginTransaction.
+
+            import matlab.unittest.fixtures.WorkingFolderFixture
+            testCase.applyFixture(WorkingFolderFixture);
+
+            base_dir    = fullfile(pwd, 'staging');
+            pending_dir = fullfile(base_dir, 'pending');
+            mkdir(pending_dir);
+
+            copyfile(fullfile(testCase.fixture_dir, 'fT00157.csv'), ...
+                     fullfile(pending_dir, 'fT00157.csv'));
+
+            conn = MockBatchConn();
+            uploader = narwc.ingestion.BatchUploader(conn, base_dir, 'LegacyMode', true);
+            uploader.uploadFromFolder('Validate', false);
+
+            testCase.verifyEqual(conn.begin_transaction_count, 0, ...
+                'T-FILEID guardrail must fire before beginTransaction is called');
+            testCase.verifyEqual(conn.fetch_call_count, 0, ...
+                'T-FILEID guardrail must fire before any DB fetch');
+            testCase.verifyEqual(conn.insert_call_count, 0, ...
+                'T-FILEID guardrail must fire before any DB insert');
+        end
+
+        function testHappyPathOpensTransactionAndCommits(testCase)
+            % uploadSurvey on a non-T FILEID (survey not in DB) must
+            % open a transaction, call insert, and commit.
+
+            conn = MockBatchConn();
+
+            import matlab.unittest.fixtures.WorkingFolderFixture
+            testCase.applyFixture(WorkingFolderFixture);
+            base_dir = fullfile(pwd, 'staging');
+            uploader = narwc.ingestion.BatchUploader(conn, base_dir);
+
+            survey = table({'f098027'}, 'VariableNames', {'FILEID'});
+            uploader.uploadSurvey(survey, 'Validate', false);
+
+            testCase.verifyEqual(conn.begin_transaction_count, 1, ...
+                'beginTransaction must be called once for a clean insert');
+            testCase.verifyEqual(conn.insert_call_count, 1, ...
+                'insert must be called once');
+            testCase.verifyEqual(conn.commit_count, 1, ...
+                'commit must be called on success');
+            testCase.verifyEqual(conn.rollback_count, 0, ...
+                'rollback must not be called on success');
+        end
+
+        function testAutoCommitRestoredAfterSuccess(testCase)
+            % After a successful upload the connection AutoCommit must
+            % return to its prior value ('on').
+
+            conn = MockBatchConn();
+            conn.auto_commit = 'on';
+
+            import matlab.unittest.fixtures.WorkingFolderFixture
+            testCase.applyFixture(WorkingFolderFixture);
+            base_dir = fullfile(pwd, 'staging');
+            uploader = narwc.ingestion.BatchUploader(conn, base_dir);
+
+            survey = table({'f098027'}, 'VariableNames', {'FILEID'});
+            uploader.uploadSurvey(survey, 'Validate', false);
+
+            testCase.verifyEqual(conn.auto_commit, 'on', ...
+                'AutoCommit must be restored to ''on'' after a successful upload');
+        end
+
+        function testInsertFailureTrigersRollback(testCase)
+            % When insert throws, rollback must be called and the
+            % upload must be reported as failed.
+
+            conn = MockBatchConn();
+            conn.insert_should_fail = true;
+
+            import matlab.unittest.fixtures.WorkingFolderFixture
+            testCase.applyFixture(WorkingFolderFixture);
+            base_dir = fullfile(pwd, 'staging');
+            uploader = narwc.ingestion.BatchUploader(conn, base_dir);
+
+            survey = table({'f098027'}, 'VariableNames', {'FILEID'});
+            [success, category] = uploader.uploadSurvey(survey, 'Validate', false);
+
+            testCase.verifyFalse(success, ...
+                'upload must report failure when insert throws');
+            testCase.verifyEqual(category, 'failed', ...
+                'category must be ''failed'' when insert throws');
+            testCase.verifyEqual(conn.rollback_count, 1, ...
+                'rollback must be called when insert fails');
+            testCase.verifyEqual(conn.commit_count, 0, ...
+                'commit must not be called when insert fails');
+        end
+
+        function testAutoCommitRestoredAfterFailure(testCase)
+            % After a failed insert the connection AutoCommit must be
+            % restored to its prior value ('on').
+
+            conn = MockBatchConn();
+            conn.auto_commit = 'on';
+            conn.insert_should_fail = true;
+
+            import matlab.unittest.fixtures.WorkingFolderFixture
+            testCase.applyFixture(WorkingFolderFixture);
+            base_dir = fullfile(pwd, 'staging');
+            uploader = narwc.ingestion.BatchUploader(conn, base_dir);
+
+            survey = table({'f098027'}, 'VariableNames', {'FILEID'});
+            uploader.uploadSurvey(survey, 'Validate', false);
+
+            testCase.verifyEqual(conn.auto_commit, 'on', ...
+                'AutoCommit must be restored to ''on'' after a failed upload');
+        end
+
+    end
+
 end

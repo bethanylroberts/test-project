@@ -3,15 +3,10 @@ classdef SurveyExtractor < handle
     % Handles large files using chunked reading
     %
     % Usage:
-    %   extractor = migration.SurveyExtractor('legacy_data.csv');
+    %   extractor = narwc.ingestion.SurveyExtractor('legacy_data.csv');
     %   extractor.extractAll('output_dir');
-    % 
+    %
     % 2026 russ.shomberg@marineacoustics.com
-
-    % FIXME: this is likely too much abstraction as it is only used by a single
-    % script from the migration scripts and will not be used more than a handful
-    % of times. There may be a generic need to extract individual surveys in
-    % some capacity. In that case, the fildid column would need to be specified.
     
     properties (Access = private)
         legacy_file
@@ -24,7 +19,7 @@ classdef SurveyExtractor < handle
             % SURVEYEXTRACTOR Constructor
             
             obj.legacy_file = legacy_file;
-            obj.logger = logging.Logger('migration.SurveyExtractor');
+            obj.logger = logging.Logger('narwc.ingestion.SurveyExtractor');
             
             if nargin > 1
                 obj.chunk_size = chunk_size;

@@ -61,7 +61,7 @@ classdef ConversionValidator < handle
             % Get survey list from CSV
             % FIXME: get from folder?
             obj.logger.info('Reading CSV to get survey list...');
-            extractor = migration.SurveyExtractor(survey_file);
+            extractor = narwc.ingestion.SurveyExtractor(survey_file);
             csv_data = obj.readCSVFull(extractor);
             csv_surveys = unique(csv_data.FILEID);
             csv_surveys = csv_surveys(~ismissing(csv_surveys) & strlength(csv_surveys) > 0);

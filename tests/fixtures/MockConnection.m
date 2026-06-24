@@ -25,5 +25,18 @@ classdef MockConnection < handle
 
         function close(~)
         end
+
+        % --- Transaction support (no-ops; guardrail tests do not verify these) ---
+        function ac = getAutoCommit(~)
+            ac = 'on';
+        end
+        function setAutoCommit(~, ~)
+        end
+        function beginTransaction(~)
+        end
+        function commit(~)
+        end
+        function rollback(~)
+        end
     end
 end
