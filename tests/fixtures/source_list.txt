@@ -1,21 +1,20 @@
 # NARWC fixture source list
 #
-# Format: source_fileid,test_fileid,description
+# Format: source_fileid,description
 #
 # source_fileid  - FILEID as it appears in the production survey CSV filename
-#                  (without .csv extension)
-# test_fileid    - Synthetic FILEID to use in the anonymized fixture.
-#                  Should start with 'T' so test data is obviously synthetic.
-# description    - Optional free-text description (may contain commas if quoted,
-#                  but plain text is easier)
+#                  (without .csv extension). Must not have 'T' in position 2
+#                  (that would indicate an already-anonymized fixture).
+# description    - Optional free-text note about the survey (for reference only).
 #
 # Lines starting with '#' are ignored. Blank lines are ignored.
 #
-# Example entries (all commented out):
-#
-# a123456,T001,Aerial survey — Gulf of Maine
-# f789012,T002,Pop-up aerial survey — Great South Channel
-# o345678,T003,Opportunistic sightings batch
+# The test FILEID is computed automatically from the anonymized dates:
+#   pos 1   : preserved from source (survey type + era case)
+#   pos 2   : 'T' (marks as synthetic; real contributor codes never use T)
+#   pos 3-4 : two-digit year of first shifted data date
+#   pos 5-7 : Julian day of first shifted date (zero-padded to 3 digits)
+#   pos 8   : preserved from source (if present)
 #
 # Run with:
 #   anonymize_surveys('/path/to/source/surveys', ...
@@ -25,30 +24,37 @@
 # The manifest path MUST be outside the repository. The recommended location
 # is one directory above the repo root: ../narwc_fixtures_manifest.txt
 
+# --- Aerial surveys (a-type, contributor 1, 2011) ---
+a111282,Aerial survey 2011 day 282
+a111296,Aerial survey 2011 day 296
+a111310,Aerial survey 2011 day 310
+a111330,Aerial survey 2011 day 330
+a111339,Aerial survey 2011 day 339
 
+# --- Ship/platform surveys (f-type) ---
+f000007,Ship survey (sequential ID)
+f000020,Ship survey (sequential ID)
+f000023,Ship survey (sequential ID)
+f000027,Ship survey (sequential ID)
+f000030,Ship survey (sequential ID)
 
-a111282
-a111296
-a111310
-a111330
-a111339
-f000007
-f000020
-f000023
-f000027
-f000030
-o001033
-o007053
-o009030
-o011006
-o014901
-p000190
-p000207
-p001219
-p002120
-p002199
-H063441
-H066139
-H066259
-H066401
-H066402
+# --- Opportunistic sightings (o-type) ---
+o001033,Opportunistic sightings
+o007053,Opportunistic sightings
+o009030,Opportunistic sightings
+o011006,Opportunistic sightings
+o014901,Opportunistic sightings
+
+# --- Platform of opportunity (p-type) ---
+p000190,POP survey
+p000207,POP survey
+p001219,POP survey
+p002120,POP survey
+p002199,POP survey
+
+# --- Historical/intermediate format (H-type, pre-2000 case) ---
+H063441,Historical survey
+H066139,Historical survey
+H066259,Historical survey
+H066401,Historical survey
+H066402,Historical survey

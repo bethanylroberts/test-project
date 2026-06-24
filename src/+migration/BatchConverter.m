@@ -118,7 +118,20 @@ classdef BatchConverter < handle
                 
                 try
                     survey_data = readtable(survey_file_path);
-                    
+
+                    % Early rejection of test fixtures before any processing
+                    if ismember('FILEID', survey_data.Properties.VariableNames)
+                        fid_val = survey_data.FILEID{1};
+                        if numel(fid_val) >= 2 && fid_val(2) == 'T'
+                            obj.logger.error(sprintf( ...
+                                '%s: FILEID has position 2 = ''T'' (test fixture). Skipping.', ...
+                                pending_survey_files(idx).name));
+                            obj.stats.failed = obj.stats.failed + 1;
+                            obj.moveFile(survey_file_path, 'failed');
+                            continue;
+                        end
+                    end
+
                     [success, category] = obj.uploadSurvey(survey_data, ...
                         'Overwrite',        options.Overwrite, ...
                         'Validate',         options.Validate, ...
@@ -174,7 +187,19 @@ classdef BatchConverter < handle
                 error('No FILEID found in survey data');
                 % NOTE: only possible if the survey is the wrong format
             end
-            
+
+            % Reject test fixtures — FILEID position 2 = 'T' is reserved for
+            % anonymized test data and must never reach the production database.
+            if numel(survey_id) >= 2 && survey_id(2) == 'T'
+                obj.logger.error(sprintf( ...
+                    '%s: FILEID has position 2 = ''T'' (test fixture marker). Refusing upload.', ...
+                    survey_id));
+                obj.stats.failed = obj.stats.failed + 1;
+                success = false;
+                category = 'failed';
+                return;
+            end
+
             % Validate if requested
             if options.Validate % FIXME: refactor to avoid nesting
 
