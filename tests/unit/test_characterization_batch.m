@@ -182,6 +182,62 @@ classdef test_characterization_batch < matlab.unittest.TestCase
     end
 
     % =====================================================================
+    % Override-gate integration
+    % =====================================================================
+
+    methods (Test)
+
+        function testValidatorRejectsUnacknowledgedWarnings(testCase)
+            % uploadSurvey must fail when the survey has new (unacknowledged)
+            % warnings, and succeed when all warnings are acknowledged.
+            %
+            % Uses a survey with YEAR=1985 which triggers datetime_rules.year_too_old.
+
+            import matlab.unittest.fixtures.WorkingFolderFixture
+            testCase.applyFixture(WorkingFolderFixture);
+
+            base_dir = fullfile(pwd, 'staging');
+            mkdir(base_dir);
+
+            % --- Survey with unacknowledged warning ---
+            survey = make_old_year_survey('fA98001');
+            conn   = MockBatchConn();
+            uploader = narwc.ingestion.BatchUploader(conn, base_dir);
+
+            cfg_no_override = struct('override_file', fullfile(pwd, 'no_such_file.csv'));
+            cfg_no_override.allow_warnings = false;
+            cfg_no_override.environmental  = struct('visibility_allow_negative', false);
+
+            validator_no = narwc.validation.SurveyValidator(cfg_no_override);
+            [is_valid_no, results_no] = validator_no.validate(survey);
+
+            testCase.verifyFalse(is_valid_no, ...
+                'Survey with unacknowledged year_too_old warning must be rejected');
+            testCase.verifyGreaterThan(results_no.summary.warnings_new, 0);
+
+            % --- Same survey with matching override ---
+            override_file = fullfile(pwd, 'overrides.csv');
+            fid = fopen(override_file, 'w');
+            fprintf(fid, 'fileid,eventno,field,rule_id,acknowledged_by,acknowledged_date,reason\n');
+            fprintf(fid, 'fA98001,5,YEAR,datetime_rules.year_too_old,test_curator,2026-01-01,unit test\n');
+            fclose(fid);
+
+            cfg_ack = struct('override_file', override_file);
+            cfg_ack.allow_warnings = false;
+            cfg_ack.environmental  = struct('visibility_allow_negative', false);
+
+            validator_ack = narwc.validation.SurveyValidator(cfg_ack);
+            [is_valid_ack, results_ack] = validator_ack.validate(survey);
+
+            testCase.verifyTrue(is_valid_ack, ...
+                'Survey with fully acknowledged warnings must be accepted');
+            testCase.verifyEqual(results_ack.summary.warnings_new, 0);
+            testCase.verifyEqual(results_ack.summary.warnings_acknowledged, 1);
+        end
+
+    end
+
+    % =====================================================================
     % Transaction behaviour
     % =====================================================================
 
@@ -304,4 +360,21 @@ classdef test_characterization_batch < matlab.unittest.TestCase
 
     end
 
+end
+
+% =========================================================================
+% Test helpers (private functions at file scope)
+% =========================================================================
+
+function survey = make_old_year_survey(fileid)
+    % Minimal survey that triggers datetime_rules.year_too_old on EVENTNO=5.
+    % Omits FK-checked fields (DDSOURCE, IDSOURCE) so no FK errors occur.
+    survey = table();
+    survey.FILEID  = {fileid};
+    survey.EVENTNO = 5;       % double; stored in warning for override matching
+    survey.LAT_DD  = 42.0;   % within survey area
+    survey.LONG_DD = -70.0;
+    survey.YEAR    = 1975;   % < year_warning (~1980) -> triggers year_too_old
+    survey.MONTH   = 6;
+    survey.DAY     = 15;
 end

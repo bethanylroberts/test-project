@@ -272,22 +272,243 @@ classdef test_validation < matlab.unittest.TestCase
 
         function testErrorCollectorStructure(testCase)
             % Debug test to see error structure
-            
+
             collector = narwc.validation.ErrorCollector();
             collector.addError('TEST_FIELD', [1, 2, 3], 'Test message', 'error');
-            
+
             errors = collector.getErrors('error');
-            
+
             % Display structure
             disp('Error structure:');
             disp(errors);
-            
+
             if ~isempty(errors)
                 disp('Fields in error struct:');
                 disp(fieldnames(errors(1)));
             end
-            
+
             testCase.verifyTrue(true);  % Always pass, just for debugging
-        end        
+        end
+
+        function testErrorCollectorRuleId(testCase)
+            % rule_id and eventno must be stored and retrievable
+
+            collector = narwc.validation.ErrorCollector();
+            collector.addError('YEAR', 3, 'Year too old', 'warning', ...
+                'datetime_rules.year_too_old', 42);
+
+            w = collector.getErrors('warning');
+            testCase.verifyEqual(length(w), 1);
+            testCase.verifyEqual(w(1).rule_id, 'datetime_rules.year_too_old');
+            testCase.verifyEqual(w(1).eventno, 42);
+        end
+
+        function testErrorCollectorDemoteToInfo(testCase)
+            % demoteToInfo must change severity and be excluded from warning count
+
+            collector = narwc.validation.ErrorCollector();
+            collector.addError('YEAR', 3, 'Year too old', 'warning', ...
+                'datetime_rules.year_too_old', 10);
+            collector.addError('LAT_DD', 5, 'Outside survey area', 'warning', ...
+                'coordinate_rules.outside_survey_lat', 20);
+
+            idx = collector.getWarningIndices();
+            testCase.verifyEqual(length(idx), 2);
+
+            % Demote the first warning
+            collector.demoteToInfo(idx(1));
+
+            testCase.verifyEqual(collector.getErrorCount('warning'), 1);
+            testCase.verifyEqual(collector.getErrorCount('info'), 1);
+        end
+
+        % -----------------------------------------------------------------
+        % Override-gate tests
+        % -----------------------------------------------------------------
+
+        function testWarningBlocksWithoutOverride(testCase)
+            % A survey with warnings only, no overrides -> is_valid = false
+
+            import matlab.unittest.fixtures.WorkingFolderFixture
+            testCase.applyFixture(WorkingFolderFixture);
+
+            % Create data directory (no overrides.csv)
+            mkdir('data');
+
+            data = make_survey_with_old_year(testCase);
+
+            cfg = struct('override_file', fullfile('data', 'overrides.csv'));
+            cfg.allow_warnings = false;
+            validator = narwc.validation.SurveyValidator(cfg);
+            [is_valid, results] = validator.validate(data);
+
+            testCase.verifyFalse(is_valid, ...
+                'Survey with unacknowledged warning must not be valid');
+            testCase.verifyGreaterThan(results.summary.warnings_new, 0, ...
+                'warnings_new must be > 0');
+            testCase.verifyEqual(results.summary.warnings_acknowledged, 0);
+        end
+
+        function testAllWarningsAcknowledged(testCase)
+            % A survey with warnings, all matching overrides -> is_valid = true
+
+            import matlab.unittest.fixtures.WorkingFolderFixture
+            testCase.applyFixture(WorkingFolderFixture);
+            mkdir('data');
+
+            data    = make_survey_with_old_year(testCase);
+            fileid  = data.FILEID{1};
+            eventno = data.EVENTNO(1);
+
+            write_override(fullfile('data', 'overrides.csv'), ...
+                fileid, eventno, 'YEAR', 'datetime_rules.year_too_old');
+
+            cfg = struct('override_file', fullfile('data', 'overrides.csv'));
+            cfg.allow_warnings = false;
+            validator = narwc.validation.SurveyValidator(cfg);
+            [is_valid, results] = validator.validate(data);
+
+            testCase.verifyTrue(is_valid, ...
+                'All warnings acknowledged -> survey must be valid');
+            testCase.verifyEqual(results.summary.warnings_new, 0);
+            testCase.verifyEqual(results.summary.warnings_acknowledged, 1);
+        end
+
+        function testPartialOverrideStillBlocks(testCase)
+            % Some warnings overridden, others not -> is_valid = false
+
+            import matlab.unittest.fixtures.WorkingFolderFixture
+            testCase.applyFixture(WorkingFolderFixture);
+            mkdir('data');
+
+            data = make_survey_two_old_years(testCase);
+            fileid = data.FILEID{1};
+
+            % Acknowledge only the first EVENTNO
+            write_override(fullfile('data', 'overrides.csv'), ...
+                fileid, data.EVENTNO(1), 'YEAR', 'datetime_rules.year_too_old');
+
+            cfg = struct('override_file', fullfile('data', 'overrides.csv'));
+            cfg.allow_warnings = false;
+            validator = narwc.validation.SurveyValidator(cfg);
+            [is_valid, results] = validator.validate(data);
+
+            testCase.verifyFalse(is_valid, ...
+                'Partial override must still block when unacknowledged warnings remain');
+            testCase.verifyEqual(results.summary.warnings_acknowledged, 1);
+            testCase.verifyGreaterThan(results.summary.warnings_new, 0);
+        end
+
+        function testErrorsBlockEvenWithAllWarningsAcknowledged(testCase)
+            % Errors + all warnings overridden -> still is_valid = false
+
+            import matlab.unittest.fixtures.WorkingFolderFixture
+            testCase.applyFixture(WorkingFolderFixture);
+            mkdir('data');
+
+            % Data with both an error (bad month) and an old-year warning.
+            % Use MONTH=13 instead of a bad latitude to avoid generating a
+            % coordinate warning that would need its own override entry.
+            data         = make_survey_with_old_year(testCase);
+            data.MONTH(1) = 13;  % Out-of-range month -> error, no side-effect warning
+
+            fileid  = data.FILEID{1};
+            eventno = data.EVENTNO(1);
+            write_override(fullfile('data', 'overrides.csv'), ...
+                fileid, eventno, 'YEAR', 'datetime_rules.year_too_old');
+
+            cfg = struct('override_file', fullfile('data', 'overrides.csv'));
+            cfg.allow_warnings = false;
+            validator = narwc.validation.SurveyValidator(cfg);
+            [is_valid, results] = validator.validate(data);
+
+            testCase.verifyFalse(is_valid, ...
+                'Errors must block even when all warnings are acknowledged');
+            testCase.verifyGreaterThan(results.summary.errors, 0);
+            testCase.verifyEqual(results.summary.warnings_acknowledged, 1);
+            testCase.verifyEqual(results.summary.warnings_new, 0);
+        end
+
+        function testOverrideRuleIdMismatchDoesNotMatch(testCase)
+            % Override with wrong rule_id must not suppress the warning
+
+            import matlab.unittest.fixtures.WorkingFolderFixture
+            testCase.applyFixture(WorkingFolderFixture);
+            mkdir('data');
+
+            data    = make_survey_with_old_year(testCase);
+            fileid  = data.FILEID{1};
+            eventno = data.EVENTNO(1);
+
+            % Write override with a WRONG rule_id
+            write_override(fullfile('data', 'overrides.csv'), ...
+                fileid, eventno, 'YEAR', 'datetime_rules.wrong_rule_id');
+
+            cfg = struct('override_file', fullfile('data', 'overrides.csv'));
+            cfg.allow_warnings = false;
+            validator = narwc.validation.SurveyValidator(cfg);
+            [is_valid, results] = validator.validate(data);
+
+            testCase.verifyFalse(is_valid, ...
+                'Rule_id mismatch must not suppress the warning');
+            testCase.verifyEqual(results.summary.warnings_acknowledged, 0);
+            testCase.verifyGreaterThan(results.summary.warnings_new, 0);
+        end
+
+        function testMissingOverrideFileDoesNotCrash(testCase)
+            % Missing override file -> behaves as no overrides, no crash
+
+            import matlab.unittest.fixtures.WorkingFolderFixture
+            testCase.applyFixture(WorkingFolderFixture);
+
+            % Do NOT create data/overrides.csv
+            data = make_survey_with_old_year(testCase);
+
+            cfg = struct('override_file', fullfile('data', 'overrides.csv'));
+            cfg.allow_warnings = true;  % Allow warnings so we test crash-free path
+            validator = narwc.validation.SurveyValidator(cfg);
+
+            % Must not throw
+            [is_valid, ~] = validator.validate(data);
+            testCase.verifyTrue(is_valid || ~is_valid);  % Just verify no exception
+        end
     end
+end
+
+% =========================================================================
+% Test helpers (private functions at file scope)
+% =========================================================================
+
+function data = make_survey_with_old_year(testCase) %#ok<INUSD>
+    % Single-row survey with YEAR before year_warning threshold (~1980).
+    % Omits FK-checked fields (DDSOURCE, IDSOURCE) so no FK errors occur.
+    data = table();
+    data.FILEID  = {'f_ovtest'};
+    data.EVENTNO = 7;          % numeric EVENTNO for override matching
+    data.LAT_DD  = 42.0;       % within survey area: no coordinate warning
+    data.LONG_DD = -70.0;
+    data.YEAR    = 1975;       % < year_warning (~1980) -> triggers year_too_old
+    data.MONTH   = 6;
+    data.DAY     = 15;
+end
+
+function data = make_survey_two_old_years(testCase) %#ok<INUSD>
+    % Two-row survey, both years trigger year_too_old warning.
+    data = table();
+    data.FILEID  = {'f_ovtest2'; 'f_ovtest2'};
+    data.EVENTNO = [7; 8];
+    data.LAT_DD  = [42.0; 43.0];
+    data.LONG_DD = [-70.0; -71.0];
+    data.YEAR    = [1975; 1973];
+    data.MONTH   = [6; 7];
+    data.DAY     = [15; 20];
+end
+
+function write_override(filepath, fileid, eventno, field, rule_id)
+    % Write a minimal overrides.csv with one acknowledged entry
+    fid = fopen(filepath, 'w');
+    fprintf(fid, 'fileid,eventno,field,rule_id,acknowledged_by,acknowledged_date,reason\n');
+    fprintf(fid, '%s,%d,%s,%s,test,2026-01-01,unit test\n', ...
+        fileid, eventno, field, rule_id);
+    fclose(fid);
 end

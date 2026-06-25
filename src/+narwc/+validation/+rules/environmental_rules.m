@@ -5,103 +5,77 @@ function environmental_rules(data, collector, config)
     %   data - Table with survey data
     %   collector - ErrorCollector instance
     %   config - Configuration struct (optional)
-    
 
-    % Get default config from centralized source
     if nargin < 3 || isempty(config)
         full_config = get_config('validation');
         config = full_config.environmental;
     elseif isfield(config, 'environmental')
         config = config.environmental;
     end
-    
-    % Validate cloud cover
-    % FIXME: delete, once determined to be wrong
-    % if ismember('CLOUD', data.Properties.VariableNames)
-    %     validate_cloud(data, collector, config);
-    % end
-    
-    % Validate visibility
+
     if ismember('VISIBLTY', data.Properties.VariableNames)
         validate_visibility(data, collector, config);
     end
-    
-    % Validate surface temperature
+
     if ismember('SURFTEMP', data.Properties.VariableNames)
         validate_surftemp(data, collector, config);
     end
-    
-    % FIXME: no longer needed. Look up table fixes this 
-    % % Validate weather code
-    % if ismember('WX', data.Properties.VariableNames)
-    %     validate_wx(data, collector, config);
-    % end
 end
 
 function validate_visibility(data, collector, config)
-    % Validate visibility
-    
-    % Cannot be negative
     if ~config.visibility_allow_negative
         negative_idx = find(data.VISIBLTY < 0);
         if ~isempty(negative_idx)
             collector.addError('VISIBLTY', negative_idx, ...
-                'VISIBLTY cannot be negative', 'error');
+                'VISIBLTY cannot be negative', 'error', ...
+                'environmental_rules.visibility_negative');
         end
     end
-    % FIXME: visibility should be limited to only a few negative numbers based on oldviz lookup table
 
-    % Warn for unusual values
     too_high = find(data.VISIBLTY > config.visibility_max);
-    if ~isempty(too_high)
-        collector.addError('VISIBLTY', too_high, ...
+    for i = 1:length(too_high)
+        row = too_high(i);
+        eventno = get_eventno(data, row);
+        collector.addError('VISIBLTY', row, ...
             sprintf('VISIBLTY >%.0f - unusually high', config.visibility_max), ...
-            'warning');
+            'warning', 'environmental_rules.visibility_too_high', eventno);
     end
 end
 
 function validate_surftemp(data, collector, config)
-    % Validate surface temperature (Celsius)
-    
-    % Out of reasonable ocean range
     too_cold = find(data.SURFTEMP < config.surftemp_min);
-    if ~isempty(too_cold)
-        collector.addError('SURFTEMP', too_cold, ...
+    for i = 1:length(too_cold)
+        row = too_cold(i);
+        eventno = get_eventno(data, row);
+        collector.addError('SURFTEMP', row, ...
             sprintf('SURFTEMP <%.0f°C - below typical ocean minimum', config.surftemp_min), ...
-            'warning');
+            'warning', 'environmental_rules.surftemp_too_cold', eventno);
     end
-    
+
     too_hot = find(data.SURFTEMP > config.surftemp_max);
-    if ~isempty(too_hot)
-        collector.addError('SURFTEMP', too_hot, ...
+    for i = 1:length(too_hot)
+        row = too_hot(i);
+        eventno = get_eventno(data, row);
+        collector.addError('SURFTEMP', row, ...
             sprintf('SURFTEMP >%.0f°C - above typical ocean maximum', config.surftemp_max), ...
-            'warning');
+            'warning', 'environmental_rules.surftemp_too_hot', eventno);
     end
 end
 
-% FIXME: not needed. Look up table fixes this
-% function validate_wx(data, collector, config)
-%     % Validate weather code (1-char)
-    
-%     if iscellstr(data.WX) || isstring(data.WX)
-%         too_long = cellfun(@length, data.WX) > 1;
-%         invalid_idx = find(too_long);
-        
-%         if ~isempty(invalid_idx)
-%             collector.addError('WX', invalid_idx, ...
-%                 'WX must be 1 character', 'error');
-%         end
-%     end
-% end
+function eventno = get_eventno(data, row)
+    eventno = [];
+    if ismember('EVENTNO', data.Properties.VariableNames)
+        val = data.EVENTNO(row);
+        if isnumeric(val) && ~isnan(val)
+            eventno = val;
+        end
+    end
+end
 
-function config = default_config()
-    % Default configuration for environmental validation
-    
-    % FIXME: move to a config file location
-    config.cloud_values = 0:8;  % Oktas
-    config.visibility_max = 50;  % km or nm
+function config = default_config() %#ok<DEFNU>
+    config.cloud_values             = 0:8;
+    config.visibility_max           = 50;
     config.visibility_allow_negative = true;
-    % FIXME: only legacy surveys should be allowed to be negative
-    config.surftemp_min = -2;  % °C (freezing point of seawater)
-    config.surftemp_max = 35;  % °C (warm tropical waters)
+    config.surftemp_min             = -2;
+    config.surftemp_max             = 35;
 end

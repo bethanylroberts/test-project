@@ -1,21 +1,22 @@
-Value,Direction,LowDeg,HighDeg
-0,"N",349,11
-1,"NNE",12,33
-2,"NE",34,56
-3,"ENE",57,78
-4,"E",79,101
-5,"ESE",102,123
-6,"SE",124,146
-7,"SSE",147,168
-8,"S",169,191
-9,"SSW",192,213
-10,"SW",214,236
-11,"WSW",237,258
-12,"W",259,281
-13,"WNW",282,303
-14,"NW",304,326
-15,"NNW",327,348
-16,"circling",0,360
-17,"various courses",0,360
-21,"stationary vessels only, but not anchored",0,360
-22,"anchored vessels only",0,360
+Value,Description
+0,"N (349-011°)"
+1,"NNE (012-033°)"
+2,"NE (034-056°)"
+3,"ENE (057-078°)"
+4,"E (079-101°)"
+5,"ESE (102-123°)"
+6,"SE (124-146°)"
+7,"SSE (147-168°)"
+8,"S (169-191°)"
+9,"SSW (192-213°)"
+10,"SW (214-236°)"
+11,"WSW (237-258°)"
+12,"W (259-281°)"
+13,"WNW (282-303°)"
+14,"NW (304-326°)"
+15,"NNW (327-348°)"
+16,"Circling"
+17,"Various courses"
+20,"Underway (vessels only), course unknown or unimportant"
+21,"Stationary but not anchored (vessels only)"
+22,"Anchored (vessels only), including wind-farm construction vessels fixed via jack-up legs"

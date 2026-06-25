@@ -14,13 +14,14 @@ classdef BatchUploader < handle
     % 2026 russ.shomberg@marineacoustics.com
 
     properties (Access = private)
-        connection  % connection to database
-        logger      % from custom logging toolbox
-        stats       % ???
-        base_dir    % location of standard folder structure
-        error_log_file  % error log
-        table_name  % target database table (default: 'Master')
-        legacy_mode % when true, applies legacy-leniency validation settings
+        connection      % connection to database
+        logger          % from custom logging toolbox
+        stats           % upload statistics
+        base_dir        % location of standard folder structure
+        error_log_file  % error log (append mode across runs)
+        run_summary_file % per-survey run summary CSV
+        table_name      % target database table (default: 'Master')
+        legacy_mode     % when true, applies legacy-leniency validation settings
     end
 
     methods
@@ -46,7 +47,6 @@ classdef BatchUploader < handle
 
             obj.resetStats();
             obj.ensureDirectories();
-            obj.initializeErrorLog();
         end
 
         function ensureDirectories(obj)
@@ -62,30 +62,72 @@ classdef BatchUploader < handle
             end
         end
 
-        function initializeErrorLog(obj)
-            % INITIALIZE ERROR LOG Create/reset error log file
+        function initializeErrorLog(obj, allow_warnings, allow_errors)
+            % INITIALIZEERRORLOG Open error log in append mode and write run header
+
+            if nargin < 2
+                allow_warnings = false;
+            end
+            if nargin < 3
+                allow_errors = false;
+            end
 
             failed_dir = fullfile(obj.base_dir, 'failed');
-            obj.error_log_file = fullfile(failed_dir, '_errors.log');
+            obj.error_log_file  = fullfile(failed_dir, '_errors.log');
+            obj.run_summary_file = fullfile(failed_dir, '_run_summary.csv');
 
-            % Create new error log (overwrites existing)
-            fid = fopen(obj.error_log_file, 'w');
+            % Append to the existing log so history accumulates across runs
+            fid = fopen(obj.error_log_file, 'a');
             if fid == -1
-                obj.logger.warning('Could not create error log file');
+                obj.logger.warning('Could not open error log file');
                 return;
             end
 
             % TODO: move log file handling into the logging toolbox
-            fprintf(fid, 'Upload Error Log\n');
-            fprintf(fid, '================\n');
-            fprintf(fid, 'Started: %s\n', char(datetime('now')));
+            fprintf(fid, '\n%s\n', repmat('=', 1, 80));
+            fprintf(fid, 'RUN STARTED: %s\n', char(datetime('now', 'Format', 'yyyy-MM-dd HH:mm:ss')));
             fprintf(fid, 'Base Directory: %s\n', obj.base_dir);
             fprintf(fid, 'Table: %s\n', obj.table_name);
-            fprintf(fid, 'LegacyMode: %s\n', mat2str(obj.legacy_mode));
-            fprintf(fid, '%s\n\n', repmat('=', 1, 80));
+            fprintf(fid, 'LegacyMode: %s | AllowWarnings: %s | AllowErrors: %s\n', ...
+                mat2str(obj.legacy_mode), mat2str(allow_warnings), mat2str(allow_errors));
+            fprintf(fid, '%s\n\n', repmat('-', 1, 80));
             fclose(fid);
 
-            obj.logger.debug(sprintf('Error log initialized: %s', obj.error_log_file));
+            obj.initializeRunSummary();
+
+            obj.logger.debug(sprintf('Error log opened (append): %s', obj.error_log_file));
+        end
+
+        function initializeRunSummary(obj)
+            % INITIALIZERUNSUMMARY Write header to run summary CSV if it does not exist
+
+            if ~exist(obj.run_summary_file, 'file')
+                fid = fopen(obj.run_summary_file, 'a');
+                if fid ~= -1
+                    fprintf(fid, 'run_timestamp,fileid,status,error_count,warning_count_new,warning_count_acknowledged,notes\n');
+                    fclose(fid);
+                end
+            end
+        end
+
+        function appendRunSummaryRow(obj, fileid, status, error_count, warn_new, warn_ack, notes)
+            % APPENDRUNSUMMARYROW Append one survey result to _run_summary.csv
+
+            if isempty(obj.run_summary_file)
+                return;
+            end
+            try
+                fid = fopen(obj.run_summary_file, 'a');
+                if fid == -1
+                    return;
+                end
+                ts = char(datetime('now', 'Format', 'yyyy-MM-dd HH:mm:ss'));
+                notes_safe = strrep(notes, ',', ';');
+                fprintf(fid, '%s,%s,%s,%d,%d,%d,%s\n', ...
+                    ts, fileid, status, error_count, warn_new, warn_ack, notes_safe);
+                fclose(fid);
+            catch
+            end
         end
 
         function uploadFromFolder(obj, options)
@@ -122,6 +164,7 @@ classdef BatchUploader < handle
 
             obj.logger.info(sprintf('Found %d surveys to upload', length(pending_survey_files)));   % FIXME: remove sprintf if not necessary
             obj.resetStats();
+            obj.initializeErrorLog(options.AllowWarnings, options.AllowErrors);
 
             for idx = 1:length(pending_survey_files)
                 survey_file_path = fullfile(pending_survey_files(idx).folder, pending_survey_files(idx).name);
@@ -231,9 +274,22 @@ classdef BatchUploader < handle
                 validator = narwc.validation.SurveyValidator(validator_config);
                 [is_valid, results] = validator.validate(survey_data);
 
+                warn_new = 0;
+                warn_ack = 0;
+                if isfield(results, 'summary')
+                    if isfield(results.summary, 'warnings_new')
+                        warn_new = results.summary.warnings_new;
+                    end
+                    if isfield(results.summary, 'warnings_acknowledged')
+                        warn_ack = results.summary.warnings_acknowledged;
+                    end
+                end
+                obj.stats.warnings_new          = obj.stats.warnings_new + warn_new;
+                obj.stats.warnings_acknowledged = obj.stats.warnings_acknowledged + warn_ack;
+
                 if ~is_valid
-                    has_errors = results.summary.errors > 0;
-                    has_warnings = results.summary.warnings > 0;
+                    has_errors   = results.summary.errors > 0;
+                    has_warnings = warn_new > 0;
 
                     % Log what's blocking
                     if has_errors && ~options.AllowErrors
@@ -241,17 +297,23 @@ classdef BatchUploader < handle
                             survey_id, results.summary.errors));
                     end
                     if has_warnings && ~options.AllowWarnings
-                        obj.logger.warning(sprintf('%s has %d validation warnings', ...
-                            survey_id, results.summary.warnings));
+                        obj.logger.warning(sprintf('%s has %d new validation warnings', ...
+                            survey_id, warn_new));
                     end
 
                     % Log validation details
                     validation_err = struct();
-                    validation_err.message = sprintf('Validation failed: %d errors, %d warnings', ...
-                        results.summary.errors, results.summary.warnings);
+                    validation_err.message = sprintf( ...
+                        'Validation failed: %d errors, %d warnings (%d acknowledged, %d new)', ...
+                        results.summary.errors, warn_ack + warn_new, warn_ack, warn_new);
                     validation_err.identifier = 'Ingestion:ValidationFailed';
                     validation_err.stack = dbstack();
                     obj.logError(survey_id, validation_err, 'Validation error', results);
+
+                    notes = sprintf('errors=%d warn_new=%d warn_ack=%d', ...
+                        results.summary.errors, warn_new, warn_ack);
+                    obj.appendRunSummaryRow(survey_id, 'rejected', ...
+                        results.summary.errors, warn_new, warn_ack, notes);
 
                     obj.stats.failed = obj.stats.failed + 1;
                     success = false;
@@ -269,6 +331,7 @@ classdef BatchUploader < handle
             if exists && ~options.Overwrite
                 obj.logger.info(sprintf('%s already exists in database, skipping', survey_id));     % TODO: remove sprintf if not needed
                 obj.stats.skipped = obj.stats.skipped + 1;
+                obj.appendRunSummaryRow(survey_id, 'skipped', 0, 0, 0, 'already exists');
                 success = true;
                 category = 'skipped';
                 return;
@@ -312,9 +375,11 @@ classdef BatchUploader < handle
                 if exists
                     obj.logger.info(sprintf('Updated %s', survey_id));
                     obj.stats.updated = obj.stats.updated + 1;
+                    obj.appendRunSummaryRow(survey_id, 'uploaded', 0, 0, 0, 'overwrite');
                 else
                     obj.logger.info(sprintf('Uploaded %s', survey_id));
                     obj.stats.uploaded = obj.stats.uploaded + 1;
+                    obj.appendRunSummaryRow(survey_id, 'uploaded', 0, 0, 0, '');
                 end
 
                 success = true;
@@ -449,6 +514,10 @@ classdef BatchUploader < handle
                 total_processed = obj.stats.uploaded + obj.stats.updated;
                 total_attempted = total_processed + obj.stats.failed;
 
+                fprintf(fid, '\nWarnings:\n');
+                fprintf(fid, '  Acknowledged: %d\n', obj.stats.warnings_acknowledged);
+                fprintf(fid, '  New (blocking): %d\n', obj.stats.warnings_new);
+
                 fprintf(fid, '\nStatistics:\n');
                 fprintf(fid, '  Total Attempted: %d\n', total_attempted);
                 fprintf(fid, '  Total Processed: %d\n', total_processed);
@@ -501,10 +570,12 @@ classdef BatchUploader < handle
             % RESETSTATS Reset statistics
 
             obj.stats = struct();
-            obj.stats.uploaded = 0;
-            obj.stats.updated = 0;
-            obj.stats.skipped = 0;
-            obj.stats.failed = 0;
+            obj.stats.uploaded             = 0;
+            obj.stats.updated              = 0;
+            obj.stats.skipped              = 0;
+            obj.stats.failed               = 0;
+            obj.stats.warnings_new         = 0;
+            obj.stats.warnings_acknowledged = 0;
         end
 
         function displayStats(obj)
