@@ -62,7 +62,8 @@ classdef SurveyValidator < handle
             end
 
             % Demote acknowledged warnings to info
-            n_acknowledged = obj.applyOverrides(fileid);
+            ack_info       = obj.applyOverrides(fileid);
+            n_acknowledged = ack_info.n_per_row + ack_info.n_per_survey;
 
             % Collect results
             results.errors   = obj.collector.getErrors('error');
@@ -70,8 +71,11 @@ classdef SurveyValidator < handle
             results.info     = obj.collector.getErrors('info');
             results.summary  = obj.collector.getSummary();
 
-            results.summary.warnings_acknowledged = n_acknowledged;
-            results.summary.warnings_new          = results.summary.warnings;
+            results.summary.warnings_acknowledged_per_row    = ack_info.n_per_row;
+            results.summary.warnings_acknowledged_per_survey = ack_info.n_per_survey;
+            results.summary.warnings_acknowledged            = n_acknowledged;
+            results.summary.warnings_new                     = results.summary.warnings;
+            results.summary.acknowledgement_by_rule          = ack_info.by_rule;
 
             results.error_details = obj.formatErrorDetails();
 
@@ -88,10 +92,11 @@ classdef SurveyValidator < handle
             end
 
             obj.logger.info(sprintf( ...
-                'Validation complete: %d errors, %d warnings (%d acknowledged, %d new)', ...
+                'Validation complete: %d errors, %d warnings (%d acknowledged [%d per-row, %d per-survey], %d new)', ...
                 results.summary.errors, ...
                 n_acknowledged + results.summary.warnings_new, ...
-                n_acknowledged, results.summary.warnings_new));
+                n_acknowledged, ack_info.n_per_row, ack_info.n_per_survey, ...
+                results.summary.warnings_new));
 
             if ~is_valid
                 obj.logger.warning('Data has validation errors');
@@ -173,12 +178,15 @@ classdef SurveyValidator < handle
     end
 
     methods (Access = private)
-        function n_acknowledged = applyOverrides(obj, fileid)
+        function ack_result = applyOverrides(obj, fileid)
             % APPLYOVERRIDES Demote warnings that have a matching override entry to 'info'
             %
-            % Returns the number of warnings that were acknowledged.
+            % Returns a struct with per-row and per-survey acknowledgement counts
+            % and a per-rule breakdown.
 
-            n_acknowledged = 0;
+            ack_result.n_per_row    = 0;
+            ack_result.n_per_survey = 0;
+            ack_result.by_rule      = struct();
 
             if isempty(obj.overrides) || isempty(fileid)
                 return;
@@ -187,33 +195,66 @@ classdef SurveyValidator < handle
             warning_indices = obj.collector.getWarningIndices();
             warnings        = obj.collector.getErrors('warning');
 
+            matcher_list = obj.buildMatcherList(fileid);
+            if isempty(matcher_list)
+                return;
+            end
+
             for k = 1:length(warning_indices)
                 w = warnings(k);
-                if ~isempty(w.eventno) && ~isempty(w.rule_id)
-                    if obj.hasOverride(fileid, w.eventno, w.field, w.rule_id)
+                if isempty(w.eventno) || isempty(w.rule_id)
+                    continue;
+                end
+                for m = 1:length(matcher_list)
+                    fn    = matcher_list{m}{1};
+                    label = matcher_list{m}{2};
+                    if fn(w.eventno, w.field, w.rule_id)
                         obj.collector.demoteToInfo(warning_indices(k));
-                        n_acknowledged = n_acknowledged + 1;
+                        ack_result.(['n_' label]) = ack_result.(['n_' label]) + 1;
+                        rule_key = strrep(w.rule_id, '.', '_');
+                        if ~isfield(ack_result.by_rule, rule_key)
+                            ack_result.by_rule.(rule_key) = struct( ...
+                                'rule_id', w.rule_id, 'per_row', 0, 'per_survey', 0);
+                        end
+                        ack_result.by_rule.(rule_key).(label) = ...
+                            ack_result.by_rule.(rule_key).(label) + 1;
+                        break;  % first match wins; no double-counting
                     end
                 end
             end
         end
 
-        function match = hasOverride(obj, fileid, eventno, field, rule_id)
-            % HASOVERRIDE Check whether a (fileid, eventno, field, rule_id) tuple is acknowledged
+        function matcher_list = buildMatcherList(obj, fileid)
+            % BUILDMATCHERLIST Build an ordered list of {matcher_fn, label} pairs
+            % for warnings belonging to this survey.
+            %
+            % Each entry is a 2-element cell: {fn, label} where
+            %   fn(eventno, field, rule_id) -> logical
+            %   label is 'per_row' or 'per_survey'
+            %
+            % Override rows are pre-filtered by fileid so matchers only carry
+            % the remaining key fields in their closures.
+            %
+            % TODO: Phase B — append a third class of matcher here for
+            %       fileid_pattern glob matching across multiple surveys.
 
-            match = false;
-
-            if isempty(obj.overrides)
-                return;
-            end
-
+            matcher_list = {};
             for k = 1:height(obj.overrides)
-                if strcmp(obj.overrides.fileid{k}, fileid) && ...
-                        obj.overrides.eventno(k) == eventno && ...
-                        strcmp(obj.overrides.field{k}, field) && ...
-                        strcmp(obj.overrides.rule_id{k}, rule_id)
-                    match = true;
-                    return;
+                if ~strcmp(obj.overrides.fileid{k}, fileid)
+                    continue;
+                end
+                ovr_eno     = obj.overrides.eventno(k);
+                ovr_field   = obj.overrides.field{k};
+                ovr_rule_id = obj.overrides.rule_id{k};
+
+                if ~isnan(ovr_eno)
+                    fn = @(eno, fld, rid) ovr_eno == eno && ...
+                        strcmp(ovr_field, fld) && strcmp(ovr_rule_id, rid);
+                    matcher_list{end+1} = {fn, 'per_row'}; %#ok<AGROW>
+                else
+                    fn = @(eno, fld, rid) strcmp(ovr_field, fld) && ... %#ok<NASGU>
+                        strcmp(ovr_rule_id, rid);
+                    matcher_list{end+1} = {fn, 'per_survey'}; %#ok<AGROW>
                 end
             end
         end
@@ -222,6 +263,7 @@ classdef SurveyValidator < handle
             % LOADOVERRIDES Read data/overrides.csv, skipping comment lines
             %
             % Returns an empty array if the file does not exist.
+            % Empty eventno values are normalized to NaN (per-survey override sentinel).
 
             overrides = [];
 
@@ -250,6 +292,19 @@ classdef SurveyValidator < handle
 
                 if height(tbl) == 0
                     return;
+                end
+
+                % Normalize eventno to double; empty cells become NaN (per-survey sentinel)
+                if iscell(tbl.eventno)
+                    raw = tbl.eventno;
+                    eventno_dbl = nan(height(tbl), 1);
+                    for i = 1:height(tbl)
+                        val = strtrim(raw{i});
+                        if ~isempty(val)
+                            eventno_dbl(i) = str2double(val);
+                        end
+                    end
+                    tbl.eventno = eventno_dbl;
                 end
 
                 overrides = tbl;

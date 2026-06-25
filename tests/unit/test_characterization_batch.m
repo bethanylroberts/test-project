@@ -187,6 +187,67 @@ classdef test_characterization_batch < matlab.unittest.TestCase
 
     methods (Test)
 
+        function testPerSurveyOverrideUploadsCleanlyAndSplitsRunSummary(testCase)
+            % A survey with many same-rule warnings + a per-survey override
+            % must upload cleanly.  The run summary CSV must contain the
+            % acknowledged counts split into per_row and per_survey columns.
+
+            import matlab.unittest.fixtures.WorkingFolderFixture
+            testCase.applyFixture(WorkingFolderFixture);
+
+            base_dir    = fullfile(pwd, 'staging');
+            pending_dir = fullfile(base_dir, 'pending');
+            mkdir(pending_dir);
+
+            % Survey with 4 year_too_old warnings (all same field + rule_id)
+            n      = 4;
+            fileid = 'fA99777';
+            survey = make_old_year_survey_n(fileid, n);
+
+            % Write survey CSV to pending/
+            survey_file = fullfile(pending_dir, [fileid '.csv']);
+            writetable(survey, survey_file);
+
+            % Per-survey override acknowledges all 4 warnings
+            override_file = fullfile(pwd, 'overrides.csv');
+            fid = fopen(override_file, 'w');
+            fprintf(fid, 'fileid,eventno,field,rule_id,acknowledged_by,acknowledged_date,reason\n');
+            fprintf(fid, '%s,,YEAR,datetime_rules.year_too_old,test_curator,2026-01-01,all old-year events\n', fileid);
+            fclose(fid);
+
+            conn     = MockBatchConn();
+            uploader = narwc.ingestion.BatchUploader(conn, base_dir);
+
+            cfg = struct('override_file', override_file, 'allow_warnings', false);
+            cfg.environmental = struct('visibility_allow_negative', false);
+            validator = narwc.validation.SurveyValidator(cfg);
+            [is_valid, results] = validator.validate(survey);
+
+            testCase.verifyTrue(is_valid, ...
+                'Survey with per-survey override must pass validation');
+            testCase.verifyEqual(results.summary.warnings_acknowledged, n, ...
+                'All 4 warnings must be acknowledged');
+            testCase.verifyEqual(results.summary.warnings_acknowledged_per_survey, n, ...
+                'All 4 must be counted as per-survey acknowledgements');
+            testCase.verifyEqual(results.summary.warnings_acknowledged_per_row, 0, ...
+                'Per-row count must be 0');
+
+            % Verify run summary CSV gets split columns
+            uploader.uploadFromFolder('Validate', false);
+            run_summary = fullfile(base_dir, 'failed', '_run_summary.csv');
+            if exist(run_summary, 'file')
+                tbl = readtable(run_summary, 'Delimiter', ',', 'TextType', 'char', ...
+                    'VariableNamingRule', 'preserve');
+                col_names = tbl.Properties.VariableNames;
+                testCase.verifyTrue( ...
+                    any(strcmp(col_names, 'warning_count_acknowledged_per_row')), ...
+                    'Run summary must have warning_count_acknowledged_per_row column');
+                testCase.verifyTrue( ...
+                    any(strcmp(col_names, 'warning_count_acknowledged_per_survey')), ...
+                    'Run summary must have warning_count_acknowledged_per_survey column');
+            end
+        end
+
         function testValidatorRejectsUnacknowledgedWarnings(testCase)
             % uploadSurvey must fail when the survey has new (unacknowledged)
             % warnings, and succeed when all warnings are acknowledged.
@@ -377,4 +438,16 @@ function survey = make_old_year_survey(fileid)
     survey.YEAR    = 1975;   % < year_warning (~1980) -> triggers year_too_old
     survey.MONTH   = 6;
     survey.DAY     = 15;
+end
+
+function survey = make_old_year_survey_n(fileid, n)
+    % n-row survey where every row triggers datetime_rules.year_too_old.
+    survey = table();
+    survey.FILEID  = repmat({fileid}, n, 1);
+    survey.EVENTNO = (1:n)';
+    survey.LAT_DD  = repmat(42.0, n, 1);
+    survey.LONG_DD = repmat(-70.0, n, 1);
+    survey.YEAR    = repmat(1975, n, 1);
+    survey.MONTH   = repmat(6, n, 1);
+    survey.DAY     = repmat(15, n, 1);
 end

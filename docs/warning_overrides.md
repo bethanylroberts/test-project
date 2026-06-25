@@ -93,18 +93,53 @@ that warning as new again.
 
 ---
 
-## Override matching is exact
+## Override matching
 
-An override suppresses a warning only when all four key fields match exactly:
-- `fileid` — exact string match
-- `eventno` — exact integer match
-- `field` — exact string match
-- `rule_id` — exact string match
+Override matching runs in two passes, in order:
 
-There is no fuzzy matching or wildcards. If a survey's EVENTNO changes (e.g.,
-because rows were inserted above it in the source file), the override will no
-longer match and the warning will re-appear. This is by design: EVENTNO is a
-stable semantic identifier within a survey and should not change.
+1. **Per-row pass** — any override where all four fields match exactly:
+   - `fileid` — exact string match
+   - `eventno` — exact integer match
+   - `field` — exact string match
+   - `rule_id` — exact string match
+
+2. **Per-survey pass** — any override where `eventno` is blank AND
+   `fileid`, `field`, and `rule_id` all match.  The warning's specific
+   `eventno` is ignored.
+
+A warning is acknowledged when either pass finds a match.  If both passes
+would match the same warning (e.g., you wrote both a per-row entry and a
+per-survey entry for the same rule), the per-row pass wins and the warning
+is counted once.
+
+---
+
+## Per-survey overrides
+
+When a survey produces many warnings of the same type — for example, a
+historic survey file where every sighting row has a year before 1980 — it
+is impractical to write a separate override entry per row.  A
+**per-survey override** acknowledges all warnings of a given `(field,
+rule_id)` combination across the entire survey with a single CSV row.
+
+To write a per-survey override, leave the `eventno` column empty:
+
+```
+fileid,eventno,field,rule_id,acknowledged_by,acknowledged_date,reason
+p905169G,,BEHAV,behavioral_rules.calf_behavior_no_calf,RS,2026-06-25,All 93 calf-behavior events reviewed; survey predates current coding convention
+```
+
+The `reason` field is effectively required for per-survey overrides — a
+blanket acknowledgement with no documented rationale is hard to audit.
+
+**Trade-off**: a per-survey override is convenient but silently absorbs
+*all* future warnings of that type in that survey, including any that arise
+from later edits to the source file.  Before issuing one, review at least a
+representative sample of the affected warnings and record your reasoning in
+the `reason` field.
+
+A future version may support pattern-based overrides spanning multiple
+surveys.  For now, write one entry per survey.
 
 ---
 

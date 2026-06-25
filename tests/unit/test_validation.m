@@ -472,6 +472,159 @@ classdef test_validation < matlab.unittest.TestCase
             [is_valid, ~] = validator.validate(data);
             testCase.verifyTrue(is_valid || ~is_valid);  % Just verify no exception
         end
+
+        % -----------------------------------------------------------------
+        % Per-survey override tests
+        % -----------------------------------------------------------------
+
+        function testPerSurveyOverrideAcknowledgesAllMatchingWarnings(testCase)
+            % N warnings of the same (field, rule_id) + a single per-survey
+            % override (empty eventno) -> all N acknowledged, is_valid = true
+
+            import matlab.unittest.fixtures.WorkingFolderFixture
+            testCase.applyFixture(WorkingFolderFixture);
+            mkdir('data');
+
+            n    = 5;
+            data = make_survey_n_old_years(n);
+
+            write_per_survey_override(fullfile('data', 'overrides.csv'), ...
+                data.FILEID{1}, 'YEAR', 'datetime_rules.year_too_old');
+
+            cfg = struct('override_file', fullfile('data', 'overrides.csv'));
+            cfg.allow_warnings = false;
+            validator = narwc.validation.SurveyValidator(cfg);
+            [is_valid, results] = validator.validate(data);
+
+            testCase.verifyTrue(is_valid, ...
+                'All warnings from per-survey override must pass validation');
+            testCase.verifyEqual(results.summary.warnings_acknowledged, n, ...
+                sprintf('All %d warnings must be acknowledged', n));
+            testCase.verifyEqual(results.summary.warnings_acknowledged_per_survey, n, ...
+                'All acknowledgements must be counted as per-survey');
+            testCase.verifyEqual(results.summary.warnings_acknowledged_per_row, 0, ...
+                'Per-row count must be 0 when only per-survey override is present');
+            testCase.verifyEqual(results.summary.warnings_new, 0);
+        end
+
+        function testPerSurveyOverrideOnlyMatchesSpecifiedRule(testCase)
+            % Per-survey override for one rule_id must not suppress warnings
+            % from a different rule_id
+
+            import matlab.unittest.fixtures.WorkingFolderFixture
+            testCase.applyFixture(WorkingFolderFixture);
+            mkdir('data');
+
+            % Survey with old-year warning (YEAR) and high-visibility warning (VISIBLTY)
+            data = make_survey_old_year_and_high_vis();
+
+            % Acknowledge only the year warning
+            write_per_survey_override(fullfile('data', 'overrides.csv'), ...
+                data.FILEID{1}, 'YEAR', 'datetime_rules.year_too_old');
+
+            cfg = struct('override_file', fullfile('data', 'overrides.csv'));
+            cfg.allow_warnings = false;
+            validator = narwc.validation.SurveyValidator(cfg);
+            [is_valid, results] = validator.validate(data);
+
+            testCase.verifyFalse(is_valid, ...
+                'Unacknowledged visibility warning must still block');
+            testCase.verifyEqual(results.summary.warnings_acknowledged, 1, ...
+                'Only the year warning must be acknowledged');
+            testCase.verifyGreaterThan(results.summary.warnings_new, 0, ...
+                'Visibility warning must remain new');
+        end
+
+        function testPerRowAndPerSurveyBothMatchSameWarning_AcknowledgedOnce(testCase)
+            % When a per-row override AND a per-survey override both match the
+            % same warning, the warning must be acknowledged exactly once
+
+            import matlab.unittest.fixtures.WorkingFolderFixture
+            testCase.applyFixture(WorkingFolderFixture);
+            mkdir('data');
+
+            data    = make_survey_with_old_year(testCase);
+            fileid  = data.FILEID{1};
+            eventno = data.EVENTNO(1);
+
+            % Write both kinds of override
+            ovr_file = fullfile('data', 'overrides.csv');
+            fid = fopen(ovr_file, 'w');
+            fprintf(fid, 'fileid,eventno,field,rule_id,acknowledged_by,acknowledged_date,reason\n');
+            fprintf(fid, '%s,%d,YEAR,datetime_rules.year_too_old,test,2026-01-01,per-row\n', fileid, eventno);
+            fprintf(fid, '%s,,YEAR,datetime_rules.year_too_old,test,2026-01-01,per-survey\n', fileid);
+            fclose(fid);
+
+            cfg = struct('override_file', ovr_file);
+            cfg.allow_warnings = false;
+            validator = narwc.validation.SurveyValidator(cfg);
+            [is_valid, results] = validator.validate(data);
+
+            testCase.verifyTrue(is_valid, ...
+                'Warning must be acknowledged (once) by either override');
+            testCase.verifyEqual(results.summary.warnings_acknowledged, 1, ...
+                'Warning must be counted as acknowledged exactly once');
+        end
+
+        function testPerSurveyOverrideFieldMismatchDoesNotMatch(testCase)
+            % Per-survey override with a different field must not suppress the warning
+
+            import matlab.unittest.fixtures.WorkingFolderFixture
+            testCase.applyFixture(WorkingFolderFixture);
+            mkdir('data');
+
+            data = make_survey_with_old_year(testCase);
+
+            % Override specifies a different field
+            write_per_survey_override(fullfile('data', 'overrides.csv'), ...
+                data.FILEID{1}, 'LAT_DD', 'datetime_rules.year_too_old');
+
+            cfg = struct('override_file', fullfile('data', 'overrides.csv'));
+            cfg.allow_warnings = false;
+            validator = narwc.validation.SurveyValidator(cfg);
+            [is_valid, results] = validator.validate(data);
+
+            testCase.verifyFalse(is_valid, ...
+                'Field mismatch in per-survey override must not suppress the warning');
+            testCase.verifyEqual(results.summary.warnings_acknowledged, 0);
+            testCase.verifyGreaterThan(results.summary.warnings_new, 0);
+        end
+
+        function testMixedPerRowAndPerSurveyCounts(testCase)
+            % Survey with 3 same-rule warnings.  Per-row override for EVENTNO=1,
+            % per-survey override for the rest.
+            % Expected: per_row=1, per_survey=2, total=3
+
+            import matlab.unittest.fixtures.WorkingFolderFixture
+            testCase.applyFixture(WorkingFolderFixture);
+            mkdir('data');
+
+            data   = make_survey_n_old_years(3);
+            fileid = data.FILEID{1};
+
+            ovr_file = fullfile('data', 'overrides.csv');
+            fid = fopen(ovr_file, 'w');
+            fprintf(fid, 'fileid,eventno,field,rule_id,acknowledged_by,acknowledged_date,reason\n');
+            % Per-row override for first eventno only
+            fprintf(fid, '%s,%d,YEAR,datetime_rules.year_too_old,test,2026-01-01,per-row\n', ...
+                fileid, data.EVENTNO(1));
+            % Per-survey override catches the rest
+            fprintf(fid, '%s,,YEAR,datetime_rules.year_too_old,test,2026-01-01,per-survey\n', fileid);
+            fclose(fid);
+
+            cfg = struct('override_file', ovr_file);
+            cfg.allow_warnings = false;
+            validator = narwc.validation.SurveyValidator(cfg);
+            [is_valid, results] = validator.validate(data);
+
+            testCase.verifyTrue(is_valid, ...
+                'All 3 warnings must be acknowledged by mixed overrides');
+            testCase.verifyEqual(results.summary.warnings_acknowledged, 3);
+            testCase.verifyEqual(results.summary.warnings_acknowledged_per_row, 1, ...
+                'Per-row must catch exactly the one explicitly listed eventno');
+            testCase.verifyEqual(results.summary.warnings_acknowledged_per_survey, 2, ...
+                'Per-survey must catch the remaining two warnings');
+        end
     end
 end
 
@@ -505,10 +658,46 @@ function data = make_survey_two_old_years(testCase) %#ok<INUSD>
 end
 
 function write_override(filepath, fileid, eventno, field, rule_id)
-    % Write a minimal overrides.csv with one acknowledged entry
+    % Write a minimal overrides.csv with one per-row acknowledged entry
     fid = fopen(filepath, 'w');
     fprintf(fid, 'fileid,eventno,field,rule_id,acknowledged_by,acknowledged_date,reason\n');
     fprintf(fid, '%s,%d,%s,%s,test,2026-01-01,unit test\n', ...
         fileid, eventno, field, rule_id);
     fclose(fid);
+end
+
+function write_per_survey_override(filepath, fileid, field, rule_id)
+    % Write a minimal overrides.csv with one per-survey entry (empty eventno)
+    fid = fopen(filepath, 'w');
+    fprintf(fid, 'fileid,eventno,field,rule_id,acknowledged_by,acknowledged_date,reason\n');
+    fprintf(fid, '%s,,%s,%s,test,2026-01-01,per-survey unit test\n', ...
+        fileid, field, rule_id);
+    fclose(fid);
+end
+
+function data = make_survey_n_old_years(n)
+    % n-row survey with YEAR=1975 on all rows (each triggers year_too_old)
+    data = table();
+    data.FILEID  = repmat({'f_ovtest_n'}, n, 1);
+    data.EVENTNO = (1:n)';
+    data.LAT_DD  = repmat(42.0, n, 1);
+    data.LONG_DD = repmat(-70.0, n, 1);
+    data.YEAR    = repmat(1975, n, 1);
+    data.MONTH   = repmat(6, n, 1);
+    data.DAY     = repmat(15, n, 1);
+end
+
+function data = make_survey_old_year_and_high_vis()
+    % Single-row survey triggering two distinct warnings:
+    %   YEAR=1975  -> datetime_rules.year_too_old   (field=YEAR)
+    %   VISIBLTY=100 -> environmental_rules.visibility_too_high (field=VISIBLTY)
+    data = table();
+    data.FILEID   = {'f_ovtest_2w'};
+    data.EVENTNO  = 7;
+    data.LAT_DD   = 42.0;
+    data.LONG_DD  = -70.0;
+    data.YEAR     = 1975;
+    data.MONTH    = 6;
+    data.DAY      = 15;
+    data.VISIBLTY = 100;   % > visibility_max (50) -> warning
 end

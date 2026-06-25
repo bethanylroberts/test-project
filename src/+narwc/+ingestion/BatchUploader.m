@@ -104,13 +104,16 @@ classdef BatchUploader < handle
             if ~exist(obj.run_summary_file, 'file')
                 fid = fopen(obj.run_summary_file, 'a');
                 if fid ~= -1
-                    fprintf(fid, 'run_timestamp,fileid,status,error_count,warning_count_new,warning_count_acknowledged,notes\n');
+                    fprintf(fid, ['run_timestamp,fileid,status,error_count,' ...
+                        'warning_count_new,warning_count_acknowledged,' ...
+                        'warning_count_acknowledged_per_row,' ...
+                        'warning_count_acknowledged_per_survey,notes\n']);
                     fclose(fid);
                 end
             end
         end
 
-        function appendRunSummaryRow(obj, fileid, status, error_count, warn_new, warn_ack, notes)
+        function appendRunSummaryRow(obj, fileid, status, error_count, warn_new, warn_ack, warn_ack_per_row, warn_ack_per_survey, notes)
             % APPENDRUNSUMMARYROW Append one survey result to _run_summary.csv
 
             if isempty(obj.run_summary_file)
@@ -123,8 +126,9 @@ classdef BatchUploader < handle
                 end
                 ts = char(datetime('now', 'Format', 'yyyy-MM-dd HH:mm:ss'));
                 notes_safe = strrep(notes, ',', ';');
-                fprintf(fid, '%s,%s,%s,%d,%d,%d,%s\n', ...
-                    ts, fileid, status, error_count, warn_new, warn_ack, notes_safe);
+                fprintf(fid, '%s,%s,%s,%d,%d,%d,%d,%d,%s\n', ...
+                    ts, fileid, status, error_count, warn_new, warn_ack, ...
+                    warn_ack_per_row, warn_ack_per_survey, notes_safe);
                 fclose(fid);
             catch
             end
@@ -274,8 +278,10 @@ classdef BatchUploader < handle
                 validator = narwc.validation.SurveyValidator(validator_config);
                 [is_valid, results] = validator.validate(survey_data);
 
-                warn_new = 0;
-                warn_ack = 0;
+                warn_new            = 0;
+                warn_ack            = 0;
+                warn_ack_per_row    = 0;
+                warn_ack_per_survey = 0;
                 if isfield(results, 'summary')
                     if isfield(results.summary, 'warnings_new')
                         warn_new = results.summary.warnings_new;
@@ -283,9 +289,20 @@ classdef BatchUploader < handle
                     if isfield(results.summary, 'warnings_acknowledged')
                         warn_ack = results.summary.warnings_acknowledged;
                     end
+                    if isfield(results.summary, 'warnings_acknowledged_per_row')
+                        warn_ack_per_row = results.summary.warnings_acknowledged_per_row;
+                    end
+                    if isfield(results.summary, 'warnings_acknowledged_per_survey')
+                        warn_ack_per_survey = results.summary.warnings_acknowledged_per_survey;
+                    end
+                    if isfield(results.summary, 'acknowledgement_by_rule')
+                        obj.accumulateRuleStats(results.summary.acknowledgement_by_rule);
+                    end
                 end
-                obj.stats.warnings_new          = obj.stats.warnings_new + warn_new;
-                obj.stats.warnings_acknowledged = obj.stats.warnings_acknowledged + warn_ack;
+                obj.stats.warnings_new                     = obj.stats.warnings_new + warn_new;
+                obj.stats.warnings_acknowledged            = obj.stats.warnings_acknowledged + warn_ack;
+                obj.stats.warnings_acknowledged_per_row    = obj.stats.warnings_acknowledged_per_row + warn_ack_per_row;
+                obj.stats.warnings_acknowledged_per_survey = obj.stats.warnings_acknowledged_per_survey + warn_ack_per_survey;
 
                 if ~is_valid
                     has_errors   = results.summary.errors > 0;
@@ -310,10 +327,10 @@ classdef BatchUploader < handle
                     validation_err.stack = dbstack();
                     obj.logError(survey_id, validation_err, 'Validation error', results);
 
-                    notes = sprintf('errors=%d warn_new=%d warn_ack=%d', ...
-                        results.summary.errors, warn_new, warn_ack);
+                    notes = sprintf('errors=%d warn_new=%d warn_ack=%d (row=%d survey=%d)', ...
+                        results.summary.errors, warn_new, warn_ack, warn_ack_per_row, warn_ack_per_survey);
                     obj.appendRunSummaryRow(survey_id, 'rejected', ...
-                        results.summary.errors, warn_new, warn_ack, notes);
+                        results.summary.errors, warn_new, warn_ack, warn_ack_per_row, warn_ack_per_survey, notes);
 
                     obj.stats.failed = obj.stats.failed + 1;
                     success = false;
@@ -331,7 +348,7 @@ classdef BatchUploader < handle
             if exists && ~options.Overwrite
                 obj.logger.info(sprintf('%s already exists in database, skipping', survey_id));     % TODO: remove sprintf if not needed
                 obj.stats.skipped = obj.stats.skipped + 1;
-                obj.appendRunSummaryRow(survey_id, 'skipped', 0, 0, 0, 'already exists');
+                obj.appendRunSummaryRow(survey_id, 'skipped', 0, 0, 0, 0, 0, 'already exists');
                 success = true;
                 category = 'skipped';
                 return;
@@ -375,11 +392,11 @@ classdef BatchUploader < handle
                 if exists
                     obj.logger.info(sprintf('Updated %s', survey_id));
                     obj.stats.updated = obj.stats.updated + 1;
-                    obj.appendRunSummaryRow(survey_id, 'uploaded', 0, 0, 0, 'overwrite');
+                    obj.appendRunSummaryRow(survey_id, 'uploaded', 0, 0, 0, 0, 0, 'overwrite');
                 else
                     obj.logger.info(sprintf('Uploaded %s', survey_id));
                     obj.stats.uploaded = obj.stats.uploaded + 1;
-                    obj.appendRunSummaryRow(survey_id, 'uploaded', 0, 0, 0, '');
+                    obj.appendRunSummaryRow(survey_id, 'uploaded', 0, 0, 0, 0, 0, '');
                 end
 
                 success = true;
@@ -515,8 +532,22 @@ classdef BatchUploader < handle
                 total_attempted = total_processed + obj.stats.failed;
 
                 fprintf(fid, '\nWarnings:\n');
-                fprintf(fid, '  Acknowledged: %d\n', obj.stats.warnings_acknowledged);
+                fprintf(fid, '  Acknowledged: %d (%d per-row, %d per-survey)\n', ...
+                    obj.stats.warnings_acknowledged, ...
+                    obj.stats.warnings_acknowledged_per_row, ...
+                    obj.stats.warnings_acknowledged_per_survey);
                 fprintf(fid, '  New (blocking): %d\n', obj.stats.warnings_new);
+
+                if ~isempty(fieldnames(obj.stats.acknowledgement_by_rule))
+                    fprintf(fid, '\nAcknowledged warnings by rule:\n');
+                    rule_keys = fieldnames(obj.stats.acknowledgement_by_rule);
+                    for i = 1:length(rule_keys)
+                        r     = obj.stats.acknowledgement_by_rule.(rule_keys{i});
+                        total = r.per_row + r.per_survey;
+                        fprintf(fid, '  %s: %d (%d per-row, %d per-survey)\n', ...
+                            r.rule_id, total, r.per_row, r.per_survey);
+                    end
+                end
 
                 fprintf(fid, '\nStatistics:\n');
                 fprintf(fid, '  Total Attempted: %d\n', total_attempted);
@@ -570,12 +601,36 @@ classdef BatchUploader < handle
             % RESETSTATS Reset statistics
 
             obj.stats = struct();
-            obj.stats.uploaded             = 0;
-            obj.stats.updated              = 0;
-            obj.stats.skipped              = 0;
-            obj.stats.failed               = 0;
-            obj.stats.warnings_new         = 0;
-            obj.stats.warnings_acknowledged = 0;
+            obj.stats.uploaded                        = 0;
+            obj.stats.updated                         = 0;
+            obj.stats.skipped                         = 0;
+            obj.stats.failed                          = 0;
+            obj.stats.warnings_new                    = 0;
+            obj.stats.warnings_acknowledged           = 0;
+            obj.stats.warnings_acknowledged_per_row   = 0;
+            obj.stats.warnings_acknowledged_per_survey = 0;
+            obj.stats.acknowledgement_by_rule         = struct();
+        end
+
+        function accumulateRuleStats(obj, by_rule)
+            % ACCUMULATERULESTATS Merge per-rule acknowledgement counts into run-level stats
+
+            if isempty(by_rule) || isempty(fieldnames(by_rule))
+                return;
+            end
+            keys = fieldnames(by_rule);
+            for i = 1:length(keys)
+                k     = keys{i};
+                entry = by_rule.(k);
+                if isfield(obj.stats.acknowledgement_by_rule, k)
+                    obj.stats.acknowledgement_by_rule.(k).per_row = ...
+                        obj.stats.acknowledgement_by_rule.(k).per_row + entry.per_row;
+                    obj.stats.acknowledgement_by_rule.(k).per_survey = ...
+                        obj.stats.acknowledgement_by_rule.(k).per_survey + entry.per_survey;
+                else
+                    obj.stats.acknowledgement_by_rule.(k) = entry;
+                end
+            end
         end
 
         function displayStats(obj)
