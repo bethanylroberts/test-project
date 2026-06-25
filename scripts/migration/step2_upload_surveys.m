@@ -11,7 +11,7 @@
 % upload for the general tools
 
 % FIXME: this is too abstract as it just calls the single
-% migration.BatchConverter.uploadFromFolder method.
+% narwc.ingestion.BatchUploader.uploadFromFolder method.
 % - [ ] batch uploader should be more generic. It just needs to pull from a pending folder
 % - [ ] batch uploader can be less abstract. Currently reads like java code not matlab
 
@@ -50,9 +50,10 @@ function stats = step2_upload_surveys(options)
     conn = narwc.db.Connection.create();
     
     try
-        % Create converter
-        converter = migration.BatchConverter(conn, options.BaseDir);
-        
+        % Create uploader — LegacyMode enables legacy-leniency validation
+        % settings (e.g. negative visibility) appropriate for migration data.
+        converter = narwc.ingestion.BatchUploader(conn, options.BaseDir, 'LegacyMode', true);
+
         % Upload all from pending folder
         converter.uploadFromFolder(...
             'Overwrite', options.Overwrite, ...

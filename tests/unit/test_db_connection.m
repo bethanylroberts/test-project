@@ -7,10 +7,12 @@ classdef test_db_connection < matlab.unittest.TestCase
     
     methods (TestClassSetup)
         function checkConfig(testCase)
-            % Check if config file exists
             if ~exist('db_config', 'file')
-                error('db_config.m not found. Copy db_config_template.m to db_config.m');
+                testCase.assumeTrue(false, ...
+                    'db_config.m not found - copy db_config_template.m to db_config.m');
             end
+            testCase.assumeTrue(has_live_db(), ...
+                'No live database connection available - skipping DB tests');
         end
     end
     

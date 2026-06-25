@@ -190,6 +190,70 @@ classdef Connection < handle
             end
         end
         
+        function ac = getAutoCommit(obj)
+            % GETAUTOCOMMIT Query current AutoCommit state
+            % Returns 'on' if the state cannot be read (driver limitation).
+            try
+                ac = obj.conn.AutoCommit;
+            catch
+                ac = 'on';
+            end
+        end
+
+        function setAutoCommit(obj, value)
+            % SETAUTOCOMMIT Restore AutoCommit state
+            % Falls back to 'on' if value cannot be set.
+            try
+                obj.conn.AutoCommit = value;
+            catch
+                try
+                    obj.conn.AutoCommit = 'on';
+                catch
+                end
+            end
+        end
+
+        function beginTransaction(obj)
+            % BEGINTRANSACTION Begin a database transaction
+            % Sets AutoCommit = 'off'.  Throws if the driver does not
+            % support transactions so the caller can fall back.
+            if ~obj.isOpen()
+                error('Database connection is not open');
+            end
+            try
+                obj.conn.AutoCommit = 'off';
+            catch ME
+                obj.log('warning', sprintf('Driver does not support transactions: %s', ME.message));
+                rethrow(ME);
+            end
+        end
+
+        function commit(obj)
+            % COMMIT Commit the current transaction
+            if ~obj.isOpen()
+                error('Database connection is not open');
+            end
+            try
+                commit(obj.conn);
+            catch ME
+                obj.log('error', sprintf('Commit failed: %s', ME.message));
+                rethrow(ME);
+            end
+        end
+
+        function rollback(obj)
+            % ROLLBACK Roll back the current transaction
+            if ~obj.isOpen()
+                error('Database connection is not open');
+            end
+            try
+                rollback(obj.conn);
+            catch ME
+                obj.log('error', sprintf('Rollback failed: %s', ME.message));
+                rethrow(ME);
+            end
+        end
+
         function update(obj, tablename, data, where_clause)
             % UPDATE Update records in table
             %

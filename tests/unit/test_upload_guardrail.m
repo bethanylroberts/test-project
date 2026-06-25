@@ -1,15 +1,25 @@
 classdef test_upload_guardrail < matlab.unittest.TestCase
-    % TEST_UPLOAD_GUARDRAIL Verify BatchConverter rejects test-fixture FILEIDs.
+    % TEST_UPLOAD_GUARDRAIL Verify BatchUploader rejects test-fixture FILEIDs.
     %
     % These tests do not require a database connection. The guardrail check
     % fires before any DB call, so a mock connection object is sufficient.
+
+    methods (TestClassSetup)
+        function setupPaths(testCase) %#ok<MANU>
+            here = fileparts(mfilename('fullpath'));
+            fixtures_path = fullfile(fileparts(here), 'fixtures');
+            if ~contains(path, fixtures_path)
+                addpath(fixtures_path);
+            end
+        end
+    end
 
     methods (Test)
 
         function testUploadSurveyRejectsTestFileid(testCase)
             % uploadSurvey must refuse a survey whose FILEID has 'T' in position 2.
             conn = MockConnection();
-            converter = migration.BatchConverter(conn, tempdir());
+            converter = narwc.ingestion.BatchUploader(conn, tempdir());
 
             data = make_survey('aT11282');
 
@@ -31,7 +41,7 @@ classdef test_upload_guardrail < matlab.unittest.TestCase
             %  separate from the guardrail — so we only check the guardrail did not
             %  set success=false before the DB call is reached.)
             conn = MockConnection();
-            converter = migration.BatchConverter(conn, tempdir());
+            converter = narwc.ingestion.BatchUploader(conn, tempdir());
 
             data = make_survey('a111282');
 
@@ -60,7 +70,7 @@ classdef test_upload_guardrail < matlab.unittest.TestCase
             writetable(data, fullfile(pending_dir, 'fT00007.csv'));
 
             conn = MockConnection();
-            converter = migration.BatchConverter(conn, base_dir);
+            converter = narwc.ingestion.BatchUploader(conn, base_dir, 'LegacyMode', true);
             converter.uploadFromFolder('Validate', false);
 
             stats = converter.getStats();
@@ -98,35 +108,4 @@ data = table( ...
 end
 
 
-% =========================================================================
-% Mock connection — satisfies the interface BatchConverter calls
-% =========================================================================
-
-classdef MockConnection < handle
-    properties
-        fetch_call_count  = 0
-        insert_call_count = 0
-        is_open           = true
-    end
-
-    methods
-        function result = fetch(obj, ~)
-            obj.fetch_call_count = obj.fetch_call_count + 1;
-            result = table(0, 'VariableNames', {'cnt'});
-        end
-
-        function execute(~, ~)
-        end
-
-        function insert(obj, ~, ~)
-            obj.insert_call_count = obj.insert_call_count + 1;
-        end
-
-        function tf = isOpen(obj)
-            tf = obj.is_open;
-        end
-
-        function close(~)
-        end
-    end
-end
+% MockConnection is defined in tests/fixtures/MockConnection.m

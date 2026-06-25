@@ -32,7 +32,7 @@ function step1_extract_surveys(csv_file, options)
     fprintf('Destination: %s\n\n', options.OutputDir);
     
     % Create extractor
-    extractor = migration.SurveyExtractor(csv_file, options.ChunkSize);
+    extractor = narwc.ingestion.SurveyExtractor(csv_file, options.ChunkSize);
     
     % Extract all
     extractor.extractAll(options.OutputDir, 'Overwrite', options.Overwrite);

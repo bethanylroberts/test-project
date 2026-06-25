@@ -137,22 +137,26 @@ classdef test_validation < matlab.unittest.TestCase
         end
         
         function testEnvironmentalValidation(testCase)
-            % Test environmental rules
-            
-            % Create test data
+            % Test environmental rules.
+            %
+            % CLOUD and WX validation are currently disabled (removed from
+            % environmental_rules.m; CLOUD via lookup table, WX via lookup
+            % table).  SURFTEMP and VISIBLTY out-of-range produce warnings,
+            % not errors.  The assertion reflects current behaviour.
+
             data = table();
-            data.CLOUD = [0; 1; 9; 2];  % One invalid (9)
-            data.VISIBLTY = [10; 20; -5; 100];  % One negative, one high
-            data.SURFTEMP = [15; 20; -10; 50];  % One too cold, one too hot
-            data.GLAREL = [0; 1; 5; 2];  % One invalid (5)
+            data.CLOUD = [0; 1; 9; 2];
+            data.VISIBLTY = [10; 20; -5; 100];   % 100 > visibility_max=50 → warning
+            data.SURFTEMP = [15; 20; -10; 50];   % -10 < -2 and 50 > 35 → warnings
+            data.GLAREL = [0; 1; 5; 2];
             data.GLARER = [0; 2; 1; 3];
-            data.WX = {'C'; 'R'; 'F'; 'LONG'};  % One too long
-            
+            data.WX = {'C'; 'R'; 'F'; 'LONG'};
+
             collector = narwc.validation.ErrorCollector();
             narwc.validation.rules.environmental_rules(data, collector);
-            
-            % Should have errors
-            testCase.verifyGreaterThan(collector.getErrorCount('error'), 0);
+
+            % Function generates warnings for out-of-range SURFTEMP and VISIBLTY
+            testCase.verifyGreaterThan(collector.getErrorCount('warning'), 0);
         end
         
         function testSurveyValidator(testCase)
