@@ -1,0 +1,16 @@
+PUBLIC M_LN
+GO 1
+STORE '   ' TO M_LN
+DO WHILE .NOT. EOF()
+DO CASE
+   CASE LEGNO <> '   '
+        M_LN = LEGNO
+        SKIP
+   CASE LEGNO = '   '
+        REPLACE LEGNO WITH M_LN
+        M_LN = LEGNO
+        SKIP
+   ENDCASE
+ENDDO
+RETURN
+
