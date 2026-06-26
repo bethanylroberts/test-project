@@ -171,14 +171,23 @@ function is_sighting = identify_sighting_records(data)
     end
 end
 
+% function speccode_str = safe_get_speccode(data, idx)
+%     if iscell(data.SPECCODE)
+%         speccode_str = data.SPECCODE{idx};
+%     elseif isstring(data.SPECCODE)
+%         speccode_str = char(data.SPECCODE(idx));
+%     else
+%         speccode_str = char(data.SPECCODE(idx));
+%     end
+% end
+
 function speccode_str = safe_get_speccode(data, idx)
-    if iscell(data.SPECCODE)
-        speccode_str = data.SPECCODE{idx};
-    elseif isstring(data.SPECCODE)
-        speccode_str = char(data.SPECCODE(idx));
-    else
-        speccode_str = char(data.SPECCODE(idx));
+    val = data.SPECCODE(idx);
+    if ismissing(val) || (isstring(val) && strlength(val) == 0)
+        speccode_str = '';
+        return;
     end
+    speccode_str = char(val);
 end
 
 function eventno = get_eventno(data, row)

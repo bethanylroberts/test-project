@@ -1,16 +1,3 @@
-<!--
-CORRECTIONS FROM CODE VERIFICATION (2026-06-26)
-- results.warnings is a STRUCT ARRAY (not a table, not a containers.Map).
-  Access fields with dot notation: results.warnings(i).eventno, .field, .rule_id, .message
-- smoke_validate is a FUNCTION (smoke_validate.m), not a script. Call as smoke_validate()
-  after startup(). The brief's step 8 is correct; noted here for clarity.
-- StandardFormat.createImportOptions() is a static method with no arguments.
-  The parser constructor takes file_path: narwc.io.parsers.StandardFormat(file_path)
-  then parser.parse() returns [data, metadata].
-- ParserFactory is marked FIXME / slated for removal; direct parser instantiation is
-  the preferred path for the walkthrough.
--->
-
 # Pipeline Walkthrough
 
 ## Purpose
@@ -37,8 +24,8 @@ path for a personal pipeline shakedown before onboarding team members. See
 
 ```matlab
 startup();
-parser = narwc.io.parsers.StandardFormat('tests/fixtures/sample_data/aT11110.csv');
-[data, ~] = parser.parse();
+parser = narwc.io.parsers.StandardFormat();
+[data, ~] = parser.parse('tests/fixtures/sample_data/aT11110.csv');
 validator = narwc.validation.SurveyValidator();
 [is_valid, results] = validator.validate(data);
 disp(results.summary)
@@ -66,8 +53,8 @@ repo root.
 
 ```matlab
 file_path = 'tests/fixtures/sample_data/aT11110.csv';
-parser = narwc.io.parsers.StandardFormat(file_path);
-[data, metadata] = parser.parse();
+parser = narwc.io.parsers.StandardFormat();
+[data, metadata] = parser.parse(file_path);
 fprintf('Loaded %d rows, %d columns\n', height(data), width(data));
 disp(metadata)
 ```
@@ -193,8 +180,8 @@ for override precedence.
 
 ```matlab
 file_vol = 'tests/fixtures/sample_data/aT99001_volume.csv';
-parser_vol = narwc.io.parsers.StandardFormat(file_vol);
-[data_vol, meta_vol] = parser_vol.parse();
+parser_vol = narwc.io.parsers.StandardFormat();
+[data_vol, meta_vol] = parser_vol.parse(file_vol);
 fprintf('Volume fixture: %d rows\n', meta_vol.row_count);
 
 validator_vol = narwc.validation.SurveyValidator();

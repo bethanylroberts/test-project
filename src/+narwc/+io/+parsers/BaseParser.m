@@ -14,23 +14,23 @@ classdef (Abstract) BaseParser < handle
     end
     
     methods
-        function obj = BaseParser(file_path)
-            obj.file_path = file_path;
+        function obj = BaseParser()
+            % obj.file_path = file_path;
             obj.logger = logging.Logger(sprintf('narwc.io.parsers.%s', class(obj)));
             
-            if ~exist(file_path, 'file')
-                error('File not found: %s', file_path);
-            end
+            % if ~exist(file_path, 'file')
+            %     error('File not found: %s', file_path);
+            % end
         end
         
-        function [data, metadata] = read(obj)
-            obj.logger.info(sprintf('Parsing file: %s', obj.file_path));
+        function [data, metadata] = read(obj, file_path)
+            obj.logger.info(sprintf('Parsing file: %s', file_path));
             
             try
-                [data, metadata] = obj.parse();
+                [data, metadata] = obj.parse(file_path);
                 data = obj.standardize(data);
                 
-                metadata.file_path = obj.file_path;
+                metadata.file_path = file_path;
                 metadata.format = obj.FORMAT_NAME;
                 metadata.parse_time = datetime('now');
                 
@@ -63,7 +63,7 @@ classdef (Abstract) BaseParser < handle
     end
     
     methods (Abstract)
-        [data, metadata] = parse(obj)
+        [data, metadata] = parse(obj, file_path)
     end
     
     methods (Static, Abstract)

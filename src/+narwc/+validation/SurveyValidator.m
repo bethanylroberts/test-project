@@ -48,7 +48,10 @@ classdef SurveyValidator < handle
             % Run validation rules
             obj.runValidationRules(data);
 
-            % Extract FILEID for override matching
+            % Extract FILEID for override matching  
+            % TODO: increase readability of this section (maybe just refactor
+            % into method) if height(data) < 0 this function does nothing
+            % anyway, maybe should pop a different error
             fileid = '';
             if ismember('FILEID', data.Properties.VariableNames) && height(data) > 0
                 fid_val = data.FILEID;
@@ -105,6 +108,10 @@ classdef SurveyValidator < handle
 
         function runValidationRules(obj, data)
             % RUNVALIDATIONRULES Execute all validation rules
+
+            % TODO: figure out how configs may need to be incorporated into the
+            % below rules. The rules functions accept a config, but it is not
+            % used here.
 
             if obj.config.validate_required_fields
                 obj.logger.debug('Validating required fields...');
@@ -186,6 +193,9 @@ classdef SurveyValidator < handle
             %
             % Returns a struct with per-row and per-survey acknowledgement counts
             % and a per-rule breakdown.
+
+            % FIXME: this method has low readability which will make error
+            % checking difficult
 
             ack_result.n_per_row    = 0;
             ack_result.n_per_survey = 0;

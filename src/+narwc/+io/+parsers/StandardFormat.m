@@ -28,13 +28,17 @@ classdef StandardFormat < narwc.io.parsers.BaseParser
         };
     end
     
-    methods
-        function [data, metadata] = parse(obj)
+    methods (Static)
+        function [data, metadata] = parse(file_path)   % FIXME: obj is not used?
             % PARSE Parse standard format file
-            
+
+            if ~exist(file_path, 'file')
+                error('File not found: %s', file_path);
+            end
+
             % Read with CSV field order
             import_opts = narwc.io.parsers.StandardFormat.createImportOptions();
-            raw_data = readtable(obj.file_path, import_opts);
+            raw_data = readtable(file_path, import_opts);
             
             % Remove the unused column
             if ismember('UNUSED', raw_data.Properties.VariableNames)
@@ -59,7 +63,7 @@ classdef StandardFormat < narwc.io.parsers.BaseParser
             num_vars = length(narwc.io.parsers.StandardFormat.CSV_FIELD_ORDER);
             import_opts = delimitedTextImportOptions('NumVariables', num_vars);
             import_opts.Delimiter = ',';
-            import_opts.DataLines = [1, Inf];  % No header in legacy file
+            import_opts.DataLines = [2, Inf];  % No header in legacy file
             
             % Set variable names from CSV order
             import_opts.VariableNames = narwc.io.parsers.StandardFormat.CSV_FIELD_ORDER;

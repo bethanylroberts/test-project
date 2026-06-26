@@ -30,13 +30,13 @@ recommended location).
 Test FILEIDs follow the standard 7–8 character NARWC FILEID structure but
 with position 2 set to `T`:
 
-| Position | Content |
-|----------|---------|
-| 1 | Preserved from source (survey type + era case) |
-| 2 | `T` — marks this as a test fixture |
-| 3–4 | Two-digit year of first shifted data date |
-| 5–7 | Julian day of first shifted date (zero-padded) |
-| 8 | Preserved from source (if source FILEID is 8 characters) |
+| Position | Content                                                  |
+| -------- | -------------------------------------------------------- |
+| 1        | Preserved from source (survey type + era case)           |
+| 2        | `T` — marks this as a test fixture                       |
+| 3–4      | Two-digit year of first shifted data date                |
+| 5–7      | Julian day of first shifted date (zero-padded)           |
+| 8        | Preserved from source (if source FILEID is 8 characters) |
 
 Position 2 = `T` is the canonical marker for synthetic fixture data.
 Real contributor codes in the production database never use `T`.

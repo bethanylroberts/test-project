@@ -13,7 +13,7 @@ classdef test_characterization_parser < matlab.unittest.TestCase
 
     properties
         fixture_dir
-        headerless_file   % per-test temp file
+        test_file   % per-test temp file
     end
 
     methods (TestClassSetup)
@@ -38,15 +38,15 @@ classdef test_characterization_parser < matlab.unittest.TestCase
             src = fullfile(testCase.fixture_dir, 'aT11110.csv');
             data = readtable(src);   % auto-detects header
 
-            testCase.headerless_file = [tempname '.csv'];
-            writetable(data, testCase.headerless_file, 'WriteVariableNames', false);
+            testCase.test_file = [tempname '.csv'];
+            writetable(data, testCase.test_file, 'WriteVariableNames', true);
         end
     end
 
     methods (TestMethodTeardown)
         function cleanupFile(testCase)
-            if exist(testCase.headerless_file, 'file')
-                delete(testCase.headerless_file);
+            if exist(testCase.test_file, 'file')
+                delete(testCase.test_file);
             end
         end
     end
@@ -56,8 +56,8 @@ classdef test_characterization_parser < matlab.unittest.TestCase
         function testParserReturnsTable(testCase)
             % read() must return a table with rows from the fixture.
 
-            parser = narwc.io.parsers.StandardFormat(testCase.headerless_file);
-            [data, ~] = parser.read();
+            parser = narwc.io.parsers.StandardFormat();
+            [data, ~] = parser.read(testCase.test_file);
 
             testCase.verifyClass(data, 'table', ...
                 'StandardFormat.read() must return a table');
@@ -68,8 +68,8 @@ classdef test_characterization_parser < matlab.unittest.TestCase
         function testParserProducesDatabaseFieldOrder(testCase)
             % After remapToDatabase the columns must be in DB order.
 
-            parser = narwc.io.parsers.StandardFormat(testCase.headerless_file);
-            [data, ~] = parser.read();
+            parser = narwc.io.parsers.StandardFormat();
+            [data, ~] = parser.read(testCase.test_file);
 
             db_order = narwc.db.FieldDefinitions.getDatabaseOrder();
             actual_fields = data.Properties.VariableNames;
@@ -96,8 +96,8 @@ classdef test_characterization_parser < matlab.unittest.TestCase
         function testParserFileidValuesPreserved(testCase)
             % FILEID values must survive the round-trip intact.
 
-            parser = narwc.io.parsers.StandardFormat(testCase.headerless_file);
-            [data, ~] = parser.read();
+            parser = narwc.io.parsers.StandardFormat();
+            [data, ~] = parser.read(testCase.test_file);
 
             testCase.verifyTrue(ismember('FILEID', data.Properties.VariableNames), ...
                 'FILEID column must be present after parse');
@@ -113,8 +113,8 @@ classdef test_characterization_parser < matlab.unittest.TestCase
             % Fields defined as double in FieldDefinitions must be numeric
             % after parsing.
 
-            parser = narwc.io.parsers.StandardFormat(testCase.headerless_file);
-            [data, ~] = parser.read();
+            parser = narwc.io.parsers.StandardFormat();
+            [data, ~] = parser.read(testCase.test_file);
 
             numeric_fields = {'LAT_DD', 'LONG_DD', 'YEAR', 'MONTH', 'DAY', ...
                               'ALT', 'BEAUFORT', 'EVENTNO'};
@@ -131,8 +131,8 @@ classdef test_characterization_parser < matlab.unittest.TestCase
         function testParserMetadataFields(testCase)
             % metadata struct must carry row_count, column_count, and format.
 
-            parser = narwc.io.parsers.StandardFormat(testCase.headerless_file);
-            [~, metadata] = parser.read();
+            parser = narwc.io.parsers.StandardFormat();
+            [~, metadata] = parser.read(testCase.test_file);
 
             testCase.verifyTrue(isfield(metadata, 'row_count'));
             testCase.verifyTrue(isfield(metadata, 'column_count'));
