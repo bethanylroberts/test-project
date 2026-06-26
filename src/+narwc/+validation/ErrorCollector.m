@@ -112,6 +112,7 @@ classdef ErrorCollector < handle
 
     methods (Static, Access = private)
         function clean = sanitizeFieldName(field)
+            % FIXME: this code is probably repeated. Refactor it to allow reuse.
             clean = regexprep(field, '[^a-zA-Z0-9_]', '_');
             if ~isempty(clean) && ~isletter(clean(1))
                 clean = ['field_' clean];

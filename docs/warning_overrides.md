@@ -38,15 +38,15 @@ every warning should be reviewed by a human before data goes into the database.
    ```
 
    Required fields:
-   | Column              | What to enter                                                                      |
-   | ------------------- | ---------------------------------------------------------------------------------- |
-   | `fileid`            | The survey FILEID (e.g., `f098027`)                                                |
-   | `eventno`           | The EVENTNO of the specific event row                                              |
-   | `field`             | The field that was flagged (e.g., `LAT_DD`)                                        |
-   | `rule_id`           | The rule identifier from the warning (e.g., `coordinate_rules.outside_survey_lat`) |
-   | `acknowledged_by`   | Your name or initials                                                              |
-   | `acknowledged_date` | Today's date in `YYYY-MM-DD` format                                                |
-   | `reason`            | Brief explanation (optional but recommended)                                       |
+   | Column              | What to enter                                                                                                                                                                                                                                                                              |
+   | ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+   | `fileid`            | The value of the **FILEID data column** in the survey file (e.g., `f098027`). This must match the column value exactly — it is **not** the CSV filename. For example, a file named `f098027_v2.csv` that contains `FILEID=f098027` in every row requires `fileid=f098027` in the override. |
+   | `eventno`           | The EVENTNO of the specific event row                                                                                                                                                                                                                                                      |
+   | `field`             | The field that was flagged (e.g., `LAT_DD`)                                                                                                                                                                                                                                                |
+   | `rule_id`           | The rule identifier from the warning (e.g., `coordinate_rules.outside_survey_lat`)                                                                                                                                                                                                         |
+   | `acknowledged_by`   | Your name or initials                                                                                                                                                                                                                                                                      |
+   | `acknowledged_date` | Today's date in `YYYY-MM-DD` format                                                                                                                                                                                                                                                        |
+   | `reason`            | Brief explanation (optional but recommended)                                                                                                                                                                                                                                               |
 
 4. **Re-run the upload.** Move the survey CSV back to `pending/` and run the
    uploader again. Surveys whose warnings all match entries in

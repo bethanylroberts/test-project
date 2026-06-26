@@ -625,6 +625,103 @@ classdef test_validation < matlab.unittest.TestCase
             testCase.verifyEqual(results.summary.warnings_acknowledged_per_survey, 2, ...
                 'Per-survey must catch the remaining two warnings');
         end
+
+        % -----------------------------------------------------------------
+        % Behavioral rules — vectorized calf-behavior check
+        % -----------------------------------------------------------------
+
+        function testBehavioralCalfWarningVectorized(testCase)
+            % validate_calf_behavior_consistency must fire for rows where a
+            % calf-associated behavior code is present but NUMCALF = 0.
+            %
+            % This test calls behavioral_rules directly with a synthetic
+            % config and a local Behave.csv so it is independent of the
+            % project-level lookup table.
+
+            import matlab.unittest.fixtures.WorkingFolderFixture
+            testCase.applyFixture(WorkingFolderFixture);
+            mkdir(fullfile('data', 'tables'));
+
+            behave_path = fullfile('data', 'tables', 'Behave.csv');
+            fid = fopen(behave_path, 'w');
+            fprintf(fid, 'Value\n');
+            for c = 1:50; fprintf(fid, '%d\n', c); end
+            fclose(fid);
+
+            data = table();
+            data.FILEID  = {'aT00001'; 'aT00001'; 'aT00001'};
+            data.EVENTNO = [1; 2; 3];
+            data.BEHAV1  = [40; NaN; 40];   % rows 1,3: MOTHER WITH YOUNG
+            data.NUMCALF = [0; 1; 0];       % rows 1,3: no calf -> warning
+
+            config = make_behav_config(behave_path);
+
+            collector = narwc.validation.ErrorCollector();
+            narwc.validation.rules.behavioral_rules(data, collector, config);
+
+            warnings = collector.getErrors('warning');
+            calf_warns = warnings(strcmp({warnings.rule_id}, ...
+                'behavioral_rules.calf_behavior_no_calf'));
+
+            testCase.verifyEqual(length(calf_warns), 2, ...
+                'Exactly 2 rows must trigger calf_behavior_no_calf');
+            warn_rows = sort([calf_warns.row]);
+            testCase.verifyEqual(warn_rows, [1, 3], ...
+                'Warnings must be on rows 1 and 3');
+        end
+
+        function testFormatErrorDetailsIncludesEventno(testCase)
+            % behavioral_rules stores EVENTNO on warnings it emits.
+            % Verify (a) the warning carries eventno and (b) the location
+            % string rendered by formatErrorDetails contains EVENTNO=N.
+            %
+            % formatErrorDetails format: [WARNING] FIELD: message (rows R, EVENTNO=N)
+
+            import matlab.unittest.fixtures.WorkingFolderFixture
+            testCase.applyFixture(WorkingFolderFixture);
+            mkdir(fullfile('data', 'tables'));
+
+            behave_path = fullfile('data', 'tables', 'Behave.csv');
+            fid = fopen(behave_path, 'w');
+            fprintf(fid, 'Value\n');
+            for c = 1:50; fprintf(fid, '%d\n', c); end
+            fclose(fid);
+
+            data = table();
+            data.FILEID  = {'f_evtest'};
+            data.EVENTNO = 42;
+            data.BEHAV1  = 40;    % MOTHER WITH YOUNG -> calf warning
+            data.NUMCALF = 0;
+
+            config = make_behav_config(behave_path);
+
+            collector = narwc.validation.ErrorCollector();
+            narwc.validation.rules.behavioral_rules(data, collector, config);
+
+            warnings = collector.getErrors('warning');
+            testCase.verifyFalse(isempty(warnings), ...
+                'behavioral_rules must generate a calf-behavior warning');
+
+            w = warnings(1);
+            testCase.verifyEqual(w.eventno, 42, ...
+                'Warning must carry EVENTNO=42 from the data');
+
+            % Simulate the formatErrorDetails rendering for this warning
+            parts = {};
+            if ~isempty(w.row)
+                parts{end+1} = sprintf('rows %s', mat2str(w.row));
+            end
+            if ~isempty(w.eventno) && ~any(isnan(w.eventno))
+                parts{end+1} = sprintf('EVENTNO=%d', w.eventno);
+            end
+            loc    = [' (' strjoin(parts, ', ') ')'];
+            detail = sprintf('[WARNING] %s: %s%s', w.field, w.message, loc);
+
+            testCase.verifyTrue(contains(detail, 'EVENTNO=42'), ...
+                'Formatted detail must contain EVENTNO=42');
+            testCase.verifyTrue(contains(detail, '[WARNING]'), ...
+                'Formatted detail must start with [WARNING]');
+        end
     end
 end
 
@@ -700,4 +797,16 @@ function data = make_survey_old_year_and_high_vis()
     data.MONTH    = 6;
     data.DAY      = 15;
     data.VISIBLTY = 100;   % > visibility_max (50) -> warning
+end
+
+function config = make_behav_config(behave_path)
+    % Minimal behavioral_rules config for unit tests.
+    % Passes the supplied Behave.csv path so the function skips get_config.
+    config.behave_table_path            = behave_path;
+    config.dead_behaviors               = [];
+    config.active_swimming_behaviors    = [];
+    config.incompatible_behavior_pairs  = zeros(0, 2);
+    config.calf_associated_behaviors    = [40; 41; 42];
+    config.taxcode_behavior_restrictions = struct();
+    config.species_behavior_restrictions = struct();
 end

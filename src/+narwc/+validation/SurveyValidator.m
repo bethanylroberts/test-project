@@ -148,30 +148,33 @@ classdef SurveyValidator < handle
         end
 
         function details = formatErrorDetails(obj)
-            % FORMATERRORDETAILS Format errors for display
-            % Format: [SEVERITY] FIELD: message (rows X)
+            % FORMATERRORDETAILS Format errors and warnings for display
+            % Format: [SEVERITY] FIELD: message (rows X, EVENTNO=N)
 
             details = cell(0);
 
-            errors = obj.collector.getErrors('error');
-            for i = 1:length(errors)
-                err = errors(i);
-                if isfield(err, 'row') && ~isempty(err.row)
-                    details{end+1} = sprintf('[ERROR] %s: %s (rows %s)', ...
-                        err.field, err.message, mat2str(err.row)); %#ok<AGROW>
-                else
-                    details{end+1} = sprintf('[ERROR] %s: %s', err.field, err.message); %#ok<AGROW>
-                end
-            end
+            for sev = {'error', 'warning'}
+                entries = obj.collector.getErrors(sev{1});
+                for i = 1:length(entries)
+                    e = entries(i);
 
-            warnings = obj.collector.getErrors('warning');
-            for i = 1:length(warnings)
-                wrn = warnings(i);
-                if isfield(wrn, 'row') && ~isempty(wrn.row)
-                    details{end+1} = sprintf('[WARNING] %s: %s (rows %s)', ...
-                        wrn.field, wrn.message, mat2str(wrn.row)); %#ok<AGROW>
-                else
-                    details{end+1} = sprintf('[WARNING] %s: %s', wrn.field, wrn.message); %#ok<AGROW>
+                    % Build location suffix combining row and EVENTNO where available
+                    parts = {};
+                    if ~isempty(e.row)
+                        parts{end+1} = sprintf('rows %s', mat2str(e.row)); %#ok<AGROW>
+                    end
+                    if ~isempty(e.eventno) && ~any(isnan(e.eventno))
+                        parts{end+1} = sprintf('EVENTNO=%d', e.eventno); %#ok<AGROW>
+                    end
+
+                    if isempty(parts)
+                        loc = '';
+                    else
+                        loc = [' (' strjoin(parts, ', ') ')'];
+                    end
+
+                    details{end+1} = sprintf('[%s] %s: %s%s', ... %#ok<AGROW>
+                        upper(sev{1}), e.field, e.message, loc);
                 end
             end
         end
