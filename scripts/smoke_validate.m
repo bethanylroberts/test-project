@@ -12,6 +12,8 @@ function smoke_validate()
 %   startup()
 %   smoke_validate()
 
+% FIXME: this is an integration test and should probably be in the tests directory
+
 if isempty(which('get_config'))
     error('smoke_validate:NotInitialized', ...
         'Run startup() before calling smoke_validate()');
