@@ -1,9 +1,9 @@
 /*
  * 01_create_database.sql
  *
- * Purpose:    Create the NARWC database on SQL Server.
- * Depends on: Nothing (run first).
- * Reversal:   DROP DATABASE NARWC;
+ * Purpose:    Create the NARWCDB database on SQL Server.
+ * Depends on: Nothing (run first). Connect to [master] before running.
+ * Reversal:   DROP DATABASE NARWCDB;
  * Last modified: 2026-06-26
  *
  * Collation: SQL_Latin1_General_CP1_CI_AS
@@ -18,17 +18,22 @@
  * before running (SSMS, sqlcmd, or MATLAB Database Toolbox).
  */
 
-IF NOT EXISTS (
-    SELECT name FROM sys.databases WHERE name = N'NARWC'
-)
-BEGIN
-    CREATE DATABASE NARWC
-        COLLATE SQL_Latin1_General_CP1_CI_AS;
-
-    PRINT 'Database NARWC created.';
-END
-ELSE
-BEGIN
-    PRINT 'Database NARWC already exists; skipping creation.';
-END
+BEGIN TRY
+    IF NOT EXISTS (
+        SELECT name FROM sys.databases WHERE name = N'NARWCDB'
+    )
+    BEGIN
+        CREATE DATABASE NARWCDB
+            COLLATE SQL_Latin1_General_CP1_CI_AS;
+        PRINT 'Database NARWCDB created.';
+    END
+    ELSE
+    BEGIN
+        PRINT 'Database NARWCDB already exists; skipping creation.';
+    END
+END TRY
+BEGIN CATCH
+    PRINT 'ERROR creating database NARWCDB: ' + ERROR_MESSAGE();
+    PRINT 'Check that the SQL Server service account has CREATE DATABASE permission.';
+END CATCH
 GO

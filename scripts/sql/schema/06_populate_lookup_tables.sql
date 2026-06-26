@@ -1,8 +1,11 @@
 /*
- * 05_populate_lookup_tables.sql
+ * 06_populate_lookup_tables.sql
  *
  * Purpose:    Populate all lookup tables from data/tables/*.csv.
- * Depends on: 03_create_lookup_tables.sql (tables must exist)
+ * Depends on: 03_create_lookup_tables.sql (tables must exist).
+ *             Run after 05_add_foreign_keys.sql if FK constraints are enabled,
+ *             because BULK INSERT to lookup tables must complete before
+ *             Master rows that reference them can satisfy FK checks.
  * Reversal:   TRUNCATE TABLE <TableName>; (one per table)
  * Last modified: 2026-06-26
  *
@@ -17,13 +20,14 @@
  *   - FIELDTERMINATOR = ',' with FIELDQUOTE = '"' for quoted fields.
  *   - The SQL Server service account must have read access to the file path.
  *
- * Tables with non-standard columns (SPECCODE, Beaufort, MONTH, sysdiagrams)
- * use a format file or a staging table approach; see inline comments.
- *
- * Credentials/connection strings are NOT embedded here.
+ * Column counts per table (for BULK INSERT column-order verification):
+ *   ANHEAD:   4 columns (Value, Direction, LowDeg, HighDeg)
+ *   Beaufort: 5 columns (Value, lWind, hWind, Waves, Description)
+ *   SPECCODE: 6 columns (Value, SPECNAME, SPECCHAR, SPECNUM, Type, TAXCODE)
+ *   All others: 2 columns (Value, Description)
  */
 
-USE NARWC;
+USE NARWCDB;
 GO
 
 DECLARE @data_root NVARCHAR(260) = N'<FILL_IN>';   -- e.g. N'C:\NARWC-DB\data\tables\'
@@ -253,27 +257,6 @@ BULK INSERT LEGTYPE
         TABLOCK
     );
 PRINT 'LEGTYPE populated.';
-GO
-
--- ── MONTH ─────────────────────────────────────────────────────────────────────
--- MONTH.csv uses MonthID / MonthName instead of Value / Description.
--- Load via a staging table and then INSERT with column remapping.
-IF OBJECT_ID('tempdb..#month_stage') IS NOT NULL DROP TABLE #month_stage;
-CREATE TABLE #month_stage (MonthID INT, MonthName NVARCHAR(32));
-BULK INSERT #month_stage
-    FROM '<FILL_IN>MONTH.csv'
-    WITH (
-        FIRSTROW        = 2,
-        FIELDTERMINATOR = ',',
-        ROWTERMINATOR   = '\n',
-        CODEPAGE        = 'ACP',
-        TABLOCK
-    );
-TRUNCATE TABLE MONTH;
-INSERT INTO MONTH (Value, Description)
-    SELECT MonthID, MonthName FROM #month_stage;
-DROP TABLE #month_stage;
-PRINT 'MONTH populated.';
 GO
 
 -- ── OLDVIZ ────────────────────────────────────────────────────────────────────

@@ -11,7 +11,7 @@ connections are established externally (MATLAB Database Toolbox, SSMS, sqlcmd).
 
 | Directory | Purpose |
 |-----------|---------|
-| `schema/` | Create database, Master table, lookup tables, indexes, and populate lookups |
+| `schema/` | Create database, Master table, lookup tables, indexes, FK constraints, and populate lookups |
 | `teardown/` | Drop tables or truncate Master (development use only) |
 | `verification/` | Row-count and integrity queries to confirm a clean migration |
 | `curation/` | Day-to-day curator operations: delete survey, find duplicates, recent uploads |
@@ -23,7 +23,12 @@ connections are established externally (MATLAB Database Toolbox, SSMS, sqlcmd).
 2. `schema/02_create_master_table.sql`
 3. `schema/03_create_lookup_tables.sql`
 4. `schema/04_create_indexes.sql`
-5. `schema/05_populate_lookup_tables.sql`
+5. `schema/05_add_foreign_keys.sql`
+6. `schema/06_populate_lookup_tables.sql`
+
+Steps 4 and 5 can be reordered (FKs first, indexes second) if desired, but the
+listed order is recommended because FKs benefit from existing indexes on the
+referenced columns (FILEID, SPECCODE, PLATFORM, etc.) for validation performance.
 
 Run verification scripts after migration to confirm row counts and referential
 integrity.
