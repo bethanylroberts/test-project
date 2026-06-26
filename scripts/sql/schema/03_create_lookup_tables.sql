@@ -29,11 +29,11 @@ BEGIN TRY
     BEGIN TRANSACTION;
 
     -- ── ANHEAD ────────────────────────────────────────────────────────────────
-    -- Value type varchar(4) matches Master.ANHEAD
+    -- Value type int matches Master.ANHEAD (0-15 coded heading directions)
     IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = N'ANHEAD' AND type = 'U')
     BEGIN
         CREATE TABLE ANHEAD (
-            Value       varchar(4)      NOT NULL,
+            Value       int             NOT NULL,
             Direction   varchar(50)     NULL,       -- compass direction label (e.g., "NNE")
             LowDeg      numeric(18,0)   NULL,       -- low end of degree range
             HighDeg     numeric(18,0)   NULL,       -- high end of degree range
@@ -43,11 +43,11 @@ BEGIN TRY
     END
 
     -- ── Beaufort ──────────────────────────────────────────────────────────────
-    -- Value type varchar(4) matches Master.BEAUFORT
+    -- Value type int matches Master.BEAUFORT (Beaufort scale 0-9)
     IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = N'Beaufort' AND type = 'U')
     BEGIN
         CREATE TABLE Beaufort (
-            Value       varchar(4)      NOT NULL,
+            Value       int             NOT NULL,
             lWind       int             NULL,       -- lower wind speed bound (knots)
             hWind       int             NULL,       -- upper wind speed bound (knots)
             Waves       numeric(18,2)   NULL,       -- typical wave height (meters)
@@ -58,11 +58,11 @@ BEGIN TRY
     END
 
     -- ── Behave ────────────────────────────────────────────────────────────────
-    -- Value type varchar(4) matches Master.BEHAV1-15
+    -- Value type int matches Master.BEHAV1-15 (integer behavior codes)
     IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = N'Behave' AND type = 'U')
     BEGIN
         CREATE TABLE Behave (
-            Value       varchar(4)      NOT NULL,
+            Value       int             NOT NULL,
             Description varchar(255)    NULL,
             CONSTRAINT PK_Behave PRIMARY KEY (Value)
         );
@@ -142,11 +142,11 @@ BEGIN TRY
     END
 
     -- ── GLARE ─────────────────────────────────────────────────────────────────
-    -- Value type varchar(4) matches Master.GLAREL and Master.GLARER
+    -- Value type int matches Master.GLAREL and Master.GLARER (severity 0-3)
     IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = N'GLARE' AND type = 'U')
     BEGIN
         CREATE TABLE GLARE (
-            Value       varchar(4)      NOT NULL,
+            Value       int             NOT NULL,
             Description varchar(255)    NULL,
             CONSTRAINT PK_GLARE PRIMARY KEY (Value)
         );
@@ -190,11 +190,11 @@ BEGIN TRY
     END
 
     -- ── LEGSTAGE ──────────────────────────────────────────────────────────────
-    -- Value type varchar(4) matches Master.LEGSTAGE
+    -- Value type int matches Master.LEGSTAGE (integer stage codes)
     IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = N'LEGSTAGE' AND type = 'U')
     BEGIN
         CREATE TABLE LEGSTAGE (
-            Value       varchar(4)      NOT NULL,
+            Value       int             NOT NULL,
             Description varchar(255)    NULL,
             CONSTRAINT PK_LEGSTAGE PRIMARY KEY (Value)
         );
@@ -202,11 +202,11 @@ BEGIN TRY
     END
 
     -- ── LEGTYPE ───────────────────────────────────────────────────────────────
-    -- Value type varchar(4) matches Master.LEGTYPE
+    -- Value type int matches Master.LEGTYPE (integer leg type codes)
     IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = N'LEGTYPE' AND type = 'U')
     BEGIN
         CREATE TABLE LEGTYPE (
-            Value       varchar(4)      NOT NULL,
+            Value       int             NOT NULL,
             Description varchar(255)    NULL,
             CONSTRAINT PK_LEGTYPE PRIMARY KEY (Value)
         );
@@ -226,11 +226,11 @@ BEGIN TRY
     END
 
     -- ── PHOTOS ────────────────────────────────────────────────────────────────
-    -- Value type varchar(4) matches Master.PHOTOS
+    -- Value type int matches Master.PHOTOS (integer photo presence codes)
     IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = N'PHOTOS' AND type = 'U')
     BEGIN
         CREATE TABLE PHOTOS (
-            Value       varchar(4)      NOT NULL,
+            Value       int             NOT NULL,
             Description varchar(255)    NULL,
             CONSTRAINT PK_PHOTOS PRIMARY KEY (Value)
         );
@@ -278,11 +278,11 @@ BEGIN TRY
     END
 
     -- ── STRIP ─────────────────────────────────────────────────────────────────
-    -- Value type varchar(4) matches Master.STRIP
+    -- Value type int matches Master.STRIP (strip number 1-16)
     IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = N'STRIP' AND type = 'U')
     BEGIN
         CREATE TABLE STRIP (
-            Value       varchar(4)      NOT NULL,
+            Value       int             NOT NULL,
             Description varchar(255)    NULL,
             CONSTRAINT PK_STRIP PRIMARY KEY (Value)
         );
@@ -290,11 +290,11 @@ BEGIN TRY
     END
 
     -- ── TAXCODE ───────────────────────────────────────────────────────────────
-    -- Value type varchar(4) matches Master.TAXCODE
+    -- Value type int matches Master.TAXCODE (integer taxonomic group codes)
     IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = N'TAXCODE' AND type = 'U')
     BEGIN
         CREATE TABLE TAXCODE (
-            Value       varchar(4)      NOT NULL,
+            Value       int             NOT NULL,
             Description varchar(255)    NULL,
             CONSTRAINT PK_TAXCODE PRIMARY KEY (Value)
         );

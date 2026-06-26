@@ -57,19 +57,19 @@ BEGIN TRY
             -- ── Survey / Leg ─────────────────────────────────────────────────
             PLATFORM    int             NULL,       -- FK to PLATFORM.Value
             LEGNO       smallint        NULL,       -- leg number within survey
-            LEGTYPE     varchar(4)      NULL,       -- FK to LEGTYPE.Value
-            LEGSTAGE    varchar(4)      NULL,       -- FK to LEGSTAGE.Value
+            LEGTYPE     int             NULL,       -- FK to LEGTYPE.Value
+            LEGSTAGE    int             NULL,       -- FK to LEGSTAGE.Value
             DDSOURCE    varchar(4)      NULL,       -- FK to DDSOURCE.Value
             IDSOURCE    varchar(4)      NULL,       -- FK to IDSOURCE.Value
             BLOCK       varchar(4)      NULL,       -- FK to Block.Value
             STRATUM     varchar(4)      NULL,       -- FK to STRATUM.Value
-            STRIP       varchar(4)      NULL,       -- FK to STRIP.Value
+            STRIP       int             NULL,       -- FK to STRIP.Value
 
             -- ── Environmental ────────────────────────────────────────────────
-            BEAUFORT    varchar(4)      NULL,       -- FK to Beaufort.Value (sea state 0-9)
+            BEAUFORT    int             NULL,       -- FK to Beaufort.Value (sea state 0-9)
             CLOUD       int             NULL,       -- FK to Cloud.Value
-            GLAREL      varchar(4)      NULL,       -- FK to GLARE.Value (left)
-            GLARER      varchar(4)      NULL,       -- FK to GLARE.Value (right)
+            GLAREL      int             NULL,       -- FK to GLARE.Value (left)
+            GLARER      int             NULL,       -- FK to GLARE.Value (right)
             WX          varchar(4)      NULL,       -- FK to WX.Value
             VISIBLTY    decimal(8,2)    NULL,       -- visibility in nautical miles
             SURFTEMP    decimal(8,2)    NULL,       -- sea surface temperature
@@ -77,34 +77,34 @@ BEGIN TRY
             -- ── Sighting ─────────────────────────────────────────────────────
             SIGHTNO     int             NULL,       -- sighting number; NULL on non-sighting rows
             SPECCODE    varchar(8)      NULL,       -- FK to SPECCODE.Value
-            TAXCODE     varchar(4)      NULL,       -- FK to TAXCODE.Value
+            TAXCODE     int             NULL,       -- FK to TAXCODE.Value
             NUMBER      int             NULL,       -- group size (best estimate)
             NUMCALF     int             NULL,       -- calf count within group
             CONFIDNC    int             NULL,       -- FK to Confidnc.Value (size-estimate confidence)
             IDREL       int             NULL,       -- FK to IDREL.Value (ID reliability)
-            PHOTOS      varchar(4)      NULL,       -- FK to PHOTOS.Value
+            PHOTOS      int             NULL,       -- FK to PHOTOS.Value
 
             -- ── Geometry ─────────────────────────────────────────────────────
             ANGLEL      smallint        NULL,       -- perpendicular angle left of trackline
             ANGLER      smallint        NULL,       -- perpendicular angle right of trackline
-            ANHEAD      varchar(4)      NULL,       -- FK to ANHEAD.Value (animal heading code)
+            ANHEAD      int             NULL,       -- FK to ANHEAD.Value (animal heading code, 0-15)
 
             -- ── Behavior codes (up to 15 per sighting) ───────────────────────
-            BEHAV1      varchar(4)      NULL,       -- FK to Behave.Value
-            BEHAV2      varchar(4)      NULL,
-            BEHAV3      varchar(4)      NULL,
-            BEHAV4      varchar(4)      NULL,
-            BEHAV5      varchar(4)      NULL,
-            BEHAV6      varchar(4)      NULL,
-            BEHAV7      varchar(4)      NULL,
-            BEHAV8      varchar(4)      NULL,
-            BEHAV9      varchar(4)      NULL,
-            BEHAV10     varchar(4)      NULL,
-            BEHAV11     varchar(4)      NULL,
-            BEHAV12     varchar(4)      NULL,
-            BEHAV13     varchar(4)      NULL,
-            BEHAV14     varchar(4)      NULL,
-            BEHAV15     varchar(4)      NULL,
+            BEHAV1      int             NULL,       -- FK to Behave.Value
+            BEHAV2      int             NULL,
+            BEHAV3      int             NULL,
+            BEHAV4      int             NULL,
+            BEHAV5      int             NULL,
+            BEHAV6      int             NULL,
+            BEHAV7      int             NULL,
+            BEHAV8      int             NULL,
+            BEHAV9      int             NULL,
+            BEHAV10     int             NULL,
+            BEHAV11     int             NULL,
+            BEHAV12     int             NULL,
+            BEHAV13     int             NULL,
+            BEHAV14     int             NULL,
+            BEHAV15     int             NULL,
 
             CONSTRAINT PK_Master PRIMARY KEY CLUSTERED (Master_ID ASC)
         );
