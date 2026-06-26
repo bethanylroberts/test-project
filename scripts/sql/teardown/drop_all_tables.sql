@@ -15,7 +15,7 @@
  * any order. Master is dropped first for explicitness.
  */
 
-USE NARWC;
+USE NARWCDB;
 GO
 
 BEGIN TRANSACTION;

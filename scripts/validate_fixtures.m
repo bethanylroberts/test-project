@@ -1,5 +1,5 @@
-function smoke_validate()
-% SMOKE_VALIDATE Run validation pass over all survey CSV fixtures
+function validate_fixtures()
+% validate_fixtures Run validation pass over all survey CSV fixtures
 %
 % Runs SurveyValidator on every survey-pattern CSV in tests/fixtures/sample_data/
 % and prints a summary table.  Log output from the validator appears before the
@@ -10,18 +10,17 @@ function smoke_validate()
 %
 % Usage:
 %   startup()
-%   smoke_validate()
+%   validate_fixtures()
 
-% FIXME: this is an integration test and should probably be in the tests directory
 
 if isempty(which('get_config'))
-    error('smoke_validate:NotInitialized', ...
-        'Run startup() before calling smoke_validate()');
+    error('validate_fixtures:NotInitialized', ...
+        'Run startup() before calling validate_fixtures()');
 end
 
 reload_config();
 
-logger = logging.Logger('narwc.scripts.smoke_validate');
+logger = logging.Logger('narwc.scripts.validate_fixtures');
 
 fixture_dir = fullfile('tests', 'fixtures', 'sample_data');
 all_csv     = dir(fullfile(fixture_dir, '*.csv'));

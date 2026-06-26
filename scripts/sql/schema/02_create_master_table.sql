@@ -21,7 +21,7 @@
  *   curation/recent_uploads.sql. Not implemented in this version.
  */
 
-USE NARWC;
+USE NARWCDB;
 GO
 
 IF NOT EXISTS (

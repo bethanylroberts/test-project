@@ -25,10 +25,10 @@ path for a personal pipeline shakedown before onboarding team members. See
 ```matlab
 startup();
 parser = narwc.io.parsers.StandardFormat();
-[data, ~] = parser.parse('tests/fixtures/sample_data/aT11110.csv');
+[data, ~] = parser.parse('tests/fixtures/sample_data/oT06129.csv');
 validator = narwc.validation.SurveyValidator();
 [is_valid, results] = validator.validate(data);
-disp(results.summary)
+results.summary
 ```
 
 Expect: `is_valid` is `true` or `false`; `results.summary` shows error/warning counts.
@@ -52,7 +52,7 @@ repo root.
 ### Step 2 — Load a Survey CSV
 
 ```matlab
-file_path = 'tests/fixtures/sample_data/aT11110.csv';
+file_path = 'tests/fixtures/sample_data/oT06129.csv';
 parser = narwc.io.parsers.StandardFormat();
 [data, metadata] = parser.parse(file_path);
 fprintf('Loaded %d rows, %d columns\n', height(data), width(data));
@@ -131,7 +131,7 @@ survey. Fill in the values from Step 4.
 Open `data/overrides.csv` in a text editor and append one line:
 
 ```
-aT11110,<EVENTNO>,<field>,<rule_id>,rss,2026-06-26,walkthrough test override
+oT06129,<EVENTNO>,<field>,<rule_id>,rss,2026-06-26,walkthrough test override
 ```
 
 Replace `<EVENTNO>`, `<field>`, and `<rule_id>` with the values from Step 4.
@@ -144,6 +144,8 @@ validator2 = narwc.validation.SurveyValidator();
 fprintf('Warnings after per-row override: %d new, %d acknowledged\n', ...
     results2.summary.warnings_new, results2.summary.warnings_acknowledged_per_row);
 ```
+
+Note, you need to make a new `SurveyValidator` instance or it will not update the overrides.
 
 **What to observe:** `results2.summary.warnings_acknowledged_per_row` increments by 1.
 The overridden warning moves from `results2.warnings` to `results2.info`. If
@@ -159,7 +161,7 @@ for a survey, regardless of EVENTNO. Leave the `eventno` column empty.
 Append to `data/overrides.csv`:
 
 ```
-aT11110,,<field>,<rule_id>,rss,2026-06-26,per-survey walkthrough test
+oT06129,,<field>,<rule_id>,rss,2026-06-26,per-survey walkthrough test
 ```
 
 Re-validate:
@@ -178,6 +180,7 @@ for override precedence.
 
 ### Step 7 — Run Validation on the High-Volume Fixture
 
+
 ```matlab
 file_vol = 'tests/fixtures/sample_data/aT99001_volume.csv';
 parser_vol = narwc.io.parsers.StandardFormat();
@@ -189,6 +192,13 @@ validator_vol = narwc.validation.SurveyValidator();
 disp(results_vol.summary)
 ```
 
+Add line to `data/overrides.csv`.
+```
+aT99001,,BEHAV,behavioral_rules.calf_behavior_no_calf,rjs,2026-06-26,walkthrough test override
+```
+
+And run again.
+
 **What to observe:** Validation completes without timeout. `results_vol.summary`
 shows the aggregate counts across all rows. This fixture is used to catch
 performance regressions; a reasonable run should complete in a few seconds.
@@ -197,18 +207,19 @@ performance regressions; a reasonable run should complete in a few seconds.
 
 ### Step 8 — Run the Smoke Test Driver
 
-`smoke_validate` runs validation over every survey fixture in
+`validate_fixtures` runs validation over every survey fixture in
 `tests/fixtures/sample_data/` and prints a summary table.
 
 ```matlab
 startup();    % if not already done
-smoke_validate()
+validate_fixtures()
 ```
 
-**What to observe:** A table is printed with one row per fixture file showing ROWS,
-ERRORS, WARN, ACK_ROW, ACK_SURV, VALID, and elapsed time. TOTALS row at the bottom.
-Any fixture in the FAILED state indicates a parser or validator crash — investigate
-that fixture before proceeding.
+**What to observe:** A table is printed with one row per fixture file showing
+ROWS, ERRORS, WARN, ACK_ROW, ACK_SURV, VALID, and elapsed time. TOTALS row at
+the bottom. Any fixture in the FAILED state indicates a parser or validator
+crash — investigate that fixture before proceeding. Correct it by investigating
+each and adding a line to `data/overrides.csv`
 
 ---
 
