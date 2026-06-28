@@ -214,7 +214,7 @@ Four-digit calendar year. Required for all records. Formerly stored as two digit
 | Lookup  | `data/tables/MONTH.csv` (16 rows) |
 | Surveys | All                               |
 
-Calendar month (1–12). `datetime_rules.m` enforces 1 ≤ MONTH ≤ 12. The MONTH.csv lookup has 16 rows; the extra rows likely reflect display labels or metadata entries in the SQL Server table and do not affect the valid range.
+Calendar month (1–12). `datetime_rules.m` enforces 1 ≤ MONTH ≤ 12. The MONTH.csv lookup has 16 rows; the extra rows are for the seasons (winter, spring, summer, fall)
 
 #### DAY
 |         |          |
@@ -678,7 +678,7 @@ The required-fields list in `required_fields.m` is marked with a FIXME noting it
 
 ## 5. Lookup Table Inventory
 
-All files are in `data/tables/`. They are CSV snapshots exported from the production SQL Server database via `scripts/setup/update_lookup_tables.m`. The production database is authoritative; these snapshots may drift from the live database as codes are added or retired.
+All files are in `data/tables/`. They are CSV snapshots exported from the production SQL Server database via `scripts/setup/pull_lookup_tables.m`. The production database is authoritative; these snapshots may drift from the live database as codes are added or retired.
 
 | File            | Rows | Constrains field(s) | Notes                                                                    |
 | --------------- | ---- | ------------------- | ------------------------------------------------------------------------ |

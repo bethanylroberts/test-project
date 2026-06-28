@@ -1,13 +1,13 @@
 # data/tables — Lookup Table Snapshots
 
 These CSV files are snapshots exported from the production SQL database via
-`scripts/setup/update_lookup_tables.m`. They are committed to the repository
+`scripts/setup/pull_lookup_tables.m`. They are committed to the repository
 to enable validation-rule development and testing on machines that do not have
 direct database access.
 
 **The production database is authoritative.** These files may drift from the
 live DB as codes are added or retired. Refresh them by running
-`update_lookup_tables.m` (database → CSV direction).
+`pull_lookup_tables.m` (database → CSV direction).
 
 ## Files
 

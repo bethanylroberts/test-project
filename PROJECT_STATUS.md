@@ -1,6 +1,6 @@
 # NARWC Database Project — Status
 
-_Branch: refactor | Last updated: 2026-06-26_
+_Branch: refactor | Last updated: 2026-06-26 (evening)_
 
 ---
 
@@ -99,10 +99,16 @@ NARWC-DB/
 │   │   ├── step3_validate_migration.m      # Step 3: analyzes results, generates report
 │   │   ├── run_full_migration.m            # Runs steps 1–3 in sequence
 │   │   └── generate_migration_report.m     # Produces markdown/HTML report + charts
-│   ├── sql/                            # (planned)
+│   ├── sql/                            # T-SQL schema and operational scripts — see scripts/sql/README.md
+│   │   ├── schema/                     # 01–06: create DB → tables → indexes → FKs → populate lookups
+│   │   ├── verification/               # Row counts, FK integrity checks
+│   │   ├── curation/                   # delete_survey, find_duplicates, recent_uploads
+│   │   ├── migration/                  # apply_known_fixes stub
+│   │   └── teardown/                   # drop_all_tables, truncate_master (dev only)
 │   └── setup/
 │       ├── test_connection.m               # Quick DB connection test
-│       └── update_lookup_tables.m          # Pushes local CSV lookup tables to DB
+│       ├── pull_lookup_tables.m            # Pulls lookup tables from DB into local CSVs
+│       └── push_lookup_tables.m            # Pushes local CSV lookup tables into DB
 │
 ├── tests/
 │   ├── test_runner.m / run_*.m         # Test runner infrastructure
@@ -142,9 +148,10 @@ NARWC-DB/
 
 ## 4. Active work
 
+- **SQL Server schema deployment** — all 6 schema scripts written (`scripts/sql/schema/`); next step is filling in the `<FILL_IN>` path in `06_populate_lookup_tables.sql` and running scripts 01–06 against the SQL Server instance. See `handoffs/db_setup_handoff.md`.
 - **Personal pipeline walkthrough** (Russ) — run the full migration end-to-end on a local copy to surface remaining blockers; not yet started
 - **Lookup table updates** (Category A, 19 codes) — add missing platform codes (13), species codes (5), behavior codes (2), ANHEAD codes (2), BLOCK code (MB), GLARE code (9) to `data/tables/`; prerequisite for most remaining FK validation failures; pending Bob confirmation on each entry
-- **ANHEAD lookup expansion** — clarify whether ANHEAD=19 is valid or a sentinel; add full 19-code compass rose (codes 0–22 minus gaps); requires domain expert input
+- **ANHEAD lookup expansion** — clarify whether ANHEAD=19 is valid or a sentinel; requires domain expert input
 - **`apply_known_fixes.m` side-script** (Category C) — mirrors Bob's SAS macro corrections to our copy of the legacy data; not yet started
 - **Package layout refactor** — rename `+io/` → `+ingestion/` (parsers), move `BatchUploader` to `+db/`, extract single-survey `Uploader` from `BatchUploader`; pre-August handoff goal
 - **SAS rule porting** — port SAS QC checks (`scripts/sas/Chk*.sas`) to MATLAB validation rules; TAXCODE-aware NUMBER thresholds first
@@ -154,17 +161,14 @@ NARWC-DB/
 ## 5. Recent commits
 
 ```
-2026-06-26 Refactor PROJECT_STATUS.md for readability and maintainability
-2026-06-26 93c0c7e Vectorize behavioral_rules, fix formatErrorDetails EVENTNO, clean up smoke_validate
-2026-06-25 7498bb6 Add smoke_validate script and synthetic volume fixture
-2026-06-25 73381a1 Add per-survey override mode to acknowledgement system
-2026-06-25 eea3002 Add per-warning override system to replace binary AllowWarnings toggle
-2026-06-25 1fcd847 Merge branch 'refactor' of https://github.com/rshom/NARWC-DB into refactor
-2026-06-25 bb6221a added sas scripts
-2026-06-24 405084d Relocate SurveyExtractor to +narwc/+ingestion and add transaction-safe overwrite
-2026-06-24 e8233bd Fix off-by-one in test_characterization_extractor row count expectations
-2026-06-24 dc4aa4a Add test baseline: skip-if-no-DB, remove deleted-code tests, characterization tests
-2026-06-24 1fc4ccd generated fixtures
+2026-06-26 ade7fe1 debugging some sql stuff
+2026-06-26 875f69c Updated the tests and files to match actual surveys and pass tests
+2026-06-26 bb65c5e Add scripts/sql/ scaffolding for DB-side scripts
+2026-06-26 10b275a Add pipeline walkthrough doc for curator onboarding
+2026-06-26 abb08f6 Refactor PROJECT_STATUS.md for readability and maintainability
+2026-06-26         SQL schema scripts fully written: all 6 schema files, docs/database_schema.md,
+                   scripts/sql/README.md, handoffs/db_setup_handoff.md. Fixed USE NARWC → USE NARWCDB
+                   across all non-schema scripts. Fixed BLOCK check bug in check_fk_integrity.sql.
 ```
 
 ---
@@ -245,7 +249,7 @@ _Status as of 2026-06-23; refresh after lookup table updates land._
 | GLARE.csv    | 9 (legacy missing-value sentinel — add or null-ify existing values)                                      |
 | PLATFORM.csv | 70, 193, 194, 266, 268, 280, 325, 329, 330, 332, 573, 637, 644 (all 13 absent from PLATFORM.csv)        |
 
-Adding these codes and running `scripts/setup/update_lookup_tables.m` is the prerequisite for resolving the majority of FK validation failures in the legacy data.
+Adding these codes and running `scripts/setup/push_lookup_tables.m` is the prerequisite for resolving the majority of FK validation failures in the legacy data.
 
 ---
 
