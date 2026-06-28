@@ -1,7 +1,7 @@
 /*
  * 03_create_lookup_tables.sql
  *
- * Purpose:    Create all 23 lookup tables referenced by the Master table.
+ * Purpose:    Create all 24 lookup tables referenced by the Master table.
  *             Table structures are derived from the recovered 2025-06-16 SSMS
  *             export, with corrected Value column types, PRIMARY KEY on each
  *             Value, and sane varchar widths sized to actual CSV data.
@@ -212,6 +212,22 @@ BEGIN TRY
         );
         PRINT 'Table LEGTYPE created.';
     END
+
+    -- ── MONTH ─────────────────────────────────────────────────────────────────
+    -- Note: includes 4 season codes (13-16) in addition to the 12 calendar months.
+    IF NOT EXISTS (
+        SELECT * FROM sys.tables WHERE name = N'MONTH' AND type = 'U'
+    )
+    BEGIN
+        CREATE TABLE MONTH (
+            Value       tinyint         NOT NULL,
+            Description varchar(255)    NULL,
+            CONSTRAINT PK_MONTH PRIMARY KEY CLUSTERED (Value ASC)
+        );
+        PRINT 'Table MONTH created.';
+    END
+    ELSE
+        PRINT 'Table MONTH already exists; skipping creation.';
 
     -- ── OLDVIZ ────────────────────────────────────────────────────────────────
     -- Not currently FK'd from Master; retained for legacy reference

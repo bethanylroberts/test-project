@@ -25,10 +25,10 @@
  * FKs are added idempotently: each ALTER TABLE is wrapped in an existence
  * check so re-running the script is safe.
  *
- * Total FK constraints: 34
+ * Total FK constraints: 35
  *   ANHEAD(1), BEAUFORT(1), BEHAV1-15(15), BLOCK(1), CLOUD(1),
  *   CONFIDNC(1), DDSOURCE(1), GLAREL(1), GLARER(1), IDREL(1),
- *   IDSOURCE(1), LEGSTAGE(1), LEGTYPE(1), PHOTOS(1), PLATFORM(1),
+ *   IDSOURCE(1), LEGSTAGE(1), LEGTYPE(1), MONTH(1), PHOTOS(1), PLATFORM(1),
  *   SPECCODE(1), STRATUM(1), STRIP(1), TAXCODE(1), WX(1)
  */
 
@@ -347,6 +347,18 @@ BEGIN TRY
         PRINT 'FK FK_Master_LEGTYPE added.';
     END
 
+    -- ── MONTH ─────────────────────────────────────────────────────────────────
+    IF NOT EXISTS (
+        SELECT * FROM sys.foreign_keys
+        WHERE name = N'FK_Master_MONTH'
+          AND parent_object_id = OBJECT_ID('Master')
+    )
+    BEGIN
+        ALTER TABLE Master ADD CONSTRAINT FK_Master_MONTH
+            FOREIGN KEY (MONTH) REFERENCES MONTH(Value);
+        PRINT 'FK_Master_MONTH added.';
+    END
+
     -- ── PHOTOS ────────────────────────────────────────────────────────────────
     IF NOT EXISTS (
         SELECT * FROM sys.foreign_keys
@@ -432,7 +444,7 @@ BEGIN TRY
     END
 
     COMMIT TRANSACTION;
-    PRINT 'Foreign key constraint creation complete (34 constraints).';
+    PRINT 'Foreign key constraint creation complete (35 constraints).';
 END TRY
 BEGIN CATCH
     IF @@TRANCOUNT > 0 ROLLBACK TRANSACTION;

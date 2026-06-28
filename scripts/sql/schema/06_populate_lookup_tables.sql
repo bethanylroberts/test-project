@@ -259,6 +259,21 @@ BULK INSERT LEGTYPE
 PRINT 'LEGTYPE populated.';
 GO
 
+-- ── MONTH ─────────────────────────────────────────────────────────────────────
+TRUNCATE TABLE MONTH;
+BULK INSERT MONTH
+    FROM '<FILL_IN>MONTH.csv'
+    WITH (
+        FIRSTROW        = 2,
+        FIELDTERMINATOR = ',',
+        FIELDQUOTE      = '"',
+        ROWTERMINATOR   = '\n',
+        CODEPAGE        = 'ACP',
+        TABLOCK
+    );
+PRINT 'MONTH populated.';
+GO
+
 -- ── OLDVIZ ────────────────────────────────────────────────────────────────────
 TRUNCATE TABLE OLDVIZ;
 BULK INSERT OLDVIZ

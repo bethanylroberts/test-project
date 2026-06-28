@@ -104,7 +104,41 @@ classdef test_validation < matlab.unittest.TestCase
             % Should have errors
             testCase.verifyGreaterThan(collector.getErrorCount('error'), 0);
         end
-        
+
+        function testMonthSeasonCodes(testCase)
+            % MONTH 1-12 (calendar) and 13-16 (season codes) are all valid;
+            % 0 and 17 are out of range.
+
+            data = table();
+            data.YEAR  = [2020; 2020; 2020; 2020];
+            data.MONTH = [6; 14; 17; 0];
+            data.DAY   = [15; NaN; 10; 5];
+            data.TIME  = [120000; 0; 0; 0];
+
+            collector = narwc.validation.ErrorCollector();
+            narwc.validation.rules.datetime_rules(data, collector);
+
+            errors = collector.getErrors('error');
+            % row may be a vector when multiple rows fail a single rule;
+            % gather all row indices from MONTH-field errors.
+            invalid_months = [];
+            for k = 1:length(errors)
+                if strcmp(errors(k).field, 'MONTH')
+                    invalid_months = [invalid_months; errors(k).row(:)]; %#ok<AGROW>
+                end
+            end
+
+            % Rows 3 (MONTH=17) and 4 (MONTH=0) must fail; rows 1 and 2 must not.
+            testCase.verifyTrue(ismember(3, invalid_months), ...
+                'MONTH=17 should be invalid');
+            testCase.verifyTrue(ismember(4, invalid_months), ...
+                'MONTH=0 should be invalid');
+            testCase.verifyFalse(ismember(1, invalid_months), ...
+                'MONTH=6 should be valid');
+            testCase.verifyFalse(ismember(2, invalid_months), ...
+                'MONTH=14 (season code) should be valid');
+        end
+
         function testBeaufortValidation(testCase)
             % Test Beaufort scale validation
             

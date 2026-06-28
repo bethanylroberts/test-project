@@ -55,10 +55,10 @@ function validate_year(data, collector, config)
 end
 
 function validate_month(data, collector, config) %#ok<INUSD>
-    invalid_idx = find(data.MONTH < 1 | data.MONTH > 12);
+    invalid_idx = find(data.MONTH < 1 | data.MONTH > 16);
     if ~isempty(invalid_idx)
         collector.addError('MONTH', invalid_idx, ...
-            'MONTH must be between 1 and 12', 'error', 'datetime_rules.month_out_of_range');
+            'MONTH must be between 1 and 16 (1-12 calendar months, 13-16 season codes)', 'error', 'datetime_rules.month_out_of_range');
     end
 end
 
@@ -102,7 +102,8 @@ function validate_time(data, collector, config) %#ok<INUSD>
 end
 
 function validate_date_combination(data, collector, config) %#ok<INUSD>
-    valid_idx = find(~isnan(data.YEAR) & ~isnan(data.MONTH) & ~isnan(data.DAY));
+    % Season codes 13-16 are not calendar months; skip datetime check for those rows.
+    valid_idx = find(~isnan(data.YEAR) & ~isnan(data.MONTH) & ~isnan(data.DAY) & data.MONTH <= 12);
     for i = 1:length(valid_idx)
         idx = valid_idx(i);
         try

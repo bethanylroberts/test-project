@@ -30,7 +30,7 @@ The database has two kinds of tables:
 
 - **Master** — one row per survey event (sighting, effort record, leg marker, watch
   transition). This is the primary data table.
-- **Lookup tables** (23 tables) — one row per valid code value. Each lookup table has
+- **Lookup tables** (24 tables) — one row per valid code value. Each lookup table has
   a `Value` column (the code) and a `Description` column. Several tables carry
   additional domain-specific columns.
 
@@ -52,7 +52,7 @@ This provides a stable row handle for curation queries and deletes without requi
 | FILEID | `varchar(20)` | NOT NULL | Survey file code; 6–8 chars in practice |
 | EVENTNO | `int` | NOT NULL | Sequential event number within file |
 | YEAR | `smallint` | NULL | 4-digit year |
-| MONTH | `tinyint` | NULL | 1–12 |
+| MONTH | `tinyint` | NULL | 1–16; FK → MONTH(Value) |
 | DAY | `tinyint` | NULL | 1–31 |
 | TIME | `int` | NULL | HHMMSS integer, UTC |
 | S_TIME | `int` | NULL | Leg-start time, HHMMSS UTC |
@@ -139,6 +139,7 @@ without implicit conversion).
 | LEGGOOD | `varchar(2)` | *(none — not FK'd)* | Description | 2 |
 | LEGSTAGE | `int` | LEGSTAGE | Description | 9 |
 | LEGTYPE | `int` | LEGTYPE | Description | 9 |
+| MONTH | `tinyint` | MONTH | Description | 16 |
 | OLDVIZ | `varchar(2)` | *(none — retired field)* | Description | 5 |
 | PHOTOS | `int` | PHOTOS | Description | 5 |
 | PLATFORM | `int` | PLATFORM | Description | 283 |
@@ -168,18 +169,13 @@ foreign key constraint in the schema.
 here but are not FK'd from Master. OLDVIZ covers the retired negative-VISIBLTY codes
 (−1 to −5) that appear in pre-2020 archived data.
 
-**MONTH** is intentionally absent. The MONTH.csv snapshot has 16 rows (vs. 12 for a
-complete calendar), and MONTH validation is enforced in MATLAB by range check rather
-than lookup. Creating a MONTH table would require resolving the 4 unexplained extra
-rows and is deferred.
-
 ---
 
 ## Foreign Key Constraints
 
 **Script:** `schema/05_add_foreign_keys.sql`
 
-34 constraints from Master columns to lookup table `Value` columns. All use `WITH CHECK`
+35 constraints from Master columns to lookup table `Value` columns. All use `WITH CHECK`
 (the default), which verifies that existing rows satisfy the constraint at the time it
 is added. Because MATLAB validation rejects invalid codes before upload, this should
 always succeed on a clean database. If it fails, investigate the offending rows before
@@ -214,6 +210,7 @@ switching to `WITH NOCHECK`.
 | FK_Master_IDSOURCE | IDSOURCE | IDSOURCE(Value) |
 | FK_Master_LEGSTAGE | LEGSTAGE | LEGSTAGE(Value) |
 | FK_Master_LEGTYPE | LEGTYPE | LEGTYPE(Value) |
+| FK_Master_MONTH | MONTH | MONTH(Value) |
 | FK_Master_PHOTOS | PHOTOS | PHOTOS(Value) |
 | FK_Master_PLATFORM | PLATFORM | PLATFORM(Value) |
 | FK_Master_SPECCODE | SPECCODE | SPECCODE(Value) |
@@ -345,7 +342,7 @@ The database has two kinds of tables:
 
 - **Master** — one row per survey event (sighting, effort record, leg marker, watch
   transition). This is the primary data table.
-- **Lookup tables** (23 tables) — one row per valid code value. Each lookup table has
+- **Lookup tables** (24 tables) — one row per valid code value. Each lookup table has
   a `Value` column (the code) and a `Description` column. Several tables carry
   additional domain-specific columns.
 
@@ -367,7 +364,7 @@ This provides a stable row handle for curation queries and deletes without requi
 | FILEID | `varchar(20)` | NOT NULL | Survey file code; 6–8 chars in practice |
 | EVENTNO | `int` | NOT NULL | Sequential event number within file |
 | YEAR | `smallint` | NOT NULL | 4-digit year; required for all records |
-| MONTH | `tinyint` | NULL | 1–12 |
+| MONTH | `tinyint` | NULL | 1–16; FK → MONTH(Value) |
 | DAY | `tinyint` | NULL | 1–31 |
 | TIME | `int` | NULL | HHMMSS integer, UTC |
 | S_TIME | `int` | NULL | Leg-start time, HHMMSS UTC |
@@ -458,6 +455,7 @@ without implicit conversion).
 | LEGGOOD | `varchar(2)` | *(none — not FK'd)* | Description | 2 |
 | LEGSTAGE | `int` | LEGSTAGE | Description | 9 |
 | LEGTYPE | `int` | LEGTYPE | Description | 9 |
+| MONTH | `tinyint` | MONTH | Description | 16 |
 | OLDVIZ | `varchar(2)` | *(none — retired field)* | Description | 5 |
 | PHOTOS | `int` | PHOTOS | Description | 5 |
 | PLATFORM | `int` | PLATFORM | Description | 283 |
@@ -487,10 +485,10 @@ foreign key constraint in the schema.
 here but are not FK'd from Master. OLDVIZ covers the retired negative-VISIBLTY codes
 (−1 to −5) that appear in pre-2020 archived data.
 
-**MONTH** is intentionally absent. The MONTH.csv snapshot has 16 rows (vs. 12 for a
-complete calendar), and MONTH validation is enforced in MATLAB by range check rather
-than lookup. Creating a MONTH table would require resolving the 4 unexplained extra
-rows and is deferred.
+**MONTH** has 16 rows: values 1–12 for calendar months and values 13–16 for season
+codes (Winter, Spring, Summer, Fall). The column names are `Value` (`tinyint`) and
+`Description` (`varchar(255)`), matching the standard two-column layout. FK constraint
+`FK_Master_MONTH` references `MONTH(Value)`. MATLAB validation accepts 1–16 to match.
 
 ---
 
@@ -498,7 +496,7 @@ rows and is deferred.
 
 **Script:** `schema/05_add_foreign_keys.sql`
 
-34 constraints from Master columns to lookup table `Value` columns. All use `WITH CHECK`
+35 constraints from Master columns to lookup table `Value` columns. All use `WITH CHECK`
 (the default), which verifies that existing rows satisfy the constraint at the time it
 is added. Because MATLAB validation rejects invalid codes before upload, this should
 always succeed on a clean database. If it fails, investigate the offending rows before
@@ -533,6 +531,7 @@ switching to `WITH NOCHECK`.
 | FK_Master_IDSOURCE | IDSOURCE | IDSOURCE(Value) |
 | FK_Master_LEGSTAGE | LEGSTAGE | LEGSTAGE(Value) |
 | FK_Master_LEGTYPE | LEGTYPE | LEGTYPE(Value) |
+| FK_Master_MONTH | MONTH | MONTH(Value) |
 | FK_Master_PHOTOS | PHOTOS | PHOTOS(Value) |
 | FK_Master_PLATFORM | PLATFORM | PLATFORM(Value) |
 | FK_Master_SPECCODE | SPECCODE | SPECCODE(Value) |

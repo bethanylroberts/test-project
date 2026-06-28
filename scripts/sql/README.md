@@ -23,14 +23,14 @@ connections are established externally (SSMS, sqlcmd, or MATLAB Database Toolbox
 
 Run the `schema/` scripts in this order from a connection to the SQL Server instance:
 
-| Step | File                                   | What it does                                                                                                                       |
-| ---- | -------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
-| 1    | `schema/01_create_database.sql`        | Creates the NARWCDB database with `SQL_Latin1_General_CP1_CI_AS` collation. Connect to `[master]` first.                           |
-| 2    | `schema/02_create_master_table.sql`    | Creates the `Master` table with a surrogate `Master_ID` primary key and all 55 survey fields.                                      |
-| 3    | `schema/03_create_lookup_tables.sql`   | Creates all 23 lookup tables (ANHEAD, Beaufort, Behave, …) with a primary key on each `Value` column.                              |
-| 4    | `schema/04_create_indexes.sql`         | Adds non-clustered indexes on `Master` for common query patterns (FILEID, YEAR, SPECCODE, LAT/LONG, PLATFORM).                     |
-| 5    | `schema/05_add_foreign_keys.sql`       | Adds 34 foreign key constraints from `Master` columns to their lookup tables.                                                      |
-| 6    | `schema/06_populate_lookup_tables.sql` | Bulk-loads lookup table CSVs from `data/tables/`. **Requires a file-path placeholder to be filled in first — see the note below.** |
+| Step | File | What it does |
+|------|------|--------------|
+| 1 | `schema/01_create_database.sql` | Creates the NARWCDB database with `SQL_Latin1_General_CP1_CI_AS` collation. Connect to `[master]` first. |
+| 2 | `schema/02_create_master_table.sql` | Creates the `Master` table with a surrogate `Master_ID` primary key and all 55 survey fields. |
+| 3 | `schema/03_create_lookup_tables.sql` | Creates all 24 lookup tables (ANHEAD, Beaufort, Behave, …) with a primary key on each `Value` column. |
+| 4 | `schema/04_create_indexes.sql` | Adds non-clustered indexes on `Master` for common query patterns (FILEID, YEAR, SPECCODE, LAT/LONG, PLATFORM). |
+| 5 | `schema/05_add_foreign_keys.sql` | Adds 35 foreign key constraints from `Master` columns to their lookup tables. |
+| 6 | `schema/06_populate_lookup_tables.sql` | Bulk-loads lookup table CSVs from `data/tables/`. **Requires a file-path placeholder to be filled in first — see the note below.** |
 
 Steps 4 and 5 can be swapped (FKs before indexes) but the listed order is recommended:
 FK validation scans the referenced table, and existing indexes make that faster.
@@ -71,9 +71,9 @@ Full design rationale is in `docs/database_schema.md`. Brief summary:
   invalid codes before upload. The constraints document schema intent for future
   maintainers and prevent manual data entry mistakes.
 
-- **MONTH table** is intentionally absent from the schema. The MONTH.csv snapshot
-  has 16 rows (vs. 12 expected) and MONTH validation is enforced in MATLAB by
-  range check, not by lookup. MONTH is not populated via BULK INSERT.
+- **MONTH table** includes 16 rows: 12 calendar months (1–12) plus 4 season codes
+  (13 = Winter, 14 = Spring, 15 = Summer, 16 = Fall). MATLAB validation accepts
+  values 1–16 to match the FK constraint.
 
 ---
 
