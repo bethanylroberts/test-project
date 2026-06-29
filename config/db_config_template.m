@@ -5,6 +5,10 @@ function config = db_config_template()
     %   1. Copy this file to 'db_config.m'
     %   2. Fill in your database credentials
     %   3. Do NOT commit db_config.m to version control
+
+    % FIXME: this is now stored in `get_config.m`. That needs to use a template
+    % because it should not be exposed to the public repo. (Fine for now because
+    % localhost and passwords will change.)
     
     % Database type: 'MySQL', 'PostgreSQL', or 'SQLServer'
     config.Type = 'MySQL';
