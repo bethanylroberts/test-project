@@ -61,7 +61,7 @@ classdef test_characterization_batch < matlab.unittest.TestCase
                      fullfile(pending_dir, 'HT63070.csv'));
 
             conn = MockBatchConn();
-            converter = narwc.ingestion.BatchUploader(conn, base_dir, 'LegacyMode', true);
+            converter = narwc.ingestion.BatchUploader(conn, base_dir);
             converter.uploadFromFolder('Validate', false);
 
             stats = converter.getStats();
@@ -93,7 +93,7 @@ classdef test_characterization_batch < matlab.unittest.TestCase
                      fullfile(pending_dir, 'fT00157.csv'));
 
             conn = MockBatchConn();
-            converter = narwc.ingestion.BatchUploader(conn, base_dir, 'LegacyMode', true);
+            converter = narwc.ingestion.BatchUploader(conn, base_dir);
             converter.uploadFromFolder('Validate', false);
 
             testCase.verifyEqual(conn.fetch_call_count, 0, ...
@@ -320,7 +320,7 @@ classdef test_characterization_batch < matlab.unittest.TestCase
                      fullfile(pending_dir, 'fT00157.csv'));
 
             conn = MockBatchConn();
-            uploader = narwc.ingestion.BatchUploader(conn, base_dir, 'LegacyMode', true);
+            uploader = narwc.ingestion.BatchUploader(conn, base_dir);
             uploader.uploadFromFolder('Validate', false);
 
             testCase.verifyEqual(conn.begin_transaction_count, 0, ...

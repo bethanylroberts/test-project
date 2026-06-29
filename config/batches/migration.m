@@ -7,9 +7,12 @@ function overrides = migration()
 % Add fields here as the migration run surfaces new issues. Commented
 % examples below show the available fields.
 
-    overrides.validation.allow_unknown_lookup_codes  = true;
-    overrides.validation.overrides.csv_path          = fullfile('config', 'overrides', 'migration_overrides.csv');
-    overrides.pipeline.known_fixes.enabled           = true;
+    overrides.validation.allow_unknown_lookup_codes                    = true;
+    overrides.validation.environmental.visibility_allow_negative       = true;
+    overrides.validation.overrides.csv_path                           = fullfile('config', 'overrides', 'migration_overrides.csv');
+    overrides.pipeline.known_fixes.enabled                            = true;
+
+    overrides.validation.behavioral.calf_associated_behaviors   = [];
 
     % Additional fields — uncomment and adjust as needed:
     % overrides.validation.datetime.year_min = 1960;
