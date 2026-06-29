@@ -75,6 +75,16 @@ Full design rationale is in `docs/database_schema.md`. Brief summary:
   (13 = Winter, 14 = Spring, 15 = Summer, 16 = Fall). MATLAB validation accepts
   values 1–16 to match the FK constraint.
 
+- **SPECCODE and TAXCODE** each have two validation-threshold columns:
+  `typical_max_group` (int, NULL) and `typical_max_calf` (int, NULL). These are
+  read by `species_rules.m` to determine per-species or per-taxonomic-group
+  thresholds for NUMBER and NUMCALF warnings. SPECCODE thresholds override TAXCODE
+  thresholds; both fall back to config globals when NULL. Curators edit the CSVs
+  in `data/tables/` and re-run `push_lookup_tables.m` to apply changes without
+  touching MATLAB code. SPECCODE has 8 columns total; TAXCODE has 4 columns total.
+  To add these columns to an existing database, run
+  `migration/add_threshold_columns.sql`.
+
 ---
 
 ## Notes

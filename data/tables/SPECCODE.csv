@@ -1,318 +1,318 @@
-"Value","SPECNAME","SPECCHAR","SPECNUM","Type","TAXCODE"
-"ABDU","American Black Duck (Anas rubripes)","__","__","BIR",""
-"AC-J","Subsonic aircraft","__","__","HUMAN/DEBRI",""
-"AC-P","Propeller aircraft","__","__","HUMAN/DEBRI",""
-"AC-S","Supersonic aircraft","__","__","HUMAN/DEBRI",""
-"AC-T","Turboprop aircraft","__","__","HUMAN/DEBRI",""
-"AMAL","American Alligator (Alligator mississippiensis)","__","__","NARWC",9
-"ANSH","Angel Shark (Squatina dumerili)","__","__","NARWC",6
-"ARTE","Arctic Tern (Sterna paradisaea)","__","__","BIR",""
-"ASDO","Atlantic Spotted Dolphin (Stenella frontalis)","__","__","NARWC",3
-"ATBR","Atlantic Brant (Branta bernicla)","__","__","BIR",""
-"ATPU","Atlantic (Common) Puffin (Fratercula arctica)","__","__","BIR",""
-"AUSH","Audubons Shearwater (Puffinus lherminieri)","__","__","BIR",""
-"BASH","Basking Shark (Cetorhinus maximus)","YK",90,"NARWC",6
-"BBPL","Black-bellied Plover (Pluvialis squatarola)","__","__","BIR",""
-"BCPE","Black-capped Petrel (Pterodroma hasitata)","__","__","BIR",""
-"BELU","Beluga (Delphinapterus leucas)","FA",39,"NARWC",3
-"BESE","Bearded Seal (Erignathus barbatus)","__","__","NARWC",4
-"BEWH","Beaked Whale (Mesoplodon sp?)","EC",35,"NARWC",2
-"BFTU","Bluefin Tuna (Thunnus thynnus)","__","__","NARWC",7
-"BHGU","Common Black-headed Gull (Larus ridibundus)","__","__","BIR",""
-"BLBW","Blainvilles Beaked Whale (Mesoplodon densirostris)","__","__","NARWC",2
-"BLFI","Bluefish (Pomatomus saltatrix)","__","__","NARWC",7
-"BLGU","Black Guillemot (Cepphus grylle)","__","__","BIR",""
-"BLKI","Black-legged Kittiwake (Rissa tridactyla)","__","__","BIR",""
-"BLSC","Black Scoter (Melanitta nigra)","__","__","BIR",""
-"BLSH","Blue Shark (Prionace glauca)","YL",91,"NARWC",6
-"BLTE","Black Tern (Chlidonias niger)","__","__","BIR",""
-"BLWH","Blue Whale (Balaenoptera musculus)","CE",17,"NARWC",1
-"BODO","Bottlenose Dolphin (Tursiops truncatus)","HE",54,"NARWC",3
-"BOGU","Bonapartes Gull (Larus philadelphia)","__","__","BIR",""
-"BOWH","Bowhead Whale (Balaena mysticetus)","__","__","NARWC",1
-"BRNO","Brown Noddy (Anous minutus)","__","__","BIR",""
-"BRPE","Brown Pelican (Pelecanus occidentalis)","__","__","BIR",""
-"BRTE","Bridled Tern (Sterna anaethetus)","__","__","BIR",""
-"BRWH","Brydes Whale (Balaenoptera brydei)","CH",20,"NARWC",1
-"BSTP","Band-rumped Storm Petrel (Oceanodroma castro)","__","__","BIR",""
-"BT-H","Heavy boat traffic","__","__","HUMAN/DEBRI",""
-"BT-L","Light boat traffic","__","__","HUMAN/DEBRI",""
-"BT-M","Moderate boat traffic","__","__","HUMAN/DEBRI",""
-"BUFF","Bufflehead (Bucephala albeola)","__","__","BIR",""
-"CABL","Cable/pipe laying","__","__","HUMAN/DEBRI",""
-"CAGO","Canada Goose (Branta canadensis)","__","__","BIR",""
-"CATE","Caspian Tern (Sterna caspica)","__","__","BIR",""
-"CDRA","Chilean Devil Ray (Mobula tarapacana)","","","NARWC",7
-"CG-B","Coast Guard, buoy tender","__","__","HUMAN/DEBRI",""
-"CG-C","Coast Guard, cutter","__","__","HUMAN/DEBRI",""
-"CG-S","Coast Guard, security patrol boat","__","__","HUMAN/DEBRI",""
-"CG-U","Coast Guard, utility boat","__","__","HUMAN/DEBRI",""
-"CLDO","Clymene Dolphin (Stenella clymene)","KC",66,"NARWC",3
-"CNRA","Cow-Nosed Ray (Rhinoptera bonasus)","__","__","NARWC",7
-"COEI","Common Eider (Somateria mollissima)","__","__","BIR",""
-"COLO","Common Loon (Gavia immer)","__","__","BIR",""
-"COMU","Common Murre (Uria aalge)","__","__","BIR",""
-"COSH","Corys Shearwater (Calonectris diomedea)","__","__","BIR",""
-"COTE","Common Tern (Sterna hirundo)","__","__","BIR",""
-"CRSH","Cruise ship","__","__","HUMAN/DEBRI",""
-"DCCO","Double-crested Cormorant (Phalacrocorax auritus)","__","__","BIR",""
-"DE-B","Debris/pollution, balloon(s)","__","__","HUMAN/DEBRI",""
-"DE-F","Debris/pollution, flotsam (natural origin)","__","__","HUMAN/DEBRI",""
-"DE-G","Debris/pollution, loose/ghost fishing gear","__","__","HUMAN/DEBRI",""
-"DE-J","Debris/pollution, jetsam (human origin)","__","__","HUMAN/DEBRI",""
-"DE-O","Debris/pollution, oil slick or sheen","__","__","HUMAN/DEBRI",""
-"DE-P","Debris/pollution, plastic","__","__","HUMAN/DEBRI",""
-"DE-R","Debris/pollution, rope/line","__","__","HUMAN/DEBRI",""
-"DE-S","Debris/pollution, Sargassum/seaweed patches or lines","__","__","HUMAN/DEBRI",""
-"DE-U","Debris/pollution, unspecified/other","__","__","HUMAN/DEBRI",""
-"DE-W","Debris/pollution, wood","__","__","HUMAN/DEBRI",""
-"DIVE","Diver(s)","__","__","HUMAN/DEBRI",""
-"DOVE","Dovekie (Alle alle)","__","__","BIR",""
-"DOWI","Dowitcher sp. (Limnodromus sp.)","__","__","BIR",""
-"DR-D","Dredge, dumping","__","__","HUMAN/DEBRI",""
-"DR-T","Dredge, in transit","__","__","HUMAN/DEBRI",""
-"DR-U","Dredge, unspecified","__","__","HUMAN/DEBRI",""
-"DR-W","Dredge, in operation","__","__","HUMAN/DEBRI",""
-"DSWH","Dwarf Sperm Whale (Kogia sima)","__","__","NARWC",3
-"DU-G","Garbage dumping","__","__","HUMAN/DEBRI",""
-"DU-T","Toxic waste dumping","__","__","HUMAN/DEBRI",""
-"DUSH","Dusky Shark (Carcharhinus obscurus)","__","__","NARWC",6
-"EXPL","Explosive discharge","__","__","HUMAN/DEBRI",""
-"FE-H","Ferry, high-speed","__","__","HUMAN/DEBRI",""
-"FE-S","Ferry, standard type","__","__","HUMAN/DEBRI",""
-"FE-U","Ferry, unspecified","__","__","HUMAN/DEBRI",""
-"FG-A","Fixed fishing gear, aquaculture pens or facilities","__","__","HUMAN/DEBRI",""
-"FG-C","Fixed fishing gear, crab pot","__","__","HUMAN/DEBRI",""
-"FG-D","Fixed fishing gear, drift net","__","__","HUMAN/DEBRI",""
-"FG-G","Fixed fishing gear, sink gill net","__","__","HUMAN/DEBRI",""
-"FG-I","Fixed fishing gear, inshore lobster","__","__","HUMAN/DEBRI",""
-"FG-L","Fixed fishing gear, pelagic long line","__","__","HUMAN/DEBRI",""
-"FG-O","Fixed fishing gear, offshore lobster","__","__","HUMAN/DEBRI",""
-"FG-U","Fixed fishing gear, unspecified type","__","__","HUMAN/DEBRI",""
-"FIWH","Fin Whale (Balaenoptera physalus)","CF",18,"NARWC",1
-"FKWH","False Killer Whale (Pseudorca crassidens)","DF",27,"NARWC",3
-"FLFI","Flying Fish (Exocoetidae)","__","__","NARWC",7
-"FOTE","Forsters Tern (Sterna forsteri)","__","__","BIR",""
-"FRDO","Frasers Dolphin (Lagenodelphis hosei)","HF",55,"NARWC",3
-"FRNT","Front/visible water-mass boundary","__","__","HUMAN/DEBRI",""
-"FV-C","Fishing vessel, lobster/crab/other pot/trap fishery","__","__","HUMAN/DEBRI",""
-"FV-D","Fishing vessel, drift-netter","__","__","HUMAN/DEBRI",""
-"FV-F","Fishing vessel, unspecified/unknown fixed-gear","__","__","HUMAN/DEBRI",""
-"FV-G","Fishing vessel, gill-netter","__","__","HUMAN/DEBRI",""
-"FV-H","Fishing vessel, party (head) boat","__","__","HUMAN/DEBRI",""
-"FV-L","Fishing vessel, long-liner","__","__","HUMAN/DEBRI",""
-"FV-P","Fishing vessel, purse-seiner","__","__","HUMAN/DEBRI",""
-"FV-S","Fishing vessel, shrimper","__","__","HUMAN/DEBRI",""
-"FV-T","Fishing vessel, trawler/dragger","__","__","HUMAN/DEBRI",""
-"FV-U","Fishing vessel, unspecified type","__","__","HUMAN/DEBRI",""
-"FV-W","Fishing vessel, whale-watching","__","__","HUMAN/DEBRI",""
-"FV-Z","Fishing vessel, factory trawler","__","__","HUMAN/DEBRI",""
-"GBBG","Great Black-backed Gull (Larus marinus)","__","__","BIR",""
-"GEBW","Gervais Beaked Whale (Mesoplodon europaeus)","__","__","NARWC",2
-"GHSH","Great Hammerhead Shark (Sphyrna mokarran)","","","NARWC",6
-"GLGU","Glaucous Gull (Larus hyperboreus)","__","__","BIR",""
-"GOBW","Cuviers Beaked Whale (Ziphius cavirostris)","ED",36,"NARWC",2
-"GRAM","Rissos Dolphin (Grampus griseus)","FD",42,"NARWC",3
-"GRCO","Great Cormorant (Phalacrocorax carbo)","__","__","BIR",""
-"GRSC","Greater Scaup (Athya marila)?","__","__","BIR",""
-"GRSE","Gray Seal (Halichoerus grypus)","__","__","NARWC",4
-"GRSH","Greater Shearwater (Puffinus gravis)","__","__","BIR",""
-"GRSK","Great Skua (Catharacta skua)","__","__","BIR",""
-"GRTU","Green Turtle (Chelonia mydas)","VD",76,"NARWC",5
-"GRWH","Gray Whale (Eschrichtius robustus)","__","__","NARWC",1
-"HAPO","Harbor Porpoise (Phocoena phocoena)","FC",41,"NARWC",3
-"HASE","Harbor Seal (Phoca vitulina)","__","__","NARWC",4
-"HATU","Hawksbill Turtle (Eretmochelys imbricata)","VF",78,"NARWC",5
-"HELO","Helicopter","__","__","HUMAN/DEBRI",""
-"HERG","Herring Gull (Larus argentatus)","__","__","BIR",""
-"HGSE","Harp or Gray Seal","__","__","NARWC",4
-"HHSH","Hammerhead Shark (Sphyrna sp?)","YJ",89,"NARWC",6
-"HOGR","Horned Grebe (Podiceps auritus)","__","__","BIR",""
-"HOSE","Hooded Seal (Cystophora cristata)","__","__","NARWC",4
-"HPSE","Harp Seal (Pagophilus groenlandicus)","__","__","NARWC",4
-"HUWH","Humpback Whale (Megaptera novaeangliae)","BG",11,"NARWC",1
-"ICGU","Iceland Gull (Larus glaucoides)","__","__","BIR",""
-"JELL","Jellyfish","__","__","NARWC",9
-"JETS","Personal watercraft (jet-ski)","__","__","HUMAN/DEBRI",""
-"KAYK","Kayak, canoe, rowboat","__","__","HUMAN/DEBRI",""
-"KIWH","Killer Whale (Orcinus orca)","DG",28,"NARWC",2
-"LAGU","Laughing Gull (Larus atricilla)","__","__","BIR",""
-"LBBG","Lesser Black-backed Gull (Larus fuscus)","__","__","BIR",""
-"LE-V","Law enforcement/Security patrol vessel","__","__","HUMAN/DEBRI",""
-"LESP","Leachs Storm-Petrel (Oceanodroma leucorhoa)","__","__","BIR",""
-"LETE","Least Tern (Sterna antillarum)","__","__","BIR",""
-"LETU","Leatherback Turtle (Dermochelys coriacea)","UB",71,"NARWC",5
-"LFPW","Long-finned Pilot Whale (Globicephala melas)","DJ",31,"NARWC",3
-"LIGU","Little Gull (Larus minutus)","__","__","BIR",""
-"LMJE","Lions-Mane Jellyfish (Cyanea capillata)","__","__","NARWC",9
-"LMSH","Long-finned Mako Shark (Isurus paucus)","","","NARWC",6
-"LOTU","Loggerhead Turtle (Caretta caretta)","UC",72,"NARWC",5
-"LTDU","Long-tailed Duck (Clangula hyemalis)","__","__","BIR",""
-"LTJA","Long-tailed Jaeger (Stercoraria longicauda)","__","__","BIR",""
-"MABO","Masked Booby (Sula dactylata)","__","__","BIR",""
-"MAGW","Marbled Godwit (Limosa fedoa)","__","__","BIR",""
-"MAHI","Mahi-mahi/Dolphin-fish (Coryphaena hippurus)","__","__","NARWC",7
-"MALL","Mallard (Anas platyrhynchus)","__","__","BIR",""
-"MANA","Manatee (Trichechus manatus)","__","__","NARWC",4
-"MARA","Manta Ray (Manta birostris)","__","__","NARWC",7
-"MASH","Manx Shearwater (Puffinus puffinus)","__","__","BIR",""
-"METT","Unknown - needs identification","","","UNKNOWN",0
-"MHWH","Melon-Headed Whale (Peponocephala electra)","DH",29,"NARWC",3
-"MIWH","Minke Whale (Balaenoptera acutorostrata)","CI",21,"NARWC",2
-"MKSH","Mako Shark (Isurus sp.)","","","NARWC",6
-"MOBU","Mobulid ray, not identified to species (Mobula, sp.)","","","NARWC",7
-"MULT","Multiple activities","__","__","HUMAN/DEBRI",""
-"MV-B","Tug and barge","__","__","HUMAN/DEBRI",""
-"MV-C","Container ship","__","__","HUMAN/DEBRI",""
-"MV-L","Merchant vessel, large","__","__","HUMAN/DEBRI",""
-"MV-O","Tanker","__","__","HUMAN/DEBRI",""
-"MV-S","Merchant vessel, small","__","__","HUMAN/DEBRI",""
-"MV-T","Tug alone","__","__","HUMAN/DEBRI",""
-"MV-U","Merchant vessel, unspecified","__","__","HUMAN/DEBRI",""
-"MY-L","Motor yacht, large","__","__","HUMAN/DEBRI",""
-"MY-S","Motor yacht, small (but larger than RECV)","__","__","HUMAN/DEBRI",""
-"NBWH","Northern Bottlenose Whale (Hyperoodon ampullatus)","EE",37,"NARWC",2
-"NOFU","Northern Fulmar (Fulmarus glacialis)","__","__","BIR",""
-"NOGA","Northern Gannet (Sula bassanus)","__","__","BIR",""
-"NV-L","Naval vessel, large","__","__","HUMAN/DEBRI",""
-"NV-S","Naval vessel, small","__","__","HUMAN/DEBRI",""
-"NV-U","Submarine","__","__","HUMAN/DEBRI",""
-"OBDO","Offshore Bottlenose Dolphin (Tursiops truncatus)","__","__","NARWC",3
-"OCSU","Ocean Sunfish/Sharp-tailed Mola (Mola mola/lanceolata)","YC",82,"NARWC",7
-"OI-D","Drilling rig","__","__","HUMAN/DEBRI",""
-"OI-L","Drill ship","__","__","HUMAN/DEBRI",""
-"OI-P","Production platform","__","__","HUMAN/DEBRI",""
-"OI-S","Seismic exploration (air-guns)","__","__","HUMAN/DEBRI",""
-"ORTU","Olive Ridley Sea Turtle (Lepidochelys olivacea)","__","__","NARWC",5
-"OTBI","Other Billfish","YI",88,"NARWC",7
-"OW-B","Oceanographic, weather, or other data buoy","__","__","HUMAN/DEBRI",0
-"PAJA","Parasitic Jaeger (Stercoraria parasiticus)","__","__","BIR",""
-"PEEP","Unidentified Shorebird","__","__","BIR",""
-"PIBO","Pilot boat","__","__","HUMAN/DEBRI",""
-"PINN","Unidentified Pinniped","__","__","NARWC",4
-"PIWH","Pilot Whale (Globicephala sp?)","DE",26,"NARWC",3
-"PMOW","Portuguese Man of War (Physalia physalus)","__","__","NARWC",9
-"POBE","Polar Bear (Ursus maritimus)","__","__","NARWC",4
-"POJA","Pomarine Jaeger (Stercoraria pomarinus)","__","__","BIR",""
-"PSDO","Pan-Tropical Spotted Dolphin (Stenella attenuata)","__","__","NARWC",3
-"PSWH","Pygmy Sperm Whale (Kogia breviceps)","__","__","NARWC",3
-"PYKW","Pygmy Killer Whale (Feresa attenuata)","DI",30,"NARWC",3
-"RAZO","Razorbill (Alca torda)","__","__","BIR",""
-"RBGU","Ring-billed Gull (Larus delawarensis)","__","__","BIR",""
-"RBME","Red-breasted Merganser (Mergus serrator)","__","__","BIR",""
-"RBTR","Red-billed Tropicbird (Phaethon aethurus)","__","__","BIR",""
-"RECV","Recreational vessel motorboat","__","__","HUMAN/DEBRI",""
-"REKN","Red Knot (Calidris canutus)","__","__","BIR",""
-"REPH","Red Phalarope (Phalaropus fulicaria)","__","__","BIR",""
-"RISE","Ringed Seal (Pusa hispida)","__","__","NARWC",4
-"RITU","Kemps Ridley Turtle (Lepidochelys kempii)","VE",77,"NARWC",5
-"RIWH","North Atlantic Right Whale (Eubalaena glacialis)","BF",10,"NARWC",1
-"RNPH","Red-necked Phalarope (Phalaropus lobatus)","__","__","BIR",""
-"ROST","Roseate Tern (Sterna dougalli)","__","__","BIR",""
-"ROYT","Royal Tern (Sterna maxima)","__","__","BIR",""
-"RTDO","Rough-Toothed Dolphin (Steno bredanensis)","GG",49,"NARWC",3
-"RTLO","Red-throated Loon (Gavia stellata)","__","__","BIR",""
-"RUTS","Ruddy Turnstone (Arenaria interpres)","__","__","BIR",""
-"RV-G","Research vessel, geophysical/seismic profiling (with the airgun arrays deployed, otherwise use RV-L)","__","__","HUMAN/DEBRI",""
-"RV-L","Research vessel, large","__","__","HUMAN/DEBRI",""
-"RV-S","Research vessel, small","__","__","HUMAN/DEBRI",""
-"RV-U","Research vessel, unspecified","__","__","HUMAN/DEBRI",""
-"RV-W","Wave glider, AUV, or other autonomous sampler","","","HUMAN/DEBRI",0
-"RWBL","Red-winged Blackbird (Agelaius phoeniceus)","__","__","BIR",""
-"SADO","Common Dolphin (Delphinus delphis)","JG",63,"NARWC",3
-"SAGU","Sabines Gull (Xema sabini)","__","__","BIR",""
-"SATE","Sandwich Tern (Sterna sandvicensis)","__","__","BIR",""
-"SCFI","Fish School","YF",85,"NARWC",7
-"SCRA","Schools of Rays","YD",83,"NARWC",7
-"SDOG","Spiny Dogfish (Squalus acanthias)","__","__","NARWC",6
-"SEWH","Sei Whale (Balaenoptera borealis)","CG",19,"NARWC",1
-"SFPW","Short-finned Pilot Whale (Globicephala macrorhynchus)","DK",32,"NARWC",3
-"SMSH","Short-finned Mako Shark (Isurus exyrinchus)","","","NARWC",6
-"SNDO","Spinner Dolphin (Stenella longirostris)","KB",65,"NARWC",3
-"SOBW","Sowerbys Beaked Whale (Mesoplodon bidens)","__","__","NARWC",2
-"SONO","Sonobuoy deployed","","","HUMAN/DEBRI",0
-"SONR","Sonar in use","__","__","HUMAN/DEBRI",""
-"SOSH","Sooty Shearwater (Puffinus griseus)","__","__","BIR",""
-"SOTE","Sooty Tern (Sterna fuscata)","__","__","BIR",""
-"SPDO","Spotted Dolphin (Stenella attenuata/frontalis)","JE",61,"NARWC",3
-"SPFV","Sport-fishing vessel","__","__","HUMAN/DEBRI",""
-"SPPL","Semipalmated Plover (Charadrius semipalmatus)","__","__","BIR",""
-"SPSK","South Polar Skua (Catharacta maccormicki)","__","__","BIR",""
-"SPWH","Sperm Whale (Physeter macrocephalus)","BE",9,"NARWC",1
-"SRWH","Southern Right Whale (Eubalaena australis)","__","__","NARWC",1
-"STDO","Striped Dolphin (Stenella coeruleoalba)","JF",62,"NARWC",3
-"SUSC","Surf Scoter (Melanitta perspicillata)","__","__","BIR",""
-"SV-L","Sailing vessel, large (>50 feet)","__","__","HUMAN/DEBRI",""
-"SV-S","Sailing vessel, small (<50 feet)","__","__","HUMAN/DEBRI",""
-"SV-U","Sailing vessel, unspecified","__","__","HUMAN/DEBRI",""
-"SWFI","Swordfish (Xiphius gladius)","YH",87,"NARWC",7
-"SWIM","Swimmer(s)","__","__","HUMAN/DEBRI",""
-"TBMU","Thick-billed Murre (Uria lomvia)","__","__","BIR",""
-"THSH","Thresher Shark (Alopias sp)","__","__","NARWC",6
-"TISH","Tiger Shark (Galeocerdo cuvier)","__","__","NARWC",6
-"TRBW","Trues Beaked Whale (Mesoplodon mirus)","__","__","NARWC",2
-"TUNS","Unidentified Tuna","YG",86,"NARWC",7
-"UNAL","Unidentified Alcid?","__","__","BIR",""
-"UNBA","Unidentified Balaenoptera","CC",15,"NARWC",1
-"UNBD","Unidentified Beaked Dolphin (Delphinus, Stenella, Tursiops)","","","NARWC",3
-"UNBF","Unidentified Blackfish","DA",22,"NARWC",3
-"UNBI","Unidentified Bird","__","__","BIR",""
-"UNBS","Unidentified Brydes or Sei Whale","__","__","NARWC",1
-"UNBW","Unidentified Beaked Whale","EA",33,"NARWC",2
-"UNCE","Unidentified Cetacean","__","__","NARWC",9
-"UNCO","Unidentified Cormorant (Phalacrocorax sp.)","__","__","BIR",""
-"UNCT","Unidentified ? (crested tern?)","__","__","BIR",""
-"UNCW","Unidentified Common or White-sided Dolphin","GB",44,"NARWC",3
-"UNDO","Unidentified Dolphin/Porpoise","AD",4,"NARWC",3
-"UNDU","Unidentified Duck","__","__","BIR",""
-"UNFI","Unidentified/Other Fish","YB",81,"NARWC",7
-"UNFS","Unidentified Fin or Sei Whale","__","__","NARWC",1
-"UNGD","Spotted or Bottlenose Dolphin","GE",47,"NARWC",3
-"UNGO","Unidentified Goose","__","__","BIR",""
-"UNGU","Unidentified Gull","__","__","BIR",""
-"UNID","Unidentified Animal","__","__","NARWC",9
-"UNJA","Unidentified Jaeger (Stercoraria sp.)","__","__","BIR",""
-"UNKO","Pygmy or Dwarf Sperm Whale (Kogia sp.)","FB",40,"NARWC",3
-"UNLA","Unidentified Large Alcid?","__","__","BIR",""
-"UNLD","Unidentified Lagenorhynchus","HB",51,"NARWC",3
-"UNLG","Unidentified Larus Gull (Larus sp.)","__","__","BIR",""
-"UNLO","Unidentified Loon (Gavia sp.)","__","__","BIR",""
-"UNLS","Unidentified Large Shearwater?","__","__","BIR",""
-"UNLW","Unidentified Large Whale","AB",2,"NARWC",1
-"UNME","Unidentified Merganser","__","__","BIR",""
-"UNMM","Unidentified Marine Mammal","__","__","NARWC",9
-"UNMU","Unidentified Murre (Uria sp.)","__","__","BIR",""
-"UNMW","Unidentified Medium Whale","AC",3,"NARWC",2
-"UNPH","Unidentified Phalarope (Phalaropus sp.)","__","__","BIR",""
-"UNPL","Unidentified Plover","__","__","BIR",""
-"UNRA","Unidentified/Other Ray","YE",84,"NARWC",7
-"UNRO","Unidentified Rorqual (Balaenopteridae)","CA",13,"NARWC",1
-"UNSA","Unidentified Small Alcid?","__","__","BIR",""
-"UNSB","Unidentified Small Blackfish (Feresa or Peponocephala)","DD",25,"NARWC",3
-"UNSC","Unidentified Scoter/Scaup?","__","__","BIR",""
-"UNSE","Unidentified Seal","XA",79,"NARWC",4
-"UNSH","Unidentified/Other Shark","YA",80,"NARWC",6
-"UNSK","Unidentified Skua (Catharacta sp.)","__","__","BIR",""
-"UNSP","Unidentified Storm-Petrel","__","__","BIR",""
-"UNSS","Unidentified Small Shearwater?","__","__","BIR",""
-"UNST","Unidentified Stenella","JC",59,"NARWC",3
-"UNSU","Unidentified ?","__","__","BIR",""
-"UNSW","Unidentified Shearwater","__","__","BIR",""
-"UNTE","Unidentified Tern (Sterna sp.)","__","__","BIR",""
-"UNTU","Unidentified Turtle","TA",67,"NARWC",5
-"UNVE","Unknown vessel","__","__","HUMAN/DEBRI",""
-"UNWH","Unidentified Whale (Size Unknown)","AA",1,"NARWC",1
-"WALR","Walrus (Odobenus rosmarus)","__","__","NARWC",4
-"WBDO","White-Beaked Dolphin (Lagenorhynchus albirostris)","HD",53,"NARWC",3
-"WFSP","White-faced Storm-Petrel (Pelagodroma marina)","__","__","BIR",""
-"WHAL","Whale-watching vessel","__","__","HUMAN/DEBRI",""
-"WHIM","Whimbrel (Numenius phaeola)","__","__","BIR",""
-"WHMA","White Marlin (Tetrapterus albidus)","__","__","NARWC",7
-"WHSH","Whale Shark (Rhincodon typus)","__","__","NARWC",6
-"WISP","Wilsons Storm-Petrel (Oceanites oceanicus)","__","__","BIR",""
-"WSDO","Atlantic White-Sided Dolphin (Lagenorhynchus acutus)","HC","__","NARWC",3
-"WTSH","White Shark (Carcharodon carcharias)","__","__","NARWC",6
-"WTTR","White-tailed Tropicbird (Phaethon lepturus)","__","__","BIR",""
-"WWSC","White-winged Scoter (Melanitta fusca)","__","__","BIR",""
-"YFTU","Yellowfin Tuna (Thunnus albacares)","__","__","NARWC",7
-"ZOOP","Zooplankton Patches","__","__","NARWC",""
+"Value","SPECNAME","SPECCHAR","SPECNUM","Type","TAXCODE","typical_max_group","typical_max_calf"
+"ABDU","American Black Duck (Anas rubripes)","__","__","BIR","",,
+"AC-J","Subsonic aircraft","__","__","HUMAN/DEBRI","",,
+"AC-P","Propeller aircraft","__","__","HUMAN/DEBRI","",,
+"AC-S","Supersonic aircraft","__","__","HUMAN/DEBRI","",,
+"AC-T","Turboprop aircraft","__","__","HUMAN/DEBRI","",,
+"AMAL","American Alligator (Alligator mississippiensis)","__","__","NARWC",9,,
+"ANSH","Angel Shark (Squatina dumerili)","__","__","NARWC",6,,
+"ARTE","Arctic Tern (Sterna paradisaea)","__","__","BIR","",,
+"ASDO","Atlantic Spotted Dolphin (Stenella frontalis)","__","__","NARWC",3,,
+"ATBR","Atlantic Brant (Branta bernicla)","__","__","BIR","",,
+"ATPU","Atlantic (Common) Puffin (Fratercula arctica)","__","__","BIR","",,
+"AUSH","Audubons Shearwater (Puffinus lherminieri)","__","__","BIR","",,
+"BASH","Basking Shark (Cetorhinus maximus)","YK",90,"NARWC",6,,
+"BBPL","Black-bellied Plover (Pluvialis squatarola)","__","__","BIR","",,
+"BCPE","Black-capped Petrel (Pterodroma hasitata)","__","__","BIR","",,
+"BELU","Beluga (Delphinapterus leucas)","FA",39,"NARWC",3,,
+"BESE","Bearded Seal (Erignathus barbatus)","__","__","NARWC",4,,
+"BEWH","Beaked Whale (Mesoplodon sp?)","EC",35,"NARWC",2,,
+"BFTU","Bluefin Tuna (Thunnus thynnus)","__","__","NARWC",7,,
+"BHGU","Common Black-headed Gull (Larus ridibundus)","__","__","BIR","",,
+"BLBW","Blainvilles Beaked Whale (Mesoplodon densirostris)","__","__","NARWC",2,,
+"BLFI","Bluefish (Pomatomus saltatrix)","__","__","NARWC",7,,
+"BLGU","Black Guillemot (Cepphus grylle)","__","__","BIR","",,
+"BLKI","Black-legged Kittiwake (Rissa tridactyla)","__","__","BIR","",,
+"BLSC","Black Scoter (Melanitta nigra)","__","__","BIR","",,
+"BLSH","Blue Shark (Prionace glauca)","YL",91,"NARWC",6,,
+"BLTE","Black Tern (Chlidonias niger)","__","__","BIR","",,
+"BLWH","Blue Whale (Balaenoptera musculus)","CE",17,"NARWC",1,,
+"BODO","Bottlenose Dolphin (Tursiops truncatus)","HE",54,"NARWC",3,,
+"BOGU","Bonapartes Gull (Larus philadelphia)","__","__","BIR","",,
+"BOWH","Bowhead Whale (Balaena mysticetus)","__","__","NARWC",1,,
+"BRNO","Brown Noddy (Anous minutus)","__","__","BIR","",,
+"BRPE","Brown Pelican (Pelecanus occidentalis)","__","__","BIR","",,
+"BRTE","Bridled Tern (Sterna anaethetus)","__","__","BIR","",,
+"BRWH","Brydes Whale (Balaenoptera brydei)","CH",20,"NARWC",1,,
+"BSTP","Band-rumped Storm Petrel (Oceanodroma castro)","__","__","BIR","",,
+"BT-H","Heavy boat traffic","__","__","HUMAN/DEBRI","",,
+"BT-L","Light boat traffic","__","__","HUMAN/DEBRI","",,
+"BT-M","Moderate boat traffic","__","__","HUMAN/DEBRI","",,
+"BUFF","Bufflehead (Bucephala albeola)","__","__","BIR","",,
+"CABL","Cable/pipe laying","__","__","HUMAN/DEBRI","",,
+"CAGO","Canada Goose (Branta canadensis)","__","__","BIR","",,
+"CATE","Caspian Tern (Sterna caspica)","__","__","BIR","",,
+"CDRA","Chilean Devil Ray (Mobula tarapacana)","","","NARWC",7,,
+"CG-B","Coast Guard, buoy tender","__","__","HUMAN/DEBRI","",,
+"CG-C","Coast Guard, cutter","__","__","HUMAN/DEBRI","",,
+"CG-S","Coast Guard, security patrol boat","__","__","HUMAN/DEBRI","",,
+"CG-U","Coast Guard, utility boat","__","__","HUMAN/DEBRI","",,
+"CLDO","Clymene Dolphin (Stenella clymene)","KC",66,"NARWC",3,,
+"CNRA","Cow-Nosed Ray (Rhinoptera bonasus)","__","__","NARWC",7,,
+"COEI","Common Eider (Somateria mollissima)","__","__","BIR","",,
+"COLO","Common Loon (Gavia immer)","__","__","BIR","",,
+"COMU","Common Murre (Uria aalge)","__","__","BIR","",,
+"COSH","Corys Shearwater (Calonectris diomedea)","__","__","BIR","",,
+"COTE","Common Tern (Sterna hirundo)","__","__","BIR","",,
+"CRSH","Cruise ship","__","__","HUMAN/DEBRI","",,
+"DCCO","Double-crested Cormorant (Phalacrocorax auritus)","__","__","BIR","",,
+"DE-B","Debris/pollution, balloon(s)","__","__","HUMAN/DEBRI","",,
+"DE-F","Debris/pollution, flotsam (natural origin)","__","__","HUMAN/DEBRI","",,
+"DE-G","Debris/pollution, loose/ghost fishing gear","__","__","HUMAN/DEBRI","",,
+"DE-J","Debris/pollution, jetsam (human origin)","__","__","HUMAN/DEBRI","",,
+"DE-O","Debris/pollution, oil slick or sheen","__","__","HUMAN/DEBRI","",,
+"DE-P","Debris/pollution, plastic","__","__","HUMAN/DEBRI","",,
+"DE-R","Debris/pollution, rope/line","__","__","HUMAN/DEBRI","",,
+"DE-S","Debris/pollution, Sargassum/seaweed patches or lines","__","__","HUMAN/DEBRI","",,
+"DE-U","Debris/pollution, unspecified/other","__","__","HUMAN/DEBRI","",,
+"DE-W","Debris/pollution, wood","__","__","HUMAN/DEBRI","",,
+"DIVE","Diver(s)","__","__","HUMAN/DEBRI","",,
+"DOVE","Dovekie (Alle alle)","__","__","BIR","",,
+"DOWI","Dowitcher sp. (Limnodromus sp.)","__","__","BIR","",,
+"DR-D","Dredge, dumping","__","__","HUMAN/DEBRI","",,
+"DR-T","Dredge, in transit","__","__","HUMAN/DEBRI","",,
+"DR-U","Dredge, unspecified","__","__","HUMAN/DEBRI","",,
+"DR-W","Dredge, in operation","__","__","HUMAN/DEBRI","",,
+"DSWH","Dwarf Sperm Whale (Kogia sima)","__","__","NARWC",3,,
+"DU-G","Garbage dumping","__","__","HUMAN/DEBRI","",,
+"DU-T","Toxic waste dumping","__","__","HUMAN/DEBRI","",,
+"DUSH","Dusky Shark (Carcharhinus obscurus)","__","__","NARWC",6,,
+"EXPL","Explosive discharge","__","__","HUMAN/DEBRI","",,
+"FE-H","Ferry, high-speed","__","__","HUMAN/DEBRI","",,
+"FE-S","Ferry, standard type","__","__","HUMAN/DEBRI","",,
+"FE-U","Ferry, unspecified","__","__","HUMAN/DEBRI","",,
+"FG-A","Fixed fishing gear, aquaculture pens or facilities","__","__","HUMAN/DEBRI","",,
+"FG-C","Fixed fishing gear, crab pot","__","__","HUMAN/DEBRI","",,
+"FG-D","Fixed fishing gear, drift net","__","__","HUMAN/DEBRI","",,
+"FG-G","Fixed fishing gear, sink gill net","__","__","HUMAN/DEBRI","",,
+"FG-I","Fixed fishing gear, inshore lobster","__","__","HUMAN/DEBRI","",,
+"FG-L","Fixed fishing gear, pelagic long line","__","__","HUMAN/DEBRI","",,
+"FG-O","Fixed fishing gear, offshore lobster","__","__","HUMAN/DEBRI","",,
+"FG-U","Fixed fishing gear, unspecified type","__","__","HUMAN/DEBRI","",,
+"FIWH","Fin Whale (Balaenoptera physalus)","CF",18,"NARWC",1,,
+"FKWH","False Killer Whale (Pseudorca crassidens)","DF",27,"NARWC",3,,
+"FLFI","Flying Fish (Exocoetidae)","__","__","NARWC",7,,
+"FOTE","Forsters Tern (Sterna forsteri)","__","__","BIR","",,
+"FRDO","Frasers Dolphin (Lagenodelphis hosei)","HF",55,"NARWC",3,,
+"FRNT","Front/visible water-mass boundary","__","__","HUMAN/DEBRI","",,
+"FV-C","Fishing vessel, lobster/crab/other pot/trap fishery","__","__","HUMAN/DEBRI","",,
+"FV-D","Fishing vessel, drift-netter","__","__","HUMAN/DEBRI","",,
+"FV-F","Fishing vessel, unspecified/unknown fixed-gear","__","__","HUMAN/DEBRI","",,
+"FV-G","Fishing vessel, gill-netter","__","__","HUMAN/DEBRI","",,
+"FV-H","Fishing vessel, party (head) boat","__","__","HUMAN/DEBRI","",,
+"FV-L","Fishing vessel, long-liner","__","__","HUMAN/DEBRI","",,
+"FV-P","Fishing vessel, purse-seiner","__","__","HUMAN/DEBRI","",,
+"FV-S","Fishing vessel, shrimper","__","__","HUMAN/DEBRI","",,
+"FV-T","Fishing vessel, trawler/dragger","__","__","HUMAN/DEBRI","",,
+"FV-U","Fishing vessel, unspecified type","__","__","HUMAN/DEBRI","",,
+"FV-W","Fishing vessel, whale-watching","__","__","HUMAN/DEBRI","",,
+"FV-Z","Fishing vessel, factory trawler","__","__","HUMAN/DEBRI","",,
+"GBBG","Great Black-backed Gull (Larus marinus)","__","__","BIR","",,
+"GEBW","Gervais Beaked Whale (Mesoplodon europaeus)","__","__","NARWC",2,,
+"GHSH","Great Hammerhead Shark (Sphyrna mokarran)","","","NARWC",6,,
+"GLGU","Glaucous Gull (Larus hyperboreus)","__","__","BIR","",,
+"GOBW","Cuviers Beaked Whale (Ziphius cavirostris)","ED",36,"NARWC",2,,
+"GRAM","Rissos Dolphin (Grampus griseus)","FD",42,"NARWC",3,,
+"GRCO","Great Cormorant (Phalacrocorax carbo)","__","__","BIR","",,
+"GRSC","Greater Scaup (Athya marila)?","__","__","BIR","",,
+"GRSE","Gray Seal (Halichoerus grypus)","__","__","NARWC",4,,
+"GRSH","Greater Shearwater (Puffinus gravis)","__","__","BIR","",,
+"GRSK","Great Skua (Catharacta skua)","__","__","BIR","",,
+"GRTU","Green Turtle (Chelonia mydas)","VD",76,"NARWC",5,,
+"GRWH","Gray Whale (Eschrichtius robustus)","__","__","NARWC",1,,
+"HAPO","Harbor Porpoise (Phocoena phocoena)","FC",41,"NARWC",3,,
+"HASE","Harbor Seal (Phoca vitulina)","__","__","NARWC",4,,
+"HATU","Hawksbill Turtle (Eretmochelys imbricata)","VF",78,"NARWC",5,,
+"HELO","Helicopter","__","__","HUMAN/DEBRI","",,
+"HERG","Herring Gull (Larus argentatus)","__","__","BIR","",,
+"HGSE","Harp or Gray Seal","__","__","NARWC",4,,
+"HHSH","Hammerhead Shark (Sphyrna sp?)","YJ",89,"NARWC",6,,
+"HOGR","Horned Grebe (Podiceps auritus)","__","__","BIR","",,
+"HOSE","Hooded Seal (Cystophora cristata)","__","__","NARWC",4,,
+"HPSE","Harp Seal (Pagophilus groenlandicus)","__","__","NARWC",4,,
+"HUWH","Humpback Whale (Megaptera novaeangliae)","BG",11,"NARWC",1,,
+"ICGU","Iceland Gull (Larus glaucoides)","__","__","BIR","",,
+"JELL","Jellyfish","__","__","NARWC",9,,
+"JETS","Personal watercraft (jet-ski)","__","__","HUMAN/DEBRI","",,
+"KAYK","Kayak, canoe, rowboat","__","__","HUMAN/DEBRI","",,
+"KIWH","Killer Whale (Orcinus orca)","DG",28,"NARWC",2,,
+"LAGU","Laughing Gull (Larus atricilla)","__","__","BIR","",,
+"LBBG","Lesser Black-backed Gull (Larus fuscus)","__","__","BIR","",,
+"LE-V","Law enforcement/Security patrol vessel","__","__","HUMAN/DEBRI","",,
+"LESP","Leachs Storm-Petrel (Oceanodroma leucorhoa)","__","__","BIR","",,
+"LETE","Least Tern (Sterna antillarum)","__","__","BIR","",,
+"LETU","Leatherback Turtle (Dermochelys coriacea)","UB",71,"NARWC",5,,
+"LFPW","Long-finned Pilot Whale (Globicephala melas)","DJ",31,"NARWC",3,,
+"LIGU","Little Gull (Larus minutus)","__","__","BIR","",,
+"LMJE","Lions-Mane Jellyfish (Cyanea capillata)","__","__","NARWC",9,,
+"LMSH","Long-finned Mako Shark (Isurus paucus)","","","NARWC",6,,
+"LOTU","Loggerhead Turtle (Caretta caretta)","UC",72,"NARWC",5,,
+"LTDU","Long-tailed Duck (Clangula hyemalis)","__","__","BIR","",,
+"LTJA","Long-tailed Jaeger (Stercoraria longicauda)","__","__","BIR","",,
+"MABO","Masked Booby (Sula dactylata)","__","__","BIR","",,
+"MAGW","Marbled Godwit (Limosa fedoa)","__","__","BIR","",,
+"MAHI","Mahi-mahi/Dolphin-fish (Coryphaena hippurus)","__","__","NARWC",7,,
+"MALL","Mallard (Anas platyrhynchus)","__","__","BIR","",,
+"MANA","Manatee (Trichechus manatus)","__","__","NARWC",4,,
+"MARA","Manta Ray (Manta birostris)","__","__","NARWC",7,,
+"MASH","Manx Shearwater (Puffinus puffinus)","__","__","BIR","",,
+"METT","Unknown - needs identification","","","UNKNOWN",0,,
+"MHWH","Melon-Headed Whale (Peponocephala electra)","DH",29,"NARWC",3,,
+"MIWH","Minke Whale (Balaenoptera acutorostrata)","CI",21,"NARWC",2,,
+"MKSH","Mako Shark (Isurus sp.)","","","NARWC",6,,
+"MOBU","Mobulid ray, not identified to species (Mobula, sp.)","","","NARWC",7,,
+"MULT","Multiple activities","__","__","HUMAN/DEBRI","",,
+"MV-B","Tug and barge","__","__","HUMAN/DEBRI","",,
+"MV-C","Container ship","__","__","HUMAN/DEBRI","",,
+"MV-L","Merchant vessel, large","__","__","HUMAN/DEBRI","",,
+"MV-O","Tanker","__","__","HUMAN/DEBRI","",,
+"MV-S","Merchant vessel, small","__","__","HUMAN/DEBRI","",,
+"MV-T","Tug alone","__","__","HUMAN/DEBRI","",,
+"MV-U","Merchant vessel, unspecified","__","__","HUMAN/DEBRI","",,
+"MY-L","Motor yacht, large","__","__","HUMAN/DEBRI","",,
+"MY-S","Motor yacht, small (but larger than RECV)","__","__","HUMAN/DEBRI","",,
+"NBWH","Northern Bottlenose Whale (Hyperoodon ampullatus)","EE",37,"NARWC",2,,
+"NOFU","Northern Fulmar (Fulmarus glacialis)","__","__","BIR","",,
+"NOGA","Northern Gannet (Sula bassanus)","__","__","BIR","",,
+"NV-L","Naval vessel, large","__","__","HUMAN/DEBRI","",,
+"NV-S","Naval vessel, small","__","__","HUMAN/DEBRI","",,
+"NV-U","Submarine","__","__","HUMAN/DEBRI","",,
+"OBDO","Offshore Bottlenose Dolphin (Tursiops truncatus)","__","__","NARWC",3,,
+"OCSU","Ocean Sunfish/Sharp-tailed Mola (Mola mola/lanceolata)","YC",82,"NARWC",7,,
+"OI-D","Drilling rig","__","__","HUMAN/DEBRI","",,
+"OI-L","Drill ship","__","__","HUMAN/DEBRI","",,
+"OI-P","Production platform","__","__","HUMAN/DEBRI","",,
+"OI-S","Seismic exploration (air-guns)","__","__","HUMAN/DEBRI","",,
+"ORTU","Olive Ridley Sea Turtle (Lepidochelys olivacea)","__","__","NARWC",5,,
+"OTBI","Other Billfish","YI",88,"NARWC",7,,
+"OW-B","Oceanographic, weather, or other data buoy","__","__","HUMAN/DEBRI",0,,
+"PAJA","Parasitic Jaeger (Stercoraria parasiticus)","__","__","BIR","",,
+"PEEP","Unidentified Shorebird","__","__","BIR","",,
+"PIBO","Pilot boat","__","__","HUMAN/DEBRI","",,
+"PINN","Unidentified Pinniped","__","__","NARWC",4,,
+"PIWH","Pilot Whale (Globicephala sp?)","DE",26,"NARWC",3,,
+"PMOW","Portuguese Man of War (Physalia physalus)","__","__","NARWC",9,,
+"POBE","Polar Bear (Ursus maritimus)","__","__","NARWC",4,,
+"POJA","Pomarine Jaeger (Stercoraria pomarinus)","__","__","BIR","",,
+"PSDO","Pan-Tropical Spotted Dolphin (Stenella attenuata)","__","__","NARWC",3,,
+"PSWH","Pygmy Sperm Whale (Kogia breviceps)","__","__","NARWC",3,,
+"PYKW","Pygmy Killer Whale (Feresa attenuata)","DI",30,"NARWC",3,,
+"RAZO","Razorbill (Alca torda)","__","__","BIR","",,
+"RBGU","Ring-billed Gull (Larus delawarensis)","__","__","BIR","",,
+"RBME","Red-breasted Merganser (Mergus serrator)","__","__","BIR","",,
+"RBTR","Red-billed Tropicbird (Phaethon aethurus)","__","__","BIR","",,
+"RECV","Recreational vessel motorboat","__","__","HUMAN/DEBRI","",,
+"REKN","Red Knot (Calidris canutus)","__","__","BIR","",,
+"REPH","Red Phalarope (Phalaropus fulicaria)","__","__","BIR","",,
+"RISE","Ringed Seal (Pusa hispida)","__","__","NARWC",4,,
+"RITU","Kemps Ridley Turtle (Lepidochelys kempii)","VE",77,"NARWC",5,,
+"RIWH","North Atlantic Right Whale (Eubalaena glacialis)","BF",10,"NARWC",1,,
+"RNPH","Red-necked Phalarope (Phalaropus lobatus)","__","__","BIR","",,
+"ROST","Roseate Tern (Sterna dougalli)","__","__","BIR","",,
+"ROYT","Royal Tern (Sterna maxima)","__","__","BIR","",,
+"RTDO","Rough-Toothed Dolphin (Steno bredanensis)","GG",49,"NARWC",3,,
+"RTLO","Red-throated Loon (Gavia stellata)","__","__","BIR","",,
+"RUTS","Ruddy Turnstone (Arenaria interpres)","__","__","BIR","",,
+"RV-G","Research vessel, geophysical/seismic profiling (with the airgun arrays deployed, otherwise use RV-L)","__","__","HUMAN/DEBRI","",,
+"RV-L","Research vessel, large","__","__","HUMAN/DEBRI","",,
+"RV-S","Research vessel, small","__","__","HUMAN/DEBRI","",,
+"RV-U","Research vessel, unspecified","__","__","HUMAN/DEBRI","",,
+"RV-W","Wave glider, AUV, or other autonomous sampler","","","HUMAN/DEBRI",0,,
+"RWBL","Red-winged Blackbird (Agelaius phoeniceus)","__","__","BIR","",,
+"SADO","Common Dolphin (Delphinus delphis)","JG",63,"NARWC",3,,
+"SAGU","Sabines Gull (Xema sabini)","__","__","BIR","",,
+"SATE","Sandwich Tern (Sterna sandvicensis)","__","__","BIR","",,
+"SCFI","Fish School","YF",85,"NARWC",7,,
+"SCRA","Schools of Rays","YD",83,"NARWC",7,,
+"SDOG","Spiny Dogfish (Squalus acanthias)","__","__","NARWC",6,,
+"SEWH","Sei Whale (Balaenoptera borealis)","CG",19,"NARWC",1,,
+"SFPW","Short-finned Pilot Whale (Globicephala macrorhynchus)","DK",32,"NARWC",3,,
+"SMSH","Short-finned Mako Shark (Isurus exyrinchus)","","","NARWC",6,,
+"SNDO","Spinner Dolphin (Stenella longirostris)","KB",65,"NARWC",3,,
+"SOBW","Sowerbys Beaked Whale (Mesoplodon bidens)","__","__","NARWC",2,,
+"SONO","Sonobuoy deployed","","","HUMAN/DEBRI",0,,
+"SONR","Sonar in use","__","__","HUMAN/DEBRI","",,
+"SOSH","Sooty Shearwater (Puffinus griseus)","__","__","BIR","",,
+"SOTE","Sooty Tern (Sterna fuscata)","__","__","BIR","",,
+"SPDO","Spotted Dolphin (Stenella attenuata/frontalis)","JE",61,"NARWC",3,,
+"SPFV","Sport-fishing vessel","__","__","HUMAN/DEBRI","",,
+"SPPL","Semipalmated Plover (Charadrius semipalmatus)","__","__","BIR","",,
+"SPSK","South Polar Skua (Catharacta maccormicki)","__","__","BIR","",,
+"SPWH","Sperm Whale (Physeter macrocephalus)","BE",9,"NARWC",1,,
+"SRWH","Southern Right Whale (Eubalaena australis)","__","__","NARWC",1,,
+"STDO","Striped Dolphin (Stenella coeruleoalba)","JF",62,"NARWC",3,,
+"SUSC","Surf Scoter (Melanitta perspicillata)","__","__","BIR","",,
+"SV-L","Sailing vessel, large (>50 feet)","__","__","HUMAN/DEBRI","",,
+"SV-S","Sailing vessel, small (<50 feet)","__","__","HUMAN/DEBRI","",,
+"SV-U","Sailing vessel, unspecified","__","__","HUMAN/DEBRI","",,
+"SWFI","Swordfish (Xiphius gladius)","YH",87,"NARWC",7,,
+"SWIM","Swimmer(s)","__","__","HUMAN/DEBRI","",,
+"TBMU","Thick-billed Murre (Uria lomvia)","__","__","BIR","",,
+"THSH","Thresher Shark (Alopias sp)","__","__","NARWC",6,,
+"TISH","Tiger Shark (Galeocerdo cuvier)","__","__","NARWC",6,,
+"TRBW","Trues Beaked Whale (Mesoplodon mirus)","__","__","NARWC",2,,
+"TUNS","Unidentified Tuna","YG",86,"NARWC",7,,
+"UNAL","Unidentified Alcid?","__","__","BIR","",,
+"UNBA","Unidentified Balaenoptera","CC",15,"NARWC",1,,
+"UNBD","Unidentified Beaked Dolphin (Delphinus, Stenella, Tursiops)","","","NARWC",3,,
+"UNBF","Unidentified Blackfish","DA",22,"NARWC",3,,
+"UNBI","Unidentified Bird","__","__","BIR","",,
+"UNBS","Unidentified Brydes or Sei Whale","__","__","NARWC",1,,
+"UNBW","Unidentified Beaked Whale","EA",33,"NARWC",2,,
+"UNCE","Unidentified Cetacean","__","__","NARWC",9,,
+"UNCO","Unidentified Cormorant (Phalacrocorax sp.)","__","__","BIR","",,
+"UNCT","Unidentified ? (crested tern?)","__","__","BIR","",,
+"UNCW","Unidentified Common or White-sided Dolphin","GB",44,"NARWC",3,,
+"UNDO","Unidentified Dolphin/Porpoise","AD",4,"NARWC",3,,
+"UNDU","Unidentified Duck","__","__","BIR","",,
+"UNFI","Unidentified/Other Fish","YB",81,"NARWC",7,,
+"UNFS","Unidentified Fin or Sei Whale","__","__","NARWC",1,,
+"UNGD","Spotted or Bottlenose Dolphin","GE",47,"NARWC",3,,
+"UNGO","Unidentified Goose","__","__","BIR","",,
+"UNGU","Unidentified Gull","__","__","BIR","",,
+"UNID","Unidentified Animal","__","__","NARWC",9,,
+"UNJA","Unidentified Jaeger (Stercoraria sp.)","__","__","BIR","",,
+"UNKO","Pygmy or Dwarf Sperm Whale (Kogia sp.)","FB",40,"NARWC",3,,
+"UNLA","Unidentified Large Alcid?","__","__","BIR","",,
+"UNLD","Unidentified Lagenorhynchus","HB",51,"NARWC",3,,
+"UNLG","Unidentified Larus Gull (Larus sp.)","__","__","BIR","",,
+"UNLO","Unidentified Loon (Gavia sp.)","__","__","BIR","",,
+"UNLS","Unidentified Large Shearwater?","__","__","BIR","",,
+"UNLW","Unidentified Large Whale","AB",2,"NARWC",1,,
+"UNME","Unidentified Merganser","__","__","BIR","",,
+"UNMM","Unidentified Marine Mammal","__","__","NARWC",9,,
+"UNMU","Unidentified Murre (Uria sp.)","__","__","BIR","",,
+"UNMW","Unidentified Medium Whale","AC",3,"NARWC",2,,
+"UNPH","Unidentified Phalarope (Phalaropus sp.)","__","__","BIR","",,
+"UNPL","Unidentified Plover","__","__","BIR","",,
+"UNRA","Unidentified/Other Ray","YE",84,"NARWC",7,,
+"UNRO","Unidentified Rorqual (Balaenopteridae)","CA",13,"NARWC",1,,
+"UNSA","Unidentified Small Alcid?","__","__","BIR","",,
+"UNSB","Unidentified Small Blackfish (Feresa or Peponocephala)","DD",25,"NARWC",3,,
+"UNSC","Unidentified Scoter/Scaup?","__","__","BIR","",,
+"UNSE","Unidentified Seal","XA",79,"NARWC",4,,
+"UNSH","Unidentified/Other Shark","YA",80,"NARWC",6,,
+"UNSK","Unidentified Skua (Catharacta sp.)","__","__","BIR","",,
+"UNSP","Unidentified Storm-Petrel","__","__","BIR","",,
+"UNSS","Unidentified Small Shearwater?","__","__","BIR","",,
+"UNST","Unidentified Stenella","JC",59,"NARWC",3,,
+"UNSU","Unidentified ?","__","__","BIR","",,
+"UNSW","Unidentified Shearwater","__","__","BIR","",,
+"UNTE","Unidentified Tern (Sterna sp.)","__","__","BIR","",,
+"UNTU","Unidentified Turtle","TA",67,"NARWC",5,,
+"UNVE","Unknown vessel","__","__","HUMAN/DEBRI","",,
+"UNWH","Unidentified Whale (Size Unknown)","AA",1,"NARWC",1,,
+"WALR","Walrus (Odobenus rosmarus)","__","__","NARWC",4,,
+"WBDO","White-Beaked Dolphin (Lagenorhynchus albirostris)","HD",53,"NARWC",3,,
+"WFSP","White-faced Storm-Petrel (Pelagodroma marina)","__","__","BIR","",,
+"WHAL","Whale-watching vessel","__","__","HUMAN/DEBRI","",,
+"WHIM","Whimbrel (Numenius phaeola)","__","__","BIR","",,
+"WHMA","White Marlin (Tetrapterus albidus)","__","__","NARWC",7,,
+"WHSH","Whale Shark (Rhincodon typus)","__","__","NARWC",6,,
+"WISP","Wilsons Storm-Petrel (Oceanites oceanicus)","__","__","BIR","",,
+"WSDO","Atlantic White-Sided Dolphin (Lagenorhynchus acutus)","HC","__","NARWC",3,,
+"WTSH","White Shark (Carcharodon carcharias)","__","__","NARWC",6,,
+"WTTR","White-tailed Tropicbird (Phaethon lepturus)","__","__","BIR","",,
+"WWSC","White-winged Scoter (Melanitta fusca)","__","__","BIR","",,
+"YFTU","Yellowfin Tuna (Thunnus albacares)","__","__","NARWC",7,,
+"ZOOP","Zooplankton Patches","__","__","NARWC","",,

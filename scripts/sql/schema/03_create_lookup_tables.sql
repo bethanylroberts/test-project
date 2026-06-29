@@ -272,12 +272,14 @@ BEGIN TRY
     IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = N'SPECCODE' AND type = 'U')
     BEGIN
         CREATE TABLE SPECCODE (
-            Value       varchar(8)      NOT NULL,
-            SPECNAME    varchar(255)    NULL,       -- full species name
-            SPECCHAR    varchar(2)      NULL,       -- species character code
-            SPECNUM     varchar(4)      NULL,       -- species number code
-            Type        varchar(20)     NULL,       -- type category (e.g., BIR, CETACEAN)
-            TAXCODE     varchar(4)      NULL,       -- taxonomic code (links to TAXCODE table)
+            Value             varchar(8)      NOT NULL,
+            SPECNAME          varchar(255)    NULL,       -- full species name
+            SPECCHAR          varchar(2)      NULL,       -- species character code
+            SPECNUM           varchar(4)      NULL,       -- species number code
+            Type              varchar(20)     NULL,       -- type category (e.g., BIR, CETACEAN)
+            TAXCODE           varchar(4)      NULL,       -- taxonomic code (links to TAXCODE table)
+            typical_max_group int             NULL,       -- per-species group-size warning threshold
+            typical_max_calf  int             NULL,       -- per-species calf-count warning threshold
             CONSTRAINT PK_SPECCODE PRIMARY KEY (Value)
         );
         PRINT 'Table SPECCODE created.';
@@ -312,8 +314,10 @@ BEGIN TRY
     IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = N'TAXCODE' AND type = 'U')
     BEGIN
         CREATE TABLE TAXCODE (
-            Value       int             NOT NULL,
-            Description varchar(255)    NULL,
+            Value             int             NOT NULL,
+            Description       varchar(255)    NULL,
+            typical_max_group int             NULL,       -- taxonomic-group group-size warning threshold
+            typical_max_calf  int             NULL,       -- taxonomic-group calf-count warning threshold
             CONSTRAINT PK_TAXCODE PRIMARY KEY (Value)
         );
         PRINT 'Table TAXCODE created.';

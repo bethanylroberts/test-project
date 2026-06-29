@@ -154,13 +154,17 @@ NARWC-DB/
 - **ANHEAD lookup expansion** — clarify whether ANHEAD=19 is valid or a sentinel; requires domain expert input
 - **`apply_known_fixes.m` side-script** (Category C) — mirrors Bob's SAS macro corrections to our copy of the legacy data; not yet started
 - **Package layout refactor** — rename `+io/` → `+ingestion/` (parsers), move `BatchUploader` to `+db/`, extract single-survey `Uploader` from `BatchUploader`; pre-August handoff goal
-- **SAS rule porting** — port SAS QC checks (`scripts/sas/Chk*.sas`) to MATLAB validation rules; TAXCODE-aware NUMBER thresholds first
+- **SAS rule porting** — port SAS QC checks (`scripts/sas/Chk*.sas`) to MATLAB validation rules; TAXCODE-aware NUMBER thresholds implemented; remaining SAS checks TBD
 
 ---
 
 ## 5. Recent commits
 
 ```
+2026-06-29         Add typical_max_group/typical_max_calf to SPECCODE and TAXCODE;
+                   validator NUMBER/NUMCALF rules now use SPECCODE → TAXCODE → global
+                   threshold cascade. Curators adjust thresholds via CSV, no code change.
+                   Commits A+B: schema/CSV/SQL migration + species_rules.m rewrite.
 2026-06-26 ade7fe1 debugging some sql stuff
 2026-06-26 875f69c Updated the tests and files to match actual surveys and pass tests
 2026-06-26 bb65c5e Add scripts/sql/ scaffolding for DB-side scripts
@@ -205,6 +209,8 @@ grep -rn 'TODO\|FIXME\|NOTE' src/ scripts/ tests/ --include='*.m'
 ## 8. Reference
 
 ### 8.1 Architecture and design decisions
+
+**Validator thresholds are data-driven.** NUMBER and NUMCALF thresholds for group-size warnings cascade: SPECCODE.typical_max_group → TAXCODE.typical_max_group → config global default (1000 / 100). Curators adjust thresholds by editing `data/tables/SPECCODE.csv` or `TAXCODE.csv` and running `push_lookup_tables.m` — no MATLAB code change needed.
 
 **Warning override philosophy.** Validation warnings block upload unless explicitly acknowledged. Acknowledgements are stored in `data/overrides.csv` (version-controlled), keyed by `(fileid, eventno, field, rule_id)`. A per-row entry suppresses exactly one warning instance. A per-survey entry (empty `eventno`) suppresses a `(fileid, field, rule_id)` combination across the entire survey. The `AllowWarnings = true` flag is preserved as an emergency escape valve but is not the intended workflow. Curator workflow documented in `docs/warning_overrides.md`.
 

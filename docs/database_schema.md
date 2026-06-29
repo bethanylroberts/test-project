@@ -143,10 +143,10 @@ without implicit conversion).
 | OLDVIZ | `varchar(2)` | *(none — retired field)* | Description | 5 |
 | PHOTOS | `int` | PHOTOS | Description | 5 |
 | PLATFORM | `int` | PLATFORM | Description | 283 |
-| SPECCODE | `varchar(8)` | SPECCODE | SPECNAME, SPECCHAR, SPECNUM, Type, TAXCODE | 317 |
+| SPECCODE | `varchar(8)` | SPECCODE | SPECNAME, SPECCHAR, SPECNUM, Type, TAXCODE, typical_max_group, typical_max_calf | 317 |
 | STRATUM | `varchar(4)` | STRATUM | Description | 10 |
 | STRIP | `int` | STRIP | Description | 16 |
-| TAXCODE | `int` | TAXCODE | Description | 10 |
+| TAXCODE | `int` | TAXCODE | Description, typical_max_group, typical_max_calf | 10 |
 | WX | `varchar(4)` | WX | Description | 12 |
 
 ### Notes on specific tables
@@ -163,7 +163,14 @@ characters); the `Description` column is `varchar(500)` in this table only.
 `SPECCHAR` (2-char abbreviation), `SPECNUM` (numeric code), `Type` (broad category
 such as BIR, CETACEAN), and `TAXCODE` (the taxonomic group code linking back to the
 TAXCODE table). The `TAXCODE` column in SPECCODE is informational — it is not a
-foreign key constraint in the schema.
+foreign key constraint in the schema. `typical_max_group` and `typical_max_calf`
+are per-species warning thresholds used by `species_rules.m`; NULL means no
+species-specific override (the TAXCODE-level threshold or global default applies).
+
+**TAXCODE** carries `typical_max_group` and `typical_max_calf` thresholds that apply
+to all species in that taxonomic group when no SPECCODE-level override is set.
+Curators adjust thresholds by editing `data/tables/SPECCODE.csv` or `TAXCODE.csv`
+and running `push_lookup_tables.m` — no code change needed.
 
 **Contrib, DType, LEGGOOD, OLDVIZ** exist in the legacy database and are retained
 here but are not FK'd from Master. OLDVIZ covers the retired negative-VISIBLTY codes
@@ -459,10 +466,10 @@ without implicit conversion).
 | OLDVIZ | `varchar(2)` | *(none — retired field)* | Description | 5 |
 | PHOTOS | `int` | PHOTOS | Description | 5 |
 | PLATFORM | `int` | PLATFORM | Description | 283 |
-| SPECCODE | `varchar(8)` | SPECCODE | SPECNAME, SPECCHAR, SPECNUM, Type, TAXCODE | 317 |
+| SPECCODE | `varchar(8)` | SPECCODE | SPECNAME, SPECCHAR, SPECNUM, Type, TAXCODE, typical_max_group, typical_max_calf | 317 |
 | STRATUM | `varchar(4)` | STRATUM | Description | 10 |
 | STRIP | `int` | STRIP | Description | 16 |
-| TAXCODE | `int` | TAXCODE | Description | 10 |
+| TAXCODE | `int` | TAXCODE | Description, typical_max_group, typical_max_calf | 10 |
 | WX | `varchar(4)` | WX | Description | 12 |
 
 ### Notes on specific tables
@@ -479,7 +486,14 @@ characters); the `Description` column is `varchar(500)` in this table only.
 `SPECCHAR` (2-char abbreviation), `SPECNUM` (numeric code), `Type` (broad category
 such as BIR, CETACEAN), and `TAXCODE` (the taxonomic group code linking back to the
 TAXCODE table). The `TAXCODE` column in SPECCODE is informational — it is not a
-foreign key constraint in the schema.
+foreign key constraint in the schema. `typical_max_group` and `typical_max_calf`
+are per-species warning thresholds used by `species_rules.m`; NULL means no
+species-specific override (the TAXCODE-level threshold or global default applies).
+
+**TAXCODE** carries `typical_max_group` and `typical_max_calf` thresholds that apply
+to all species in that taxonomic group when no SPECCODE-level override is set.
+Curators adjust thresholds by editing `data/tables/SPECCODE.csv` or `TAXCODE.csv`
+and running `push_lookup_tables.m` — no code change needed.
 
 **Contrib, DType, LEGGOOD, OLDVIZ** exist in the legacy database and are retained
 here but are not FK'd from Master. OLDVIZ covers the retired negative-VISIBLTY codes
