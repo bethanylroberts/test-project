@@ -191,6 +191,21 @@ classdef BatchUploader < handle
                         end
                     end
 
+                    % Apply known Category C corrections before validation.
+                    % Fixes are applied silently; a log line fires only when
+                    % at least one row was actually changed.
+                    if ismember('FILEID', survey_data.Properties.VariableNames)
+                        fix_fileid = survey_data.FILEID{1};
+                    else
+                        fix_fileid = '';
+                    end
+                    [survey_data, fix_report] = migration.apply_known_fixes(survey_data, fix_fileid);
+                    if any(structfun(@(x) x > 0, fix_report))
+                        obj.logger.info(sprintf('Known fixes applied to %s: %s', ...
+                            fix_fileid, format_fix_summary(fix_report)));
+                    end
+                    obj.accumulateFixReport(fix_report);
+
                     [success, category] = obj.uploadSurvey(survey_data, ...
                         'Overwrite',        options.Overwrite, ...
                         'Validate',         options.Validate, ...
@@ -560,6 +575,21 @@ classdef BatchUploader < handle
 
                 fprintf(fid, '\n%s\n', repmat('=', 1, 80));
 
+                % Known Fixes Applied section
+                ft = obj.stats.fix_totals;
+                fs = obj.stats.fix_survey_counts;
+                fprintf(fid, '\n=== Known Fixes Applied ===\n');
+                fprintf(fid, '%s\n', fix_summary_line('PHOTOS = 0 -> 1 (sighting rows)', ft.photos_0_to_1,   fs.photos_0_to_1));
+                fprintf(fid, '%s\n', fix_summary_line('STRIP > 16 -> NULL (NEAq 2021)',  ft.strip_neaq_2021, fs.strip_neaq_2021));
+                fprintf(fid, '%s\n', fix_summary_line('BEAUFORT = 99 -> NULL',           ft.beaufort_99,     fs.beaufort_99));
+                fprintf(fid, '%s\n', fix_summary_line('CLOUD = 99 -> NULL',              ft.cloud_99,        fs.cloud_99));
+                fprintf(fid, '%s\n', fix_summary_line('GLAREL = 99 -> NULL',             ft.glarel_99,       fs.glarel_99));
+                fprintf(fid, '%s\n', fix_summary_line('GLARER = 99 -> NULL',             ft.glarer_99,       fs.glarer_99));
+                fprintf(fid, '%s\n', fix_summary_line('NUMCALF = 99 -> NULL',            ft.numcalf_99,      fs.numcalf_99));
+                fprintf(fid, '%s\n', fix_summary_line('SPECCODE trailing whitespace trim', ft.speccode_trim,  fs.speccode_trim));
+                fprintf(fid, '%s\n', fix_summary_line('LEGTYPE = 99 -> NULL',            ft.legtype_99,      fs.legtype_99));
+                fprintf(fid, '\n%s\n', repmat('=', 1, 80));
+
                 fclose(fid);
 
                 obj.logger.info(sprintf('Error log summary written to: %s', obj.error_log_file));
@@ -610,6 +640,16 @@ classdef BatchUploader < handle
             obj.stats.warnings_acknowledged_per_row   = 0;
             obj.stats.warnings_acknowledged_per_survey = 0;
             obj.stats.acknowledgement_by_rule         = struct();
+
+            % Per-fix row totals and survey counts for the Known Fixes section
+            zero_fix = struct( ...
+                'photos_0_to_1',   0, 'strip_neaq_2021', 0, ...
+                'beaufort_99',     0, 'cloud_99',         0, ...
+                'glarel_99',       0, 'glarer_99',        0, ...
+                'numcalf_99',      0, 'speccode_trim',    0, ...
+                'legtype_99',      0);
+            obj.stats.fix_totals        = zero_fix;
+            obj.stats.fix_survey_counts = zero_fix;
         end
 
         function accumulateRuleStats(obj, by_rule)
@@ -655,5 +695,60 @@ classdef BatchUploader < handle
             % GETSTATS Get upload statistics
             stats = obj.stats;
         end
+
+        function accumulateFixReport(obj, fix_report)
+            % ACCUMULATEFIXREPORT Merge a per-survey fix report into run-level totals.
+            keys = fieldnames(fix_report);
+            for i = 1:numel(keys)
+                k = keys{i};
+                if isfield(obj.stats.fix_totals, k)
+                    obj.stats.fix_totals.(k) = obj.stats.fix_totals.(k) + fix_report.(k);
+                    if fix_report.(k) > 0
+                        obj.stats.fix_survey_counts.(k) = obj.stats.fix_survey_counts.(k) + 1;
+                    end
+                end
+            end
+        end
+    end
+end
+
+
+% =========================================================================
+% File-level helpers (not class methods)
+% =========================================================================
+
+function s = format_fix_summary(report)
+% Return a compact one-line description of which fixes fired and how many rows.
+    parts = {};
+    fields = fieldnames(report);
+    labels = struct( ...
+        'photos_0_to_1',   'PHOTOS 0->1', ...
+        'strip_neaq_2021', 'STRIP>16', ...
+        'beaufort_99',     'BEAUFORT 99', ...
+        'cloud_99',        'CLOUD 99', ...
+        'glarel_99',       'GLAREL 99', ...
+        'glarer_99',       'GLARER 99', ...
+        'numcalf_99',      'NUMCALF 99', ...
+        'speccode_trim',   'SPECCODE trim', ...
+        'legtype_99',      'LEGTYPE 99');
+    for i = 1:numel(fields)
+        k = fields{i};
+        if report.(k) > 0 && isfield(labels, k)
+            parts{end+1} = sprintf('%s=%d', labels.(k), report.(k)); %#ok<AGROW>
+        end
+    end
+    if isempty(parts)
+        s = 'none';
+    else
+        s = strjoin(parts, ', ');
+    end
+end
+
+function s = fix_summary_line(label, total_rows, survey_count)
+% Format one line of the Known Fixes Applied block in the error log.
+    if total_rows == 0
+        s = sprintf('%s: 0 rows', label);
+    else
+        s = sprintf('%s: %d rows across %d survey(s)', label, total_rows, survey_count);
     end
 end

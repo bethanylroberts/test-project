@@ -37,7 +37,8 @@ NARWC-DB/
 │   └── reload_config.m         # Clears cached config to force reload
 │
 ├── src/
-│   ├── +migration/             # Phase 1 leftovers — both files marked for deletion
+│   ├── +migration/
+│   │   ├── apply_known_fixes.m    # Category C corrections applied pre-validation
 │   │   ├── ConversionValidator.m  # FIXME:DELETE — unused
 │   │   └── MetadataExtractor.m    # FIXME:DELETE — unused
 │   │
@@ -103,7 +104,7 @@ NARWC-DB/
 │   │   ├── schema/                     # 01–06: create DB → tables → indexes → FKs → populate lookups
 │   │   ├── verification/               # Row counts, FK integrity checks
 │   │   ├── curation/                   # delete_survey, find_duplicates, recent_uploads
-│   │   ├── migration/                  # apply_known_fixes stub
+│   │   ├── migration/                  # apply_known_fixes (SQL fallback for post-upload correction)
 │   │   └── teardown/                   # drop_all_tables, truncate_master (dev only)
 │   └── setup/
 │       ├── test_connection.m               # Quick DB connection test
@@ -152,7 +153,7 @@ NARWC-DB/
 - **Personal pipeline walkthrough** (Russ) — run the full migration end-to-end on a local copy to surface remaining blockers; not yet started
 - **Lookup table updates** (Category A, 19 codes) — add missing platform codes (13), species codes (5), behavior codes (2), ANHEAD codes (2), BLOCK code (MB), GLARE code (9) to `data/tables/`; prerequisite for most remaining FK validation failures; pending Bob confirmation on each entry
 - **ANHEAD lookup expansion** — clarify whether ANHEAD=19 is valid or a sentinel; requires domain expert input
-- **`apply_known_fixes.m` side-script** (Category C) — mirrors Bob's SAS macro corrections to our copy of the legacy data; not yet started
+- **`apply_known_fixes.m`** (Category C) — **done**. `src/+migration/apply_known_fixes.m` implements all 8 fixes and is called by `BatchUploader.uploadFromFolder` between CSV parse and validation. SQL script retained as post-upload fallback. See `docs/known_fixes.md`.
 - **Package layout refactor** — rename `+io/` → `+ingestion/` (parsers), move `BatchUploader` to `+db/`, extract single-survey `Uploader` from `BatchUploader`; pre-August handoff goal
 - **SAS rule porting** — port SAS QC checks (`scripts/sas/Chk*.sas`) to MATLAB validation rules; TAXCODE-aware NUMBER thresholds implemented; remaining SAS checks TBD
 
