@@ -1,6 +1,6 @@
 # NARWC Database Project — Status
 
-_Branch: refactor | Last updated: 2026-06-26 (evening)_
+_Branch: refactor | Last updated: 2026-06-29_
 
 ---
 
@@ -152,11 +152,14 @@ NARWC-DB/
 
 - **SQL Server schema deployment** — all 6 schema scripts written (`scripts/sql/schema/`); next step is filling in the `<FILL_IN>` path in `06_populate_lookup_tables.sql` and running scripts 01–06 against the SQL Server instance. See `handoffs/db_setup_handoff.md`.
 - **Personal pipeline walkthrough** (Russ) — run the full migration end-to-end on a local copy to surface remaining blockers; not yet started
-- **Lookup table updates** (Category A, 19 codes) — add missing platform codes (13), species codes (5), behavior codes (2), ANHEAD codes (2), BLOCK code (MB), GLARE code (9) to `data/tables/`; prerequisite for most remaining FK validation failures; pending Bob confirmation on each entry
+- **Lookup table updates** (Category A, 19 codes) — add missing platform codes (13), species codes (5), behavior codes (2), ANHEAD codes (2), BLOCK code (MB), GLARE code (9) to `data/tables/`; prerequisite for most remaining FK validation failures; pending Bob confirmation on each entry. See §8.4.
 - **ANHEAD lookup expansion** — clarify whether ANHEAD=19 is valid or a sentinel; requires domain expert input
-- **`apply_known_fixes.m`** (Category C) — **done**. `src/+migration/apply_known_fixes.m` implements all 8 fixes and is called by `BatchUploader.uploadFromFolder` between CSV parse and validation. SQL script retained as post-upload fallback. See `docs/known_fixes.md`.
+- **Per-survey corrections** — specific event/field fixes for individual surveys; see §8.5. Prerequisite for those surveys passing validation.
+- **`apply_known_fixes.m`** (Category C) — **done**. `src/+migration/apply_known_fixes.m` implements all 8 fixes; called by `BatchUploader.uploadFromFolder` between CSV parse and validation, gated by `config.pipeline.known_fixes.enabled`. SQL script retained as post-upload fallback. See `docs/known_fixes.md`.
+- **Coordinate warning messages** — **done** (2026-06-29). `coordinate_rules.m` now includes the actual lat/lon value in all out-of-range and outside-survey-area warning messages.
 - **Package layout refactor** — rename `+io/` → `+ingestion/` (parsers), move `BatchUploader` to `+db/`, extract single-survey `Uploader` from `BatchUploader`; pre-August handoff goal
 - **SAS rule porting** — port SAS QC checks (`scripts/sas/Chk*.sas`) to MATLAB validation rules; TAXCODE-aware NUMBER thresholds implemented; remaining SAS checks TBD
+- **Opportunistic sighting field warnings** — `required_fields.m` raises 'error' for missing DAY/MONTH/TIME; these should be 'warning' for opportunistic sightings (identified by survey type prefix or explicit flag). Not yet implemented.
 
 ---
 
@@ -242,22 +245,63 @@ The major structural moves completed on the `refactor` branch:
 
 **Per-survey override mode (2026-06-25).** Empty `eventno` in `overrides.csv` acknowledges all warnings of a `(fileid, field, rule_id)` combination across an entire survey. Results expose `warnings_acknowledged_per_row` and `warnings_acknowledged_per_survey`.
 
-### 8.4 Lookup table audit
+### 8.4 Open validation/code tasks
+
+Items surfaced during migration that require code or config changes (not yet implemented):
+
+| Task | Notes |
+|------|-------|
+| Opportunistic fields (DAY/MONTH/TIME) → warning | `required_fields.m` raises error; should be warning for opportunistic sightings |
+| ANHEAD > 22 → NaN | Needs a new fix in `apply_known_fixes.m` (or post-upload SQL); threshold from field manual |
+| Check year/month/day matches FILEID | New validation rule; FILEID encodes the survey date — mismatch indicates data-entry error |
+| f403158: GLARER=7 → 1 | One-off correction; add to `apply_known_fixes.m` or override CSV |
+| o105921: PLATFORM=164 → 900 | Unknown platform code; 900 is the "other/unknown" sentinel; confirm with Bob |
+| o112971: DDSOURCE unknown | May be resolved by copying IDSOURCE to DDSOURCE; confirm with Bob |
+| o121911: CONFIDNC row 444 = 90 → 0 | Invalid code; 0 is the correct value |
+| o123921: EVENT 159 TIME=003716/DAY=11; EVENT 211 TIME=001240/DAY=26; EVENT 212 TIME=005201/DAY=26; EVENT 283 LONG_DD=-71.93525 (missing negative sign) | Four discrete corrections; add to override CSV or apply_known_fixes |
+
+---
+
+### 8.5 Lookup table audit
 
 _Status as of 2026-06-23; refresh after lookup table updates land._
 
-**Nothing on the README's "to add" list is currently present in any lookup table.** All additions below remain missing.
+All entries below are absent from their respective CSVs. Adding them and running `scripts/setup/push_lookup_tables.m` is the prerequisite for resolving the majority of FK validation failures in the legacy data. Pending Bob confirmation on each entry.
 
-| Table        | Missing entries                                                                                          |
-| ------------ | -------------------------------------------------------------------------------------------------------- |
-| SPECCODE.csv | CV-C, CV-O, CV-P, CV-R (wind-farm construction vessels), ECOT (dolphin watching)                        |
-| Behave.csv   | 73 (security zone patrol), 74 (pile-driving)                                                             |
-| ANHEAD.csv   | 19 (intent unclear — clarify before adding), 20 (underway, course unknown)                               |
-| Block.csv    | MB (Mass Bay — "not in manual, add?")                                                                    |
-| GLARE.csv    | 9 (legacy missing-value sentinel — add or null-ify existing values)                                      |
-| PLATFORM.csv | 70, 193, 194, 266, 268, 280, 325, 329, 330, 332, 573, 637, 644 (all 13 absent from PLATFORM.csv)        |
+| Table        | Missing entries                                                                                   |
+| ------------ | ------------------------------------------------------------------------------------------------- |
+| SPECCODE.csv | CV-C, CV-O, CV-P, CV-R (wind-farm construction vessels), ECOT (dolphin watching)                 |
+| Behave.csv   | 73 (security zone patrol), 74 (pile-driving)                                                      |
+| ANHEAD.csv   | 19 (intent unclear — clarify before adding), 20 (underway, course unknown)                        |
+| Block.csv    | MB (Mass Bay — not in manual; confirm before adding)                                              |
+| GLARE.csv    | 9 (legacy missing-value sentinel — add as valid code or null-ify existing 9 values in data)       |
+| PLATFORM.csv | 70, 193, 194, 266, 268, 280, 325, 329, 330, 332, 573, 637, 644 (13 codes absent from PLATFORM.csv) |
 
-Adding these codes and running `scripts/setup/push_lookup_tables.m` is the prerequisite for resolving the majority of FK validation failures in the legacy data.
+Platform notes: 573 = towboat/similar; 637 = APEM Partenavia; 266 = Canadian Coast Guard; 193 = Mingan Island Cetacean Study; 280 = misc./unknown Canadian vessel; 325 = Fugro Explorer; 194 = Helen H; 268 = R/V Leeway Odyssey; 329/330/332/644/70 = MMO vessels around wind farm.
+
+---
+
+### 8.6 Survey-specific data observations
+
+Known data quality issues in individual surveys. "Correction needed" items require explicit fix via `apply_known_fixes.m`, override CSV, or manual DB correction with Bob's approval.
+
+| Survey     | Issue                                                                                                                   | Status / Action |
+| ---------- | ----------------------------------------------------------------------------------------------------------------------- | --------------- |
+| c018101    | BEHAV1 values may be placed in ANHEAD field                                                                             | Investigate |
+| f011048    | BEHAV1 values may be placed in ANHEAD field                                                                             | Investigate |
+| f203360    | BEHAV1 values may be placed in ANHEAD field                                                                             | Investigate |
+| f403158    | GLARER=7 should be 1                                                                                                    | Needs correction (apply_known_fixes or override) |
+| f607053    | BEHAV1 values may be placed in ANHEAD field                                                                             | Investigate |
+| f608034    | BEHAV1 values may be placed in ANHEAD field                                                                             | Investigate |
+| o105921    | PLATFORM=164 (unknown code); likely should be 900 (other/unknown)                                                       | Confirm with Bob |
+| o112971    | DDSOURCE unknown; may be copied from IDSOURCE                                                                           | Confirm with Bob |
+| o113921    | PLATFORM=266 = Canadian Coast Guard (add to lookup — see §8.5)                                                          | Lookup table gap |
+| o117001    | Lat outside typical survey area and early year are both valid — opportunistic sighting                                  | Add override CSV entry |
+| o118921    | Lat/lon outside typical area is valid                                                                                   | Add override CSV entry |
+| o121911    | CONFIDNC row 444 = 90 (invalid); should be 0                                                                            | Needs correction |
+| o123921    | EVENT 159: TIME=003716/DAY=11; EVENT 211: TIME=001240/DAY=26; EVENT 212: TIME=005201/DAY=26; EVENT 283: LONG_DD=-71.93525 (missing negative sign) | Four corrections needed |
+| p3127214   | EVENT 540: LAT_DD=0, LONG_DD=0 (both missing in source data; printout shows interpolated 48.042/−63.714)               | Investigate — likely missing, not zero |
+| p905169G   | Large survey with many comments; suspected data corruption                                                              | Needs manual review before migration |
 
 ---
 
