@@ -32,10 +32,17 @@ function validation = validation_config_default()
     validation.coordinates.lon_max    = 180;
     validation.coordinates.check_land = false;
     % Study area bounds (warning if outside)
+<<<<<<< HEAD
     % validation.coordinates.study_area_lat_min = 20;
     % validation.coordinates.study_area_lat_max = 55;
     % validation.coordinates.study_area_lon_min = -85;
     % validation.coordinates.study_area_lon_max = -40;
+=======
+    validation.coordinates.study_area_lat_min = 20;
+    validation.coordinates.study_area_lat_max = 55;
+    validation.coordinates.study_area_lon_min = -85;
+    validation.coordinates.study_area_lon_max = -40;
+>>>>>>> 1655bbbb8891a88efce57fa118b63cef93537fd0
     % Aliases used by coordinate_rules
     validation.coordinates.survey_lat_min = 20;
     validation.coordinates.survey_lat_max = 55;

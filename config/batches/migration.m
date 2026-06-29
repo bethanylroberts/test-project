@@ -7,6 +7,7 @@ function overrides = migration()
 % Add fields here as the migration run surfaces new issues. Commented
 % examples below show the available fields.
 
+<<<<<<< HEAD
     overrides.validation.required_fields = {'LAT_DD', 'LONG_DD', 'YEAR'};
     overrides.validation.environmental.surftemp_max              = 37;
 
@@ -17,6 +18,8 @@ function overrides = migration()
 
 
     overrides.validation.datetime.year_warning = 1900;
+=======
+>>>>>>> 1655bbbb8891a88efce57fa118b63cef93537fd0
     overrides.validation.allow_unknown_lookup_codes                    = true;
     overrides.validation.environmental.visibility_allow_negative       = true;
     overrides.validation.overrides.csv_path                           = fullfile('config', 'overrides', 'migration_overrides.csv');
