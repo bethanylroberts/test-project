@@ -41,6 +41,7 @@ function results = step3_validate_migration(options)
     processed_dir = fullfile(options.BaseDir, 'processed');
     failed_dir = fullfile(options.BaseDir, 'failed');
     pending_dir = fullfile(options.BaseDir, 'pending');
+    log_dir = fileparts(options.BaseDir);
     
     % Verify directories exist
     if ~exist(processed_dir, 'dir')
@@ -63,12 +64,12 @@ function results = step3_validate_migration(options)
         % Analyze errors in detail if requested
         if options.DetailedErrorAnalysis && results.metrics.failed_uploads > 0
             fprintf('Analyzing errors...\n');
-            results.error_analysis = analyze_failed_surveys(failed_dir);
+            results.error_analysis = analyze_failed_surveys(failed_dir, log_dir);
             results.metrics.error_breakdown = results.error_analysis.error_breakdown;
         end
-        
+
         % Display summary
-        display_validation_summary(results, failed_dir);
+        display_validation_summary(results, failed_dir, log_dir);
         
         % Generate visualizations
         if options.GenerateCharts
@@ -269,9 +270,9 @@ function type_metrics = analyze_survey_types(results)
 end
 
 
-function error_analysis = analyze_failed_surveys(failed_dir)
+function error_analysis = analyze_failed_surveys(failed_dir, log_dir)
     % ANALYZE_FAILED_SURVEYS Analyze error logs from failed surveys
-    
+
     error_analysis = struct();
     error_analysis.error_breakdown = struct();
     error_analysis.error_breakdown.parsing_errors = 0;
@@ -281,13 +282,13 @@ function error_analysis = analyze_failed_surveys(failed_dir)
     error_analysis.error_breakdown.data_type_mismatches = 0;
     error_analysis.error_breakdown.constraint_violations = 0;
     error_analysis.error_breakdown.other_errors = 0;
-    
+
     error_analysis.detailed_errors = {};
     error_analysis.survey_errors = struct('filename', {}, 'error_type', {}, 'message', {});
-    
+
     % Look for error log file
-    error_log_file = fullfile(failed_dir, '_errors.log');
-    
+    error_log_file = fullfile(log_dir, '_errors.log');
+
     if ~exist(error_log_file, 'file')
         fprintf('⚠️  No error log found at: %s\n', error_log_file);
         fprintf('   Counting failed files instead...\n');
@@ -449,7 +450,7 @@ function db_stats = get_database_statistics(conn)
     end
 end
 
-function display_validation_summary(results, failed_dir)
+function display_validation_summary(results, failed_dir, log_dir)
     % Display comprehensive validation summary
     
     try
@@ -523,7 +524,7 @@ function display_validation_summary(results, failed_dir)
         
         % Show error log location
         if isfield(results, 'error_analysis')
-            error_log = fullfile(failed_dir, '_errors.log');
+            error_log = fullfile(log_dir, '_errors.log');
             if exist(error_log, 'file')
                 fprintf('Full error log: %s\n\n', error_log);
             end

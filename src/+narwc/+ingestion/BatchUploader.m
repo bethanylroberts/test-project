@@ -76,7 +76,7 @@ classdef BatchUploader < handle
                 run_ts = '';
             end
 
-            failed_dir = fullfile(obj.base_dir, 'failed');
+            log_dir = fileparts(obj.base_dir);
 
             use_datetime = true;
             if isfield(obj.batch_config, 'pipeline') && ...
@@ -89,11 +89,11 @@ classdef BatchUploader < handle
                 if isempty(run_ts)
                     run_ts = narwc.logging.run_timestamp();
                 end
-                obj.error_log_file   = fullfile(failed_dir, sprintf('_errors_%s.log', run_ts));
-                obj.run_summary_file = fullfile(failed_dir, sprintf('_run_summary_%s.csv', run_ts));
+                obj.error_log_file   = fullfile(log_dir, sprintf('_errors_%s.log', run_ts));
+                obj.run_summary_file = fullfile(log_dir, sprintf('_run_summary_%s.csv', run_ts));
             else
-                obj.error_log_file   = fullfile(failed_dir, '_errors.log');
-                obj.run_summary_file = fullfile(failed_dir, '_run_summary.csv');
+                obj.error_log_file   = fullfile(log_dir, '_errors.log');
+                obj.run_summary_file = fullfile(log_dir, '_run_summary.csv');
             end
 
             fid = fopen(obj.error_log_file, 'a');
