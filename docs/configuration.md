@@ -56,16 +56,21 @@ The merged config has three top-level sections:
 
 ### config.validation
 
-| Field                                  | Default | Migration |
-|----------------------------------------|---------|-----------|
-| `thresholds.year_min`                  | 1980    | 1970      |
-| `thresholds.year_max`                  | now+1   | now+1     |
-| `thresholds.group_size_default`        | 1000000 | —         |
-| `thresholds.calf_count_default`        | 100000  | —         |
-| `warnings_become_errors`               | false   | false     |
-| `allow_unknown_lookup_codes`           | false   | true      |
-| `overrides.enabled`                    | true    | true      |
-| `overrides.csv_path`                   | `''`    | `config/overrides/migration_overrides.csv` |
+| Field                                      | Default  | Notes                                      |
+|--------------------------------------------|----------|--------------------------------------------|
+| `datetime.year_min`                        | 1970     | Records below this year are errors         |
+| `datetime.year_max`                        | now+1    |                                            |
+| `datetime.year_warning`                    | 1890     | Records below this year trigger a warning  |
+| `coordinates.lat_min/max`                  | -90/90   |                                            |
+| `coordinates.study_area_lat_min/max`       | 20/55    | Warning if outside study area              |
+| `coordinates.study_area_lon_min/max`       | -85/-40  |                                            |
+| `species.thresholds.group_size_default`    | 100000   | Fallback when SPECCODE/TAXCODE have no threshold |
+| `species.thresholds.calf_count_default`    | 100      |                                            |
+| `environmental.visibility_allow_negative`  | true     | Legacy data has negative visibility codes  |
+| `warnings_become_errors`                   | false    |                                            |
+| `allow_unknown_lookup_codes`               | false    | true in migration batch                    |
+| `overrides.enabled`                        | true     |                                            |
+| `overrides.csv_path`                       | `''`     | Set in batch config                        |
 
 ### config.pipeline
 
