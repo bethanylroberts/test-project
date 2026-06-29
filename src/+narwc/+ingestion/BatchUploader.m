@@ -212,19 +212,28 @@ classdef BatchUploader < handle
                     end
 
                     % Apply known Category C corrections before validation.
-                    % Fixes are applied silently; a log line fires only when
-                    % at least one row was actually changed.
-                    if ismember('FILEID', survey_data.Properties.VariableNames)
-                        fix_fileid = survey_data.FILEID{1};
-                    else
-                        fix_fileid = '';
+                    % Gated by config.pipeline.known_fixes.enabled (default: true).
+                    % A log line fires only when at least one row was actually changed.
+                    apply_fixes = true;
+                    if isfield(obj.batch_config, 'pipeline') && ...
+                            isfield(obj.batch_config.pipeline, 'known_fixes') && ...
+                            isfield(obj.batch_config.pipeline.known_fixes, 'enabled')
+                        apply_fixes = obj.batch_config.pipeline.known_fixes.enabled;
                     end
-                    [survey_data, fix_report] = migration.apply_known_fixes(survey_data, fix_fileid);
-                    if any(structfun(@(x) x > 0, fix_report))
-                        obj.logger.info(sprintf('Known fixes applied to %s: %s', ...
-                            fix_fileid, format_fix_summary(fix_report)));
+
+                    if apply_fixes
+                        if ismember('FILEID', survey_data.Properties.VariableNames)
+                            fix_fileid = survey_data.FILEID{1};
+                        else
+                            fix_fileid = '';
+                        end
+                        [survey_data, fix_report] = migration.apply_known_fixes(survey_data, fix_fileid);
+                        if any(structfun(@(x) x > 0, fix_report))
+                            obj.logger.info(sprintf('Known fixes applied to %s: %s', ...
+                                fix_fileid, format_fix_summary(fix_report)));
+                        end
+                        obj.accumulateFixReport(fix_report);
                     end
-                    obj.accumulateFixReport(fix_report);
 
                     [success, category] = obj.uploadSurvey(survey_data, ...
                         'Overwrite',        options.Overwrite, ...
