@@ -11,6 +11,10 @@ function overrides = migration()
     overrides.validation.environmental.visibility_allow_negative       = true;
     overrides.validation.overrides.csv_path                           = fullfile('config', 'overrides', 'migration_overrides.csv');
     overrides.pipeline.known_fixes.enabled                            = true;
+    overrides.validation.allow_unknown_lookup_codes                    = true;
+    overrides.validation.environmental.visibility_allow_negative       = true;
+    overrides.validation.overrides.csv_path                           = fullfile('config', 'overrides', 'migration_overrides.csv');
+    overrides.pipeline.known_fixes.enabled                            = true;
 
     overrides.validation.behavioral.calf_associated_behaviors   = [];
 
