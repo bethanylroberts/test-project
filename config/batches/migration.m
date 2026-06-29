@@ -7,19 +7,6 @@ function overrides = migration()
 % Add fields here as the migration run surfaces new issues. Commented
 % examples below show the available fields.
 
-<<<<<<< HEAD
-    overrides.validation.required_fields = {'LAT_DD', 'LONG_DD', 'YEAR'};
-    overrides.validation.environmental.surftemp_max              = 37;
-
-    overrides.validation.coordinates.survey_lat_min = 20;
-    overrides.validation.coordinates.survey_lat_max = 55;
-    overrides.validation.coordinates.survey_lon_min = -85;
-    overrides.validation.coordinates.survey_lon_max = -20;
-
-
-    overrides.validation.datetime.year_warning = 1900;
-=======
->>>>>>> 1655bbbb8891a88efce57fa118b63cef93537fd0
     overrides.validation.allow_unknown_lookup_codes                    = true;
     overrides.validation.environmental.visibility_allow_negative       = true;
     overrides.validation.overrides.csv_path                           = fullfile('config', 'overrides', 'migration_overrides.csv');
@@ -36,7 +23,11 @@ function overrides = migration()
     overrides.validation.species.allow_numcalf_exceeds_half     = true;
 
     % Additional fields — uncomment and adjust as needed:
-    % overrides.validation.datetime.year_min = 1960;
+    overrides.validation.datetime.year_min = 1700;
+    overrides.validation.datetime.year_warning = 1700;
+    overrides.validation.environmental.surftemp_max = 38;
+
+
     % overrides.validation.species.thresholds.group_size_default = 1000000;
     % overrides.pipeline.fk_violations_blocking = false;
 end
