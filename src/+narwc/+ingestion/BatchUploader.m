@@ -95,8 +95,8 @@ classdef BatchUploader < handle
                 if isempty(run_ts)
                     run_ts = narwc.logging.run_timestamp();
                 end
-                obj.error_log_file   = fullfile(failed_dir, sprintf('errors_%s.log', run_ts));
-                obj.run_summary_file = fullfile(failed_dir, sprintf('run_summary_%s.csv', run_ts));
+                obj.error_log_file   = fullfile(failed_dir, sprintf('_errors_%s.log', run_ts));
+                obj.run_summary_file = fullfile(failed_dir, sprintf('_run_summary_%s.csv', run_ts));
             else
                 obj.error_log_file   = fullfile(failed_dir, '_errors.log');
                 obj.run_summary_file = fullfile(failed_dir, '_run_summary.csv');
