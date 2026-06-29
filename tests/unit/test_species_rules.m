@@ -171,6 +171,7 @@ config.right_whale_codes               = {'RIWH', 'NARW', 'SARW'};
 config.right_whale_max_group           = 9999;  % suppress right-whale-specific check
 config.right_whale_max_calves          = 9999;
 config.lookup_table_dir                = '';    % prevent file loading
+config.allow_numcalf_exceeds_half      = false;
 end
 
 

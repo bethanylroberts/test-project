@@ -4,12 +4,9 @@ function datetime_rules(data, collector, config)
     % Inputs:
     %   data - Table with survey data
     %   collector - ErrorCollector instance
-    %   config - Configuration struct (optional)
+    %   config - Configuration struct
 
-    if nargin < 3 || isempty(config)
-        full_config = get_config('validation');
-        config = full_config.datetime;
-    elseif isfield(config, 'datetime')
+    if isfield(config, 'datetime')
         config = config.datetime;
     end
 
@@ -125,10 +122,4 @@ function eventno = get_eventno(data, row)
             eventno = val;
         end
     end
-end
-
-function config = default_config() %#ok<DEFNU>
-    config.year_min     = 1970;
-    config.year_max     = year(datetime('now')) + 1;
-    config.year_warning = 1990;
 end

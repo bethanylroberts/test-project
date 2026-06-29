@@ -11,15 +11,16 @@ function overrides = migration()
     overrides.validation.environmental.visibility_allow_negative       = true;
     overrides.validation.overrides.csv_path                           = fullfile('config', 'overrides', 'migration_overrides.csv');
     overrides.pipeline.known_fixes.enabled                            = true;
-    overrides.validation.allow_unknown_lookup_codes                    = true;
-    overrides.validation.environmental.visibility_allow_negative       = true;
-    overrides.validation.overrides.csv_path                           = fullfile('config', 'overrides', 'migration_overrides.csv');
-    overrides.pipeline.known_fixes.enabled                            = true;
 
     % NOTE: there are a lot of historical instances of calf associated behaviors
     % which do not record numcalf. Dr Kenney reports that calfs were often not
     % recorded, so these warnings must be ignored.
     overrides.validation.behavioral.calf_associated_behaviors   = [];
+
+    % Legacy data frequently has NUMCALF > NUMBER/2 (small groups with one
+    % calf). Suppress this warning for migration; curators should re-enable
+    % for new survey ingestion.
+    overrides.validation.species.allow_numcalf_exceeds_half     = true;
 
     % Additional fields — uncomment and adjust as needed:
     % overrides.validation.datetime.year_min = 1960;

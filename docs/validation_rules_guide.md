@@ -54,8 +54,9 @@ For each rule you port, write a test:
 function testYourCustomRule(testCase)
     data = create_test_data_with_known_issues();
     collector = narwc.validation.ErrorCollector();
-    narwc.validation.rules.your_custom_rule(data, collector);
-    
+    cfg = load_config(); cfg = cfg.validation;  % always pass config
+    narwc.validation.rules.your_custom_rule(data, collector, cfg);
+
     testCase.verifyGreaterThan(collector.getErrorCount(), 0);
 end
 ```

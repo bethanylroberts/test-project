@@ -5,7 +5,10 @@ classdef SurveyValidator < handle
     %   validator = narwc.validation.SurveyValidator();
     %   [is_valid, results] = validator.validate(data);
     %
-    %   % With a custom override file (useful in tests):
+    %   % Run with migration batch config:
+    %   validator = narwc.validation.SurveyValidator('migration');
+    %
+    %   % Pass a raw config struct (for tests):
     %   cfg = struct('override_file', '/path/to/overrides.csv');
     %   validator = narwc.validation.SurveyValidator(cfg);
 
@@ -17,16 +20,35 @@ classdef SurveyValidator < handle
     end
 
     methods
-        function obj = SurveyValidator(config)
+        function obj = SurveyValidator(batch_name_or_config)
             % SURVEYVALIDATOR Constructor
+            %
+            % Inputs (optional):
+            %   batch_name_or_config - char/string batch name (loads via load_config),
+            %                          or struct of raw config overrides
 
             obj.logger    = logging.Logger('narwc.validation.SurveyValidator');
             obj.collector = narwc.validation.ErrorCollector();
 
-            if nargin < 1 || isempty(config)
+            if nargin < 1 || isempty(batch_name_or_config)
                 obj.config = obj.defaultConfig();
+            elseif ischar(batch_name_or_config) || isstring(batch_name_or_config)
+                try
+                    full = load_config(char(batch_name_or_config));
+                    obj.config = obj.mergeConfig(obj.defaultConfig(), full.validation);
+                catch ME
+                    error('SurveyValidator:BatchNotFound', ...
+                        'Could not load batch config "%s": %s', batch_name_or_config, ME.message);
+                end
             else
-                obj.config = obj.mergeConfig(obj.defaultConfig(), config);
+                obj.config = obj.mergeConfig(obj.defaultConfig(), batch_name_or_config);
+            end
+
+            % Batch configs set the override path via overrides.csv_path;
+            % reconcile with the top-level override_file field.
+            if isfield(obj.config, 'overrides') && isfield(obj.config.overrides, 'csv_path') && ...
+                    ~isempty(obj.config.overrides.csv_path) && isempty(obj.config.override_file)
+                obj.config.override_file = obj.config.overrides.csv_path;
             end
 
             obj.overrides = obj.loadOverrides(obj.config.override_file);
@@ -48,7 +70,7 @@ classdef SurveyValidator < handle
             % Run validation rules
             obj.runValidationRules(data);
 
-            % Extract FILEID for override matching  
+            % Extract FILEID for override matching
             % TODO: increase readability of this section (maybe just refactor
             % into method) if height(data) < 0 this function does nothing
             % anyway, maybe should pop a different error
@@ -108,39 +130,38 @@ classdef SurveyValidator < handle
 
         function runValidationRules(obj, data)
             % RUNVALIDATIONRULES Execute all validation rules
-
-            % TODO: figure out how configs may need to be incorporated into the
-            % below rules. The rules functions accept a config, but it is not
-            % used here.
+            %
+            % obj.config (the full validation config struct) is passed to every
+            % rule. Each rule extracts its own sub-struct at the top.
 
             if obj.config.validate_required_fields
                 obj.logger.debug('Validating required fields...');
-                narwc.validation.rules.required_fields(data, obj.collector);
+                narwc.validation.rules.required_fields(data, obj.collector, obj.config);
             end
 
             if obj.config.validate_coordinates
                 obj.logger.debug('Validating coordinates...');
-                narwc.validation.rules.coordinate_rules(data, obj.collector);
+                narwc.validation.rules.coordinate_rules(data, obj.collector, obj.config);
             end
 
             if obj.config.validate_datetime
                 obj.logger.debug('Validating date/time fields...');
-                narwc.validation.rules.datetime_rules(data, obj.collector);
+                narwc.validation.rules.datetime_rules(data, obj.collector, obj.config);
             end
 
             if obj.config.validate_species
                 obj.logger.debug('Validating species fields...');
-                narwc.validation.rules.species_rules(data, obj.collector);
+                narwc.validation.rules.species_rules(data, obj.collector, obj.config);
             end
 
             if obj.config.validate_environmental
                 obj.logger.debug('Validating environmental fields...');
-                narwc.validation.rules.environmental_rules(data, obj.collector);
+                narwc.validation.rules.environmental_rules(data, obj.collector, obj.config);
             end
 
             if obj.config.validate_beaufort
                 obj.logger.debug('Validating Beaufort scale...');
-                narwc.validation.rules.beaufort_rules(data, obj.collector);
+                narwc.validation.rules.beaufort_rules(data, obj.collector, obj.config);
             end
 
             if obj.config.validate_behavioral
@@ -148,9 +169,14 @@ classdef SurveyValidator < handle
                 narwc.validation.rules.behavioral_rules(data, obj.collector, obj.config);
             end
 
+            if obj.config.validate_platform
+                obj.logger.debug('Validating platform field...');
+                narwc.validation.rules.platform_rules(data, obj.collector, obj.config);
+            end
+
             if obj.config.validate_foreign_keys
                 obj.logger.debug('Validating foreign key fields...');
-                narwc.validation.rules.foreign_key_rules(data, obj.collector);
+                narwc.validation.rules.foreign_key_rules(data, obj.collector, obj.config);
             end
         end
 
@@ -331,10 +357,15 @@ classdef SurveyValidator < handle
         end
 
         function config = defaultConfig(~)
-            % DEFAULTCONFIG Default validation configuration
+            % DEFAULTCONFIG Build default validation config from load_config().
+            %
+            % All defaults live in config/defaults/validation_config_default.m.
+            % The flags below (validate_*, allow_*) are SurveyValidator-level
+            % controls on top of those defaults.
 
             try
-                config = get_config('validation');
+                full = load_config();
+                config = full.validation;
             catch
                 config = struct();
             end
@@ -352,9 +383,7 @@ classdef SurveyValidator < handle
             config.allow_errors   = false;
             config.allow_warnings = false;
 
-            % Override file path — caller can supply via config struct or
-            % set via load_config() batch config (validation.overrides.csv_path).
-            % Empty string means no overrides are loaded.
+            % Override file path — reconciled with overrides.csv_path in constructor.
             config.override_file = '';
         end
 

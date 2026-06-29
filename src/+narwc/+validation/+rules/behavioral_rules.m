@@ -4,33 +4,10 @@ function behavioral_rules(data, collector, config)
     % Inputs:
     %   data      - Table with survey data
     %   collector - ErrorCollector instance
-    %   config    - Configuration struct (optional)
+    %   config    - Configuration struct
 
-    if nargin < 3 || isempty(config)
-        full_config = get_config('validation');
-        config = full_config.behavioral;
-        config.behave_table_path = full_config.behave_table_path;
-    elseif isfield(config, 'behavioral')
-        behave_path = '';
-        if isfield(config, 'behave_table_path')
-            behave_path = config.behave_table_path;
-        elseif isfield(config.behavioral, 'behave_table_path')
-            behave_path = config.behavioral.behave_table_path;
-        end
+    if isfield(config, 'behavioral')
         config = config.behavioral;
-        if ~isempty(behave_path)
-            config.behave_table_path = behave_path;
-        end
-    end
-
-    if ~isfield(config, 'behave_table_path')
-        try
-            paths = get_config('paths');
-            config.behave_table_path = paths.lookup_tables.behave;
-        catch
-            warning('behavioral_rules:NoPath', 'Could not determine behave_table_path');
-            return;
-        end
     end
 
     valid_codes = load_behavior_codes(config);
@@ -329,15 +306,4 @@ function validate_calf_behavior_consistency(data, behav_matrix, collector, confi
                 mat2str(found)), 'warning', ...
             'behavioral_rules.calf_behavior_no_calf', eventno);
     end
-end
-
-function config = default_config() %#ok<DEFNU>
-    % FIXME: is this generally used? We should add this information to the lookup table
-    config.behave_table_path            = fullfile('.', 'data', 'tables', 'Behave.csv');
-    config.dead_behaviors               = [0, 1, 2, 3];
-    config.active_swimming_behaviors    = [6, 7, 8, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21];
-    config.incompatible_behavior_pairs  = [6, 22; 22, 11];
-    config.calf_associated_behaviors    = [];
-    config.taxcode_behavior_restrictions = struct();
-    config.species_behavior_restrictions = struct();
 end

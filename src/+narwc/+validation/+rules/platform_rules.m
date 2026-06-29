@@ -4,46 +4,36 @@ function platform_rules(data, collector, config)
     % Inputs:
     %   data      - Table with survey data
     %   collector - ErrorCollector instance
-    %   config    - Configuration struct (optional)
+    %   config    - Configuration struct
 
     if ~ismember('PLATFORM', data.Properties.VariableNames)
         return;
     end
 
-    if nargin < 3 || isempty(config)
-        try
-            paths = get_config('paths');
-            config.platform_table_path = paths.lookup_tables.platform;
-        catch
-            config.platform_table_path = fullfile('.', 'data', 'tables', 'PLATFORM.csv');
-        end
-    elseif ~isfield(config, 'platform_table_path')
-        try
-            paths = get_config('paths');
-            config.platform_table_path = paths.lookup_tables.platform;
-        catch
-            config.platform_table_path = fullfile('.', 'data', 'tables', 'PLATFORM.csv');
-        end
+    if isfield(config, 'platform')
+        platform_table_path = config.platform.table_path;
+    else
+        platform_table_path = fullfile('data', 'tables', 'PLATFORM.csv');
     end
 
-    valid_codes = load_platform_codes(config);
+    valid_codes = load_platform_codes(platform_table_path);
     if isempty(valid_codes)
         warning('platform_rules:NoCodesLoaded', ...
             'Could not load platform codes from %s - skipping platform validation', ...
-            config.platform_table_path);
+            platform_table_path);
         return;
     end
 
     validate_platform_values(data, collector, valid_codes);
 end
 
-function valid_codes = load_platform_codes(config)
+function valid_codes = load_platform_codes(platform_table_path)
     valid_codes = [];
-    if ~exist(config.platform_table_path, 'file')
+    if ~exist(platform_table_path, 'file')
         return;
     end
     try
-        platform_table = readtable(config.platform_table_path, 'TextType', 'string');
+        platform_table = readtable(platform_table_path, 'TextType', 'string');
         if ismember('Value', platform_table.Properties.VariableNames)
             valid_codes = platform_table.Value;
         elseif ismember('CODE', platform_table.Properties.VariableNames)

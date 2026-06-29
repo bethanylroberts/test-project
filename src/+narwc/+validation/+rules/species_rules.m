@@ -6,31 +6,11 @@ function species_rules(data, collector, config)
     % Inputs:
     %   data - Table with survey data
     %   collector - ErrorCollector instance
-    %   config - Configuration struct (optional)
+    %   config - Configuration struct
 
-    if nargin < 3 || isempty(config)
-        full_config = get_config('validation');
-        config = full_config.species;
-        config.speccode_table_path = full_config.speccode_table_path;
-        config.taxcode_table_path  = full_config.taxcode_table_path;
-    elseif isfield(config, 'species')
-        paths = struct();
-        if isfield(config, 'speccode_table_path')
-            paths.speccode_table_path = config.speccode_table_path;
-        end
-        if isfield(config, 'taxcode_table_path')
-            paths.taxcode_table_path = config.taxcode_table_path;
-        end
+    if isfield(config, 'species')
         config = config.species;
-        if isfield(paths, 'speccode_table_path')
-            config.speccode_table_path = paths.speccode_table_path;
-        end
-        if isfield(paths, 'taxcode_table_path')
-            config.taxcode_table_path = paths.taxcode_table_path;
-        end
     end
-
-    config = merge_with_defaults(config);
 
     if isempty(config.speccode_table)
         config = load_lookup_tables(config);
@@ -70,40 +50,8 @@ function species_rules(data, collector, config)
 end
 
 %% =========================================================================
-%  CONFIGURATION
+%  LOOKUP TABLE LOADER
 %% =========================================================================
-
-function config = default_config()
-    config.lookup_table_dir             = 'data/tables';
-    config.valid_taxcodes               = 0:9;
-    config.cetacean_taxcodes            = [1, 2, 3];
-    config.marine_mammal_taxcodes       = [1, 2, 3, 4];
-    config.thresholds.group_size_default = 1000;   % fallback when SPECCODE and TAXCODE both NULL
-    config.thresholds.calf_count_default  = 100;
-    config.right_whale_codes            = {'RIWH', 'NARW', 'SARW'};
-    config.right_whale_max_group        = 50;
-    config.right_whale_max_calves       = 5;
-    config.require_speccode_for_sightings = true;
-    config.require_taxcode_for_sightings  = true;
-    config.validate_speccode_lookup       = true;
-    config.validate_taxcode_lookup        = true;
-    config.validate_speccode_taxcode_match = true;
-    config.speccode_table = [];
-    config.speccode_map   = [];
-    config.taxcode_table  = [];
-    config.taxcode_map    = [];
-end
-
-function config = merge_with_defaults(config)
-    defaults = default_config();
-    default_fields = fieldnames(defaults);
-    for i = 1:length(default_fields)
-        field = default_fields{i};
-        if ~isfield(config, field)
-            config.(field) = defaults.(field);
-        end
-    end
-end
 
 function config = load_lookup_tables(config)
     speccode_file = fullfile(config.lookup_table_dir, 'SPECCODE.csv');
@@ -175,16 +123,6 @@ function is_sighting = identify_sighting_records(data)
         end
     end
 end
-
-% function speccode_str = safe_get_speccode(data, idx)
-%     if iscell(data.SPECCODE)
-%         speccode_str = data.SPECCODE{idx};
-%     elseif isstring(data.SPECCODE)
-%         speccode_str = char(data.SPECCODE(idx));
-%     else
-%         speccode_str = char(data.SPECCODE(idx));
-%     end
-% end
 
 function speccode_str = safe_get_speccode(data, idx)
     val = data.SPECCODE(idx);
@@ -440,7 +378,7 @@ function validate_calf_count(data, collector, config, is_sighting) %#ok<INUSD>
     end
 end
 
-function validate_calves_vs_total(data, collector, config) %#ok<INUSD>
+function validate_calves_vs_total(data, collector, config)
     num_records = height(data);
     for i = 1:num_records
         number  = data.NUMBER(i);
@@ -453,7 +391,7 @@ function validate_calves_vs_total(data, collector, config) %#ok<INUSD>
                 sprintf('NUMCALF (%d) exceeds total NUMBER (%d)', numcalf, number), ...
                 'error', 'species_rules.numcalf_exceeds_total');
         end
-        if numcalf > 0 && number > 0 && numcalf > number / 2
+        if ~config.allow_numcalf_exceeds_half && numcalf > 0 && number > 0 && numcalf > number / 2
             eventno = get_eventno(data, i);
             collector.addError('NUMCALF', i, ...
                 sprintf('NUMCALF (%d) is more than half of NUMBER (%d) - verify count', ...

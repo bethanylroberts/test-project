@@ -4,12 +4,9 @@ function coordinate_rules(data, collector, config)
     % Inputs:
     %   data - Table with survey data
     %   collector - ErrorCollector instance
-    %   config - Configuration struct (optional)
+    %   config - Configuration struct
 
-    if nargin < 3 || isempty(config)
-        full_config = get_config('validation');
-        config = full_config.coordinates;
-    elseif isfield(config, 'coordinates')
+    if isfield(config, 'coordinates')
         config = config.coordinates;
     end
 
@@ -101,7 +98,6 @@ function validate_coordinate_pairs(data, collector, config) %#ok<INUSD>
 end
 
 function eventno = get_eventno(data, row)
-    % GET_EVENTNO Extract EVENTNO for a given row, or return [] if unavailable
     eventno = [];
     if ismember('EVENTNO', data.Properties.VariableNames)
         val = data.EVENTNO(row);
@@ -109,16 +105,4 @@ function eventno = get_eventno(data, row)
             eventno = val;
         end
     end
-end
-
-function config = default_config() %#ok<DEFNU>
-    config.lat_min = -90;
-    config.lat_max = 90;
-    config.lon_min = -180;
-    config.lon_max = 180;
-    config.survey_lat_min = 35;
-    config.survey_lat_max = 50;
-    config.survey_lon_min = -75;
-    config.survey_lon_max = -60;
-    config.check_land = false;
 end

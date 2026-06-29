@@ -76,7 +76,7 @@ The `rule_id` appears in the validation output and in `_errors.log`. It takes th
 | `species_rules.number_large_group`              | Group size unusually large                    |
 | `species_rules.numcalf_exceeds_max`             | Calf count above maximum threshold            |
 | `species_rules.numcalf_non_mammal`              | Calf count for non-mammal species             |
-| `species_rules.numcalf_exceeds_half`            | Calf count more than half the group           |
+| `species_rules.numcalf_exceeds_half`            | Calf count more than half the group — can be suppressed globally by setting `validation.species.allow_numcalf_exceeds_half = true` in a batch config (already set in `migration.m`) |
 | `species_rules.right_whale_large_group`         | Right whale group unusually large             |
 | `species_rules.right_whale_high_calf_count`     | Right whale calf count unusually high         |
 | `behavioral_rules.calf_behavior_no_calf`        | Calf-associated behavior without calf present |

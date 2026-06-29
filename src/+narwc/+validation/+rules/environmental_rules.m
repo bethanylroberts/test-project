@@ -4,12 +4,9 @@ function environmental_rules(data, collector, config)
     % Inputs:
     %   data - Table with survey data
     %   collector - ErrorCollector instance
-    %   config - Configuration struct (optional)
+    %   config - Configuration struct
 
-    if nargin < 3 || isempty(config)
-        full_config = get_config('validation');
-        config = full_config.environmental;
-    elseif isfield(config, 'environmental')
+    if isfield(config, 'environmental')
         config = config.environmental;
     end
 
@@ -70,12 +67,4 @@ function eventno = get_eventno(data, row)
             eventno = val;
         end
     end
-end
-
-function config = default_config() %#ok<DEFNU>
-    config.cloud_values             = 0:8;
-    config.visibility_max           = 50;
-    config.visibility_allow_negative = true;
-    config.surftemp_min             = -2;
-    config.surftemp_max             = 35;
 end
