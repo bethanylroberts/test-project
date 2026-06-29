@@ -9,6 +9,8 @@ classdef SurveyReader < handle
     %   reader = narwc.io.SurveyReader('survey.csv', 'FormatHint', 'LegacyFormat');
     %   data = reader.read();
     
+    % FIXME: DELETE, have the user set up the format manually, currently used in test_parsers.m
+
     properties (Access = private)
         file_path
         parser

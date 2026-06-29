@@ -1,0 +1,17 @@
+# NARWC Warning Override Store
+# Each row acknowledges one or more warnings so they no longer block upload.
+# Add entries here after reviewing warnings from a validation run.
+#
+# Columns:
+#   fileid            - Survey identifier (e.g., f098027)
+#   eventno           - EVENTNO of the offending record (integer).
+#                       Leave EMPTY for a per-survey override that matches
+#                       all warnings of (fileid, field, rule_id) regardless
+#                       of EVENTNO.  See docs/warning_overrides.md.
+#   field             - Field that was flagged (e.g., LAT_DD)
+#   rule_id           - Stable rule identifier (e.g., coordinate_rules.outside_survey_lat)
+#   acknowledged_by   - Curator name or initials
+#   acknowledged_date - ISO 8601 date (YYYY-MM-DD)
+#   reason            - Free-text justification (strongly recommended for per-survey overrides)
+#
+fileid,eventno,field,rule_id,acknowledged_by,acknowledged_date,reason

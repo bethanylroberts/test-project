@@ -1,0 +1,16 @@
+PUBLIC M_LT
+GO 1
+STORE ' ' TO M_LT
+DO WHILE .NOT. EOF()
+DO CASE 
+   CASE LEGTYPE <> ' '
+        M_LT = LEGTYPE
+        SKIP
+   CASE LEGTYPE=' '
+        REPLACE LEGTYPE WITH M_LT
+        M_LT = LEGTYPE
+        SKIP
+   ENDCASE 
+ENDDO
+RETURN
+

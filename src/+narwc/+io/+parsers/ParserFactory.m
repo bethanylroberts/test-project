@@ -4,6 +4,8 @@ classdef ParserFactory
     % Usage:
     %   parser = narwc.io.parsers.ParserFactory.create('survey.csv');
     %   [data, metadata] = parser.read();
+
+    % FIXME: get rid of this (and remove from tests). I do not want to auto-detect. The user should be selecting the correct parser when they set up the converter
     
     methods (Static)
         function parser = create(file_path, format_hint)

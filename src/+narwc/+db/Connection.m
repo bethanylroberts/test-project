@@ -190,6 +190,70 @@ classdef Connection < handle
             end
         end
         
+        function ac = getAutoCommit(obj)
+            % GETAUTOCOMMIT Query current AutoCommit state
+            % Returns 'on' if the state cannot be read (driver limitation).
+            try
+                ac = obj.conn.AutoCommit;
+            catch
+                ac = 'on';
+            end
+        end
+
+        function setAutoCommit(obj, value)
+            % SETAUTOCOMMIT Restore AutoCommit state
+            % Falls back to 'on' if value cannot be set.
+            try
+                obj.conn.AutoCommit = value;
+            catch
+                try
+                    obj.conn.AutoCommit = 'on';
+                catch
+                end
+            end
+        end
+
+        function beginTransaction(obj)
+            % BEGINTRANSACTION Begin a database transaction
+            % Sets AutoCommit = 'off'.  Throws if the driver does not
+            % support transactions so the caller can fall back.
+            if ~obj.isOpen()
+                error('Database connection is not open');
+            end
+            try
+                obj.conn.AutoCommit = 'off';
+            catch ME
+                obj.log('warning', sprintf('Driver does not support transactions: %s', ME.message));
+                rethrow(ME);
+            end
+        end
+
+        function commit(obj)
+            % COMMIT Commit the current transaction
+            if ~obj.isOpen()
+                error('Database connection is not open');
+            end
+            try
+                commit(obj.conn);
+            catch ME
+                obj.log('error', sprintf('Commit failed: %s', ME.message));
+                rethrow(ME);
+            end
+        end
+
+        function rollback(obj)
+            % ROLLBACK Roll back the current transaction
+            if ~obj.isOpen()
+                error('Database connection is not open');
+            end
+            try
+                rollback(obj.conn);
+            catch ME
+                obj.log('error', sprintf('Rollback failed: %s', ME.message));
+                rethrow(ME);
+            end
+        end
+
         function update(obj, tablename, data, where_clause)
             % UPDATE Update records in table
             %
@@ -249,26 +313,26 @@ classdef Connection < handle
     end
     
     methods (Static)
-        function obj = create(config_file)
-            % CREATE Create database connection using config file
+        function obj = create(db_config)
+            % CREATE Create database connection
             %
             % Usage:
-            %   conn = narwc.db.Connection.create()                    % Use default config
-            %   conn = narwc.db.Connection.create('my_db_config.m')    % Use custom config
-            
-            if nargin < 1
-                config_file = 'db_config';
+            %   conn = narwc.db.Connection.create()            % load config internally
+            %   conn = narwc.db.Connection.create(config.db)   % use caller-supplied db config
+
+            if nargin < 1 || isempty(db_config)
+                try
+                    full_config = load_config();
+                    db_config   = full_config.db;
+                catch ME
+                    error('narwc:db:Connection:ConfigLoadFailed', ...
+                        'Failed to load database config via load_config(): %s\n%s', ...
+                        ME.message, ...
+                        'Create config/local/db_config_local.m from the template and add credentials.');
+                end
             end
-            
-            % Load configuration
-            try
-                config = feval(config_file);
-            catch ME
-                error('Failed to load config file ''%s'': %s', config_file, ME.message);
-            end
-            
-            % Create connection
-            obj = narwc.db.Connection(config);
+
+            obj = narwc.db.Connection(db_config);
         end
     end
 end

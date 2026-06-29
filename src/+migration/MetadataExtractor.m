@@ -1,12 +1,18 @@
 classdef MetadataExtractor < handle
     % METADATAEXTRACTOR Extract metadata from surveys
     %
+    % 
+    % 
     % Usage:
     %   extractor = migration.MetadataExtractor();
     %   metadata = extractor.extract(survey_data);
+    % 
+    % 2026 russ.shomberg@marineacoustics.com
+
+    % FIXME: DETETE? I do not think this gets used anywhere
     
     properties (Access = private)
-        logger
+        logger  % logging toolbox logger
     end
     
     methods

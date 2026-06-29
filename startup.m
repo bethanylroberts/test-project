@@ -14,6 +14,9 @@ function startup()
     addpath(fullfile(project_root, 'apps'));
     addpath(fullfile(project_root, 'scripts'));
     addpath(fullfile(project_root, 'config'));
+    addpath(fullfile(project_root, 'config', 'defaults'));
+    addpath(fullfile(project_root, 'config', 'batches'));
+    addpath(fullfile(project_root, 'config', 'local'));
     addpath(fullfile(project_root, 'tests'));
     
     % Add all script subdirectories
@@ -108,14 +111,14 @@ function startup()
     
     % Check for configuration files
     fprintf('\nChecking configuration files...\n');
-    config_file = fullfile(project_root, 'config', 'db_config.m');
-    if ~exist(config_file, 'file')
-        fprintf('  ✗ db_config.m not found\n');
-        fprintf('    Copy db_config_template.m to db_config.m and configure\n');
+    local_config = fullfile(project_root, 'config', 'local', 'db_config_local.m');
+    if ~exist(local_config, 'file')
+        fprintf('  ✗ config/local/db_config_local.m not found\n');
+        fprintf('    Copy config/local/db_config_local.m.template to db_config_local.m and add credentials\n');
     else
-        fprintf('  ✓ db_config.m found\n');
+        fprintf('  ✓ config/local/db_config_local.m found\n');
     end
-    
+
     % Test database connection (if configured)
     fprintf('\nTesting database connection...\n');
     try
@@ -124,7 +127,7 @@ function startup()
         conn.close();
     catch ME
         fprintf('  ✗ Database connection failed: %s\n', ME.message);
-        fprintf('    Configure config/db_config.m with your database credentials\n');
+        fprintf('    Configure config/local/db_config_local.m with your database credentials\n');
     end
     
     % Display available functions

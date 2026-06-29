@@ -1,21 +1,18 @@
 % LOG this function will need to grow over time
 
-function msg = log(tag,varargin)   
+function msg = log(tag,varargin)
 
     % NOTE: to disable/enable logging (un)comment `return` statement below
     % return
 
+    msg = '';   % ensure output is always assigned even on early return
+
     levels = ["DEBUG","INFO","WARNING","ERROR","CRITICAL","FATAL"];
-    log_level = find(tag==levels);   
+    log_level = find(tag==levels);
 
     % NOTE: to disable/enable log tag go to logging and (un)comment `return` statement at start of each individual function. This methodology is significicantly faster than using if or switch statements.
 
     % NOTE: could add branch here to disable log levels. However, it is faster to disable in actual functions
-
-    LOGGING_LEVEL = 1;
-    if log_level<LOGGING_LEVEL
-        return
-    end
 
 
     % NOTE: tags at or above RED_LEVEL are colored red on screen

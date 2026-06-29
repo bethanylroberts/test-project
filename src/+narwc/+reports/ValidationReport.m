@@ -4,6 +4,8 @@ classdef ValidationReport < handle
     % Usage:
     %   report = narwc.reports.ValidationReport(validation_results, survey_id);
     %   report.generate('validation_report.md');
+
+    % NOTE: only used by validation report
     
     properties (Access = private)
         results

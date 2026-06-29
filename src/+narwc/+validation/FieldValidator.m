@@ -2,6 +2,8 @@ classdef FieldValidator
     % FIELDVALIDATOR Field-level validation utilities
     %
     % Static methods for common validation patterns
+
+    % NOTE: only run by test_validation
     
     methods (Static)
         function [is_valid, invalid_rows] = validateRange(values, min_val, max_val)
