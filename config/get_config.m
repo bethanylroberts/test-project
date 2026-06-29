@@ -153,6 +153,9 @@ function validation = get_validation_config(paths)
     validation.species.require_valid_taxcode = true;
     validation.species.speccode_table_path = paths.lookup_tables.speccode;
     validation.species.taxcode_table_path = paths.lookup_tables.taxcode;
+    % Global fallback thresholds used when neither SPECCODE nor TAXCODE provides one
+    validation.species.thresholds.group_size_default = 1000;
+    validation.species.thresholds.calf_count_default  = 100;
     
     % ----- Environmental validation -----
     validation.environmental = struct();

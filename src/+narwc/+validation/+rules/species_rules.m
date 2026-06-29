@@ -78,9 +78,8 @@ function config = default_config()
     config.valid_taxcodes               = 0:9;
     config.cetacean_taxcodes            = [1, 2, 3];
     config.marine_mammal_taxcodes       = [1, 2, 3, 4];
-    config.large_group_threshold        = 500;
-    config.very_large_group_threshold   = 1000;
-    config.max_calf_count               = 50;
+    config.thresholds.group_size_default = 1000;   % fallback when SPECCODE and TAXCODE both NULL
+    config.thresholds.calf_count_default  = 100;
     config.right_whale_codes            = {'RIWH', 'NARW', 'SARW'};
     config.right_whale_max_group        = 50;
     config.right_whale_max_calves       = 5;
@@ -112,6 +111,12 @@ function config = load_lookup_tables(config)
         try
             opts = detectImportOptions(speccode_file);
             opts = setvartype(opts, 'Value', 'char');
+            if ismember('typical_max_group', opts.VariableNames)
+                opts = setvartype(opts, 'typical_max_group', 'double');
+            end
+            if ismember('typical_max_calf', opts.VariableNames)
+                opts = setvartype(opts, 'typical_max_calf', 'double');
+            end
             config.speccode_table = readtable(speccode_file, opts);
             codes = config.speccode_table.Value;
             if iscell(codes)
@@ -337,7 +342,9 @@ function validate_speccode_taxcode_match(data, collector, config)
 end
 
 function validate_group_size(data, collector, config, is_sighting)
-    num_records = height(data);
+    num_records   = height(data);
+    has_speccode  = ismember('SPECCODE', data.Properties.VariableNames);
+    has_taxcode   = ismember('TAXCODE',  data.Properties.VariableNames);
     for i = 1:num_records
         number = data.NUMBER(i);
         if isnan(number) || ismissing(number)
@@ -355,16 +362,24 @@ function validate_group_size(data, collector, config, is_sighting)
                 'NUMBER is zero for sighting record', 'warning', ...
                 'species_rules.number_zero_for_sighting', eventno);
         end
-        if number > config.very_large_group_threshold
-            collector.addError('NUMBER', i, ...
-                sprintf('NUMBER=%d exceeds maximum threshold (%d) - likely data error', ...
-                number, config.very_large_group_threshold), 'error', ...
-                'species_rules.number_exceeds_maximum');
-        elseif number > config.large_group_threshold
+        speccode = '';
+        if has_speccode
+            speccode = safe_get_speccode(data, i);
+        end
+        taxcode = NaN;
+        if has_taxcode
+            tc = data.TAXCODE(i);
+            if ~ismissing(tc) && ~isnan(tc)
+                taxcode = tc;
+            end
+        end
+        [threshold, source] = get_max_group_threshold(speccode, taxcode, config);
+        if number > threshold
             eventno = get_eventno(data, i);
             collector.addError('NUMBER', i, ...
-                sprintf('NUMBER=%d is unusually large - verify count', number), 'warning', ...
-                'species_rules.number_large_group', eventno);
+                sprintf('NUMBER=%d exceeds threshold %d for SPECCODE=%s (source: %s). Verify count.', ...
+                number, threshold, speccode, source), 'warning', ...
+                'species_rules.number_unusual', eventno);
         end
         if number ~= floor(number)
             collector.addError('NUMBER', i, ...
@@ -376,7 +391,8 @@ end
 
 function validate_calf_count(data, collector, config, is_sighting) %#ok<INUSD>
     num_records  = height(data);
-    has_taxcode  = ismember('TAXCODE', data.Properties.VariableNames);
+    has_speccode = ismember('SPECCODE', data.Properties.VariableNames);
+    has_taxcode  = ismember('TAXCODE',  data.Properties.VariableNames);
     for i = 1:num_records
         numcalf = data.NUMCALF(i);
         if isnan(numcalf) || ismissing(numcalf)
@@ -388,23 +404,32 @@ function validate_calf_count(data, collector, config, is_sighting) %#ok<INUSD>
                 'species_rules.numcalf_negative');
             continue;
         end
-        if numcalf > config.max_calf_count
+        speccode = '';
+        if has_speccode
+            speccode = safe_get_speccode(data, i);
+        end
+        taxcode = NaN;
+        if has_taxcode
+            tc = data.TAXCODE(i);
+            if ~ismissing(tc) && ~isnan(tc)
+                taxcode = tc;
+            end
+        end
+        [threshold, source] = get_max_calf_threshold(speccode, taxcode, config);
+        if numcalf > threshold
             eventno = get_eventno(data, i);
             collector.addError('NUMCALF', i, ...
-                sprintf('NUMCALF=%d exceeds maximum threshold (%d)', ...
-                numcalf, config.max_calf_count), 'warning', ...
-                'species_rules.numcalf_exceeds_max', eventno);
+                sprintf('NUMCALF=%d exceeds threshold %d for SPECCODE=%s (source: %s). Verify count.', ...
+                numcalf, threshold, speccode, source), 'warning', ...
+                'species_rules.numcalf_unusual', eventno);
         end
-        if numcalf > 0 && has_taxcode
-            taxcode = data.TAXCODE(i);
-            if ~isnan(taxcode) && ~ismissing(taxcode)
-                if ~ismember(taxcode, config.marine_mammal_taxcodes)
-                    eventno = get_eventno(data, i);
-                    collector.addError('NUMCALF', i, ...
-                        sprintf('NUMCALF=%d for non-mammal species (TAXCODE=%d)', ...
-                        numcalf, taxcode), 'warning', ...
-                        'species_rules.numcalf_non_mammal', eventno);
-                end
+        if numcalf > 0 && has_taxcode && ~isnan(taxcode)
+            if ~ismember(taxcode, config.marine_mammal_taxcodes)
+                eventno = get_eventno(data, i);
+                collector.addError('NUMCALF', i, ...
+                    sprintf('NUMCALF=%d for non-mammal species (TAXCODE=%d)', ...
+                    numcalf, taxcode), 'warning', ...
+                    'species_rules.numcalf_non_mammal', eventno);
             end
         end
         if numcalf ~= floor(numcalf)
@@ -436,6 +461,62 @@ function validate_calves_vs_total(data, collector, config) %#ok<INUSD>
                 'species_rules.numcalf_exceeds_half', eventno);
         end
     end
+end
+
+function [t, source] = get_max_group_threshold(speccode, taxcode, config)
+    % Cascade: SPECCODE override → TAXCODE default → global default
+    if ~isempty(speccode) && ~isempty(config.speccode_table) && ...
+            ismember('typical_max_group', config.speccode_table.Properties.VariableNames) && ...
+            isKey(config.speccode_map, speccode)
+        row_idx = config.speccode_map(speccode);
+        val = config.speccode_table.typical_max_group(row_idx);
+        if isnumeric(val) && ~isnan(val)
+            t = val;
+            source = 'SPECCODE override';
+            return
+        end
+    end
+    if ~isnan(taxcode) && ~isempty(config.taxcode_table) && ...
+            ismember('typical_max_group', config.taxcode_table.Properties.VariableNames) && ...
+            isKey(config.taxcode_map, taxcode)
+        row_idx = config.taxcode_map(taxcode);
+        val = config.taxcode_table.typical_max_group(row_idx);
+        if isnumeric(val) && ~isnan(val)
+            t = val;
+            source = sprintf('TAXCODE %d default', taxcode);
+            return
+        end
+    end
+    t = config.thresholds.group_size_default;
+    source = 'global default';
+end
+
+function [t, source] = get_max_calf_threshold(speccode, taxcode, config)
+    % Cascade: SPECCODE override → TAXCODE default → global default
+    if ~isempty(speccode) && ~isempty(config.speccode_table) && ...
+            ismember('typical_max_calf', config.speccode_table.Properties.VariableNames) && ...
+            isKey(config.speccode_map, speccode)
+        row_idx = config.speccode_map(speccode);
+        val = config.speccode_table.typical_max_calf(row_idx);
+        if isnumeric(val) && ~isnan(val)
+            t = val;
+            source = 'SPECCODE override';
+            return
+        end
+    end
+    if ~isnan(taxcode) && ~isempty(config.taxcode_table) && ...
+            ismember('typical_max_calf', config.taxcode_table.Properties.VariableNames) && ...
+            isKey(config.taxcode_map, taxcode)
+        row_idx = config.taxcode_map(taxcode);
+        val = config.taxcode_table.typical_max_calf(row_idx);
+        if isnumeric(val) && ~isnan(val)
+            t = val;
+            source = sprintf('TAXCODE %d default', taxcode);
+            return
+        end
+    end
+    t = config.thresholds.calf_count_default;
+    source = 'global default';
 end
 
 function validate_right_whale_specific(data, collector, config)

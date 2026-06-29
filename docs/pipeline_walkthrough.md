@@ -302,6 +302,42 @@ fclose(fid);
 
 ---
 
+## Tuning validation thresholds
+
+The validator flags unusually large NUMBER or NUMCALF values per row. Thresholds are
+per-species or per-taxonomic-group, stored in `data/tables/SPECCODE.csv` and
+`data/tables/TAXCODE.csv`.
+
+**To raise the threshold for a specific species:**
+
+1. Edit `data/tables/SPECCODE.csv`
+2. Find the row for that species (by `Value` column, e.g., `SADO` for Atlantic
+   spotted dolphin)
+3. Set `typical_max_group` to your desired threshold integer
+4. Save the CSV
+5. Run `scripts/setup/push_lookup_tables.m` to update the database
+
+If a SPECCODE row has NULL for `typical_max_group`, the validator falls back to the
+`typical_max_group` for that species' TAXCODE (taxonomic group).
+
+**To change the default for an entire taxonomic group**, edit `data/tables/TAXCODE.csv`
+the same way. Starting defaults:
+
+| TAXCODE | Category | typical_max_group | typical_max_calf |
+|---------|----------|-------------------|------------------|
+| 1 | Large cetacean | 50 | 10 |
+| 2 | Medium cetacean | 200 | 30 |
+| 3 | Small cetacean | 2000 | 200 |
+| 4 | Other marine mammal | 5000 | 500 |
+| 5 | Sea turtle | 20 | 5 |
+| 8 | Bird | 100000 | — |
+| 9 | Other/unknown | 1000 | 100 |
+
+For details on the three-level cascade (SPECCODE → TAXCODE → global default), see
+`docs/validation_rules_guide.md`.
+
+---
+
 ## Troubleshooting
 
 *(Populate this section during your personal pipeline shakedown.)*
