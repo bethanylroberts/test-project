@@ -152,7 +152,7 @@ config.speccode_map   = containers.Map({'RIWH'}, {1});
 tax_table = table(1, tax_grp, tax_calf, ...
     'VariableNames', {'Value', 'typical_max_group', 'typical_max_calf'});
 config.taxcode_table = tax_table;
-config.taxcode_map   = containers.Map([1], {1});
+config.taxcode_map   = containers.Map([1], [1]);
 
 % Global fallbacks
 config.thresholds.group_size_default = 1000;

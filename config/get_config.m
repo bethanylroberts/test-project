@@ -144,8 +144,7 @@ function validation = get_validation_config(paths)
     validation.datetime = struct();
     validation.datetime.year_min = 1970;
     validation.datetime.year_max = year(datetime('now')) + 1;
-    validation.datetime.year_warning = 1880;  % Warn for data before this year
-    % FIXME: go back to a reasonable date
+    validation.datetime.year_warning = 1990;  % Warn for data before this year
     
     % ----- Species validation -----
     validation.species = struct();

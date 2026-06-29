@@ -441,10 +441,11 @@ classdef test_validation < matlab.unittest.TestCase
             mkdir('data');
 
             % Data with both an error (bad month) and an old-year warning.
-            % Use MONTH=13 instead of a bad latitude to avoid generating a
-            % coordinate warning that would need its own override entry.
+            % Use MONTH=17 (> 16, so truly out of range) to generate an error
+            % without also generating a coordinate warning that would need its
+            % own override entry. Note: MONTH 13-16 are valid season codes.
             data         = make_survey_with_old_year(testCase);
-            data.MONTH(1) = 13;  % Out-of-range month -> error, no side-effect warning
+            data.MONTH(1) = 17;  % Out-of-range month (> 16) -> error, no side-effect warning
 
             fileid  = data.FILEID{1};
             eventno = data.EVENTNO(1);
