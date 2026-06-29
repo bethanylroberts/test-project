@@ -70,7 +70,7 @@ classdef test_upload_guardrail < matlab.unittest.TestCase
             writetable(data, fullfile(pending_dir, 'fT00007.csv'));
 
             conn = MockConnection();
-            converter = narwc.ingestion.BatchUploader(conn, base_dir, 'LegacyMode', true);
+            converter = narwc.ingestion.BatchUploader(conn, base_dir);
             converter.uploadFromFolder('Validate', false);
 
             stats = converter.getStats();

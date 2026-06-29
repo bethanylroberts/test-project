@@ -56,10 +56,8 @@ function stats = step2_upload_surveys(options)
     end
 
     try
-        % Create uploader — LegacyMode enables legacy-leniency validation
-        % settings (e.g. negative visibility) appropriate for migration data.
         converter = narwc.ingestion.BatchUploader(conn, options.BaseDir, ...
-            'LegacyMode', true, 'Config', options.Config);
+            'Config', options.Config);
 
         % Upload all from pending folder
         converter.uploadFromFolder(...

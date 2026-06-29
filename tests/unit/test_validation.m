@@ -705,6 +705,106 @@ classdef test_validation < matlab.unittest.TestCase
                 'Warnings must be on rows 1 and 3');
         end
 
+        function testCalfBehaviorsEmptyOverrideDisablesCheck(testCase)
+            % When behavioral.calf_associated_behaviors is overridden to []
+            % via the validator config, no calf-behavior warnings must fire
+            % even when the data contains behavior codes that would otherwise
+            % trigger them.
+            %
+            % This exercises the full path:
+            %   SurveyValidator(config) → mergeConfig → behavioral_rules(…, obj.config)
+
+            import matlab.unittest.fixtures.WorkingFolderFixture
+            testCase.applyFixture(WorkingFolderFixture);
+            mkdir(fullfile('data', 'tables'));
+
+            behave_path = fullfile('data', 'tables', 'Behave.csv');
+            fid = fopen(behave_path, 'w');
+            fprintf(fid, 'Value\n');
+            for c = 1:50; fprintf(fid, '%d\n', c); end
+            fclose(fid);
+
+            % Data that would fire calf warnings under defaults (code 40 + NUMCALF=0)
+            data = table();
+            data.FILEID  = {'f_calftest'};
+            data.EVENTNO = 1;
+            data.BEHAV1  = 40;
+            data.NUMCALF = 0;
+
+            % Config that zeros out the calf-associated list
+            cfg = struct();
+            cfg.behavioral = struct();
+            cfg.behavioral.calf_associated_behaviors    = [];
+            cfg.behavioral.behave_table_path            = behave_path;
+            cfg.behavioral.dead_behaviors               = [];
+            cfg.behavioral.active_swimming_behaviors    = [];
+            cfg.behavioral.incompatible_behavior_pairs  = zeros(0, 2);
+            cfg.behavioral.taxcode_behavior_restrictions = struct();
+            cfg.behavioral.species_behavior_restrictions = struct();
+            cfg.allow_warnings = false;
+            cfg.validate_behavioral = true;
+            % Disable all other rules to isolate the behavioral check
+            cfg.validate_required_fields = false;
+            cfg.validate_coordinates     = false;
+            cfg.validate_datetime        = false;
+            cfg.validate_species         = false;
+            cfg.validate_environmental   = false;
+            cfg.validate_beaufort        = false;
+            cfg.validate_foreign_keys    = false;
+
+            validator = narwc.validation.SurveyValidator(cfg);
+            [is_valid, results] = validator.validate(data);
+
+            testCase.verifyTrue(is_valid, ...
+                'With calf_associated_behaviors=[], no calf warnings must fire');
+            testCase.verifyEqual(results.summary.warnings, 0, ...
+                'Warning count must be zero when calf check is disabled via empty override');
+        end
+
+        function testCalfBehaviorsDefaultFiringStillWorks(testCase)
+            % Complement to the empty-override test: with default config the
+            % calf warning must still fire (regression guard).
+
+            import matlab.unittest.fixtures.WorkingFolderFixture
+            testCase.applyFixture(WorkingFolderFixture);
+            mkdir(fullfile('data', 'tables'));
+
+            behave_path = fullfile('data', 'tables', 'Behave.csv');
+            fid = fopen(behave_path, 'w');
+            fprintf(fid, 'Value\n');
+            for c = 1:50; fprintf(fid, '%d\n', c); end
+            fclose(fid);
+
+            data = table();
+            data.FILEID  = {'f_calftest2'};
+            data.EVENTNO = 1;
+            data.BEHAV1  = 40;
+            data.NUMCALF = 0;
+
+            cfg = make_behav_config(behave_path);  % uses [40;41;42] as defaults
+            % Wrap in the validator-style nesting
+            vcfg = struct();
+            vcfg.behavioral = cfg;
+            vcfg.behavioral.calf_associated_behaviors = [40; 41; 42];
+            vcfg.allow_warnings = false;
+            vcfg.validate_behavioral = true;
+            vcfg.validate_required_fields = false;
+            vcfg.validate_coordinates     = false;
+            vcfg.validate_datetime        = false;
+            vcfg.validate_species         = false;
+            vcfg.validate_environmental   = false;
+            vcfg.validate_beaufort        = false;
+            vcfg.validate_foreign_keys    = false;
+
+            validator = narwc.validation.SurveyValidator(vcfg);
+            [is_valid, results] = validator.validate(data);
+
+            testCase.verifyFalse(is_valid, ...
+                'With default calf_associated_behaviors, warning must fire and block');
+            testCase.verifyGreaterThan(results.summary.warnings, 0, ...
+                'At least one calf-behavior warning must be generated');
+        end
+
         function testFormatErrorDetailsIncludesEventno(testCase)
             % behavioral_rules stores EVENTNO on warnings it emits.
             % Verify (a) the warning carries eventno and (b) the location

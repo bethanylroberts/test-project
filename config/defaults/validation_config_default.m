@@ -40,7 +40,7 @@ function validation = validation_config_default()
     % ----- Date/time validation -----
     validation.datetime.year_min     = 1970;
     validation.datetime.year_max     = year(datetime('now')) + 1;
-    validation.datetime.year_warning = 1890;
+    validation.datetime.year_warning = 1980;
 
     % ----- Species validation -----
     validation.species.require_valid_speccode        = true;
@@ -56,7 +56,7 @@ function validation = validation_config_default()
     % ----- Environmental validation -----
     validation.environmental.cloud_values              = 0:8;
     validation.environmental.visibility_max            = 50;
-    validation.environmental.visibility_allow_negative = true;
+    validation.environmental.visibility_allow_negative = false;
     validation.environmental.surftemp_min              = -2;
     validation.environmental.surftemp_max              = 35;
     validation.environmental.glare_values              = 0:3;

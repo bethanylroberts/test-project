@@ -145,7 +145,7 @@ classdef SurveyValidator < handle
 
             if obj.config.validate_behavioral
                 obj.logger.debug('Validating behavioral fields...');
-                narwc.validation.rules.behavioral_rules(data, obj.collector);
+                narwc.validation.rules.behavioral_rules(data, obj.collector, obj.config);
             end
 
             if obj.config.validate_foreign_keys

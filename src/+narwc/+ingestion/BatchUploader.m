@@ -5,9 +5,6 @@ classdef BatchUploader < handle
     %   uploader = narwc.ingestion.BatchUploader(conn, base_dir);
     %   uploader.uploadFromFolder();
     %
-    %   % Legacy migration mode (allows negative visibility etc.):
-    %   uploader = narwc.ingestion.BatchUploader(conn, base_dir, 'LegacyMode', true);
-    %
     %   % Custom target table:
     %   uploader = narwc.ingestion.BatchUploader(conn, base_dir, 'TableName', 'StagingMaster');
     %
@@ -21,7 +18,6 @@ classdef BatchUploader < handle
         error_log_file  % error log (one file per run when datetime stamping is on)
         run_summary_file % per-survey run summary CSV
         table_name      % target database table (default: 'Master')
-        legacy_mode     % when true, applies legacy-leniency validation settings
         batch_config    % full config struct from load_config(), or struct() if not provided
     end
 
@@ -37,7 +33,6 @@ classdef BatchUploader < handle
                 connection
                 base_dir char = 'data/legacy/surveys'
                 options.TableName char = 'Master'
-                options.LegacyMode logical = false
                 options.Config struct = struct()
             end
 
@@ -45,7 +40,6 @@ classdef BatchUploader < handle
             obj.logger       = logging.Logger('narwc.ingestion.BatchUploader');
             obj.base_dir     = base_dir;
             obj.table_name   = options.TableName;
-            obj.legacy_mode  = options.LegacyMode;
             obj.batch_config = options.Config;
 
             obj.resetStats();
@@ -113,8 +107,8 @@ classdef BatchUploader < handle
             fprintf(fid, 'RUN STARTED: %s\n', char(datetime('now', 'Format', 'yyyy-MM-dd HH:mm:ss')));
             fprintf(fid, 'Base Directory: %s\n', obj.base_dir);
             fprintf(fid, 'Table: %s\n', obj.table_name);
-            fprintf(fid, 'LegacyMode: %s | AllowWarnings: %s | AllowErrors: %s\n', ...
-                mat2str(obj.legacy_mode), mat2str(allow_warnings), mat2str(allow_errors));
+            fprintf(fid, 'AllowWarnings: %s | AllowErrors: %s\n', ...
+                mat2str(allow_warnings), mat2str(allow_errors));
             fprintf(fid, '%s\n\n', repmat('-', 1, 80));
             fclose(fid);
 
@@ -306,22 +300,18 @@ classdef BatchUploader < handle
                 obj.logger.info(sprintf('Validating survey: %s (%d records)', ...
                                 survey_id, height(survey_data)));
 
-                % Create validator config with override options
-                validator_config = struct();
+                % Build validator config from batch validation settings + run-specific flags
+                if isfield(obj.batch_config, 'validation')
+                    validator_config = obj.batch_config.validation;
+                else
+                    validator_config = struct();
+                end
                 validator_config.allow_warnings = options.AllowWarnings;
                 validator_config.allow_errors   = options.AllowErrors;
-
-                % LegacyMode controls leniency flags that differ between legacy
-                % migration and modern strict ingestion.
-                validator_config.environmental = struct();
-                validator_config.environmental.visibility_allow_negative = obj.legacy_mode;
-
-                % Override file path from batch config (empty = no overrides)
-                if isfield(obj.batch_config, 'validation') && ...
-                        isfield(obj.batch_config.validation, 'overrides') && ...
-                        isfield(obj.batch_config.validation.overrides, 'csv_path')
-                    validator_config.override_file = ...
-                        obj.batch_config.validation.overrides.csv_path;
+                % SurveyValidator uses flat override_file field, not overrides.csv_path
+                if isfield(validator_config, 'overrides') && ...
+                        isfield(validator_config.overrides, 'csv_path')
+                    validator_config.override_file = validator_config.overrides.csv_path;
                 end
 
                 validator = narwc.validation.SurveyValidator(validator_config);
