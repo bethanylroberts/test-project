@@ -313,26 +313,26 @@ classdef Connection < handle
     end
     
     methods (Static)
-        function obj = create(config_file)
-            % CREATE Create database connection using config file
+        function obj = create(db_config)
+            % CREATE Create database connection
             %
             % Usage:
-            %   conn = narwc.db.Connection.create()                    % Use default config
-            %   conn = narwc.db.Connection.create('my_db_config.m')    % Use custom config
-            
-            if nargin < 1
-                config_file = 'db_config';
+            %   conn = narwc.db.Connection.create()            % load config internally
+            %   conn = narwc.db.Connection.create(config.db)   % use caller-supplied db config
+
+            if nargin < 1 || isempty(db_config)
+                try
+                    full_config = load_config();
+                    db_config   = full_config.db;
+                catch ME
+                    error('narwc:db:Connection:ConfigLoadFailed', ...
+                        'Failed to load database config via load_config(): %s\n%s', ...
+                        ME.message, ...
+                        'Create config/local/db_config.local.m from the template and add credentials.');
+                end
             end
-            
-            % Load configuration
-            try
-                config = feval(config_file);
-            catch ME
-                error('Failed to load config file ''%s'': %s', config_file, ME.message);
-            end
-            
-            % Create connection
-            obj = narwc.db.Connection(config);
+
+            obj = narwc.db.Connection(db_config);
         end
     end
 end

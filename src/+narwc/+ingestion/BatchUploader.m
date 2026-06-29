@@ -18,10 +18,11 @@ classdef BatchUploader < handle
         logger          % from custom logging toolbox
         stats           % upload statistics
         base_dir        % location of standard folder structure
-        error_log_file  % error log (append mode across runs)
+        error_log_file  % error log (one file per run when datetime stamping is on)
         run_summary_file % per-survey run summary CSV
         table_name      % target database table (default: 'Master')
         legacy_mode     % when true, applies legacy-leniency validation settings
+        batch_config    % full config struct from load_config(), or struct() if not provided
     end
 
     methods
@@ -37,13 +38,15 @@ classdef BatchUploader < handle
                 base_dir char = 'data/legacy/surveys'
                 options.TableName char = 'Master'
                 options.LegacyMode logical = false
+                options.Config struct = struct()
             end
 
-            obj.connection  = connection;
-            obj.logger      = logging.Logger('narwc.ingestion.BatchUploader');
-            obj.base_dir    = base_dir;
-            obj.table_name  = options.TableName;
-            obj.legacy_mode = options.LegacyMode;
+            obj.connection   = connection;
+            obj.logger       = logging.Logger('narwc.ingestion.BatchUploader');
+            obj.base_dir     = base_dir;
+            obj.table_name   = options.TableName;
+            obj.legacy_mode  = options.LegacyMode;
+            obj.batch_config = options.Config;
 
             obj.resetStats();
             obj.ensureDirectories();
@@ -62,8 +65,12 @@ classdef BatchUploader < handle
             end
         end
 
-        function initializeErrorLog(obj, allow_warnings, allow_errors)
-            % INITIALIZEERRORLOG Open error log in append mode and write run header
+        function initializeErrorLog(obj, allow_warnings, allow_errors, run_ts)
+            % INITIALIZEERRORLOG Open error log and write run header.
+            %
+            % When config.pipeline.logging.use_datetime_filenames is true (the
+            % default), each run gets its own timestamped log file.  Otherwise
+            % a fixed filename is used and runs accumulate in the same file.
 
             if nargin < 2
                 allow_warnings = false;
@@ -71,12 +78,30 @@ classdef BatchUploader < handle
             if nargin < 3
                 allow_errors = false;
             end
+            if nargin < 4
+                run_ts = '';
+            end
 
             failed_dir = fullfile(obj.base_dir, 'failed');
-            obj.error_log_file  = fullfile(failed_dir, '_errors.log');
-            obj.run_summary_file = fullfile(failed_dir, '_run_summary.csv');
 
-            % Append to the existing log so history accumulates across runs
+            use_datetime = true;
+            if isfield(obj.batch_config, 'pipeline') && ...
+                    isfield(obj.batch_config.pipeline, 'logging') && ...
+                    isfield(obj.batch_config.pipeline.logging, 'use_datetime_filenames')
+                use_datetime = obj.batch_config.pipeline.logging.use_datetime_filenames;
+            end
+
+            if use_datetime
+                if isempty(run_ts)
+                    run_ts = narwc.logging.run_timestamp();
+                end
+                obj.error_log_file   = fullfile(failed_dir, sprintf('errors_%s.log', run_ts));
+                obj.run_summary_file = fullfile(failed_dir, sprintf('run_summary_%s.csv', run_ts));
+            else
+                obj.error_log_file   = fullfile(failed_dir, '_errors.log');
+                obj.run_summary_file = fullfile(failed_dir, '_run_summary.csv');
+            end
+
             fid = fopen(obj.error_log_file, 'a');
             if fid == -1
                 obj.logger.warning('Could not open error log file');
@@ -168,7 +193,8 @@ classdef BatchUploader < handle
 
             obj.logger.info(sprintf('Found %d surveys to upload', length(pending_survey_files)));   % FIXME: remove sprintf if not necessary
             obj.resetStats();
-            obj.initializeErrorLog(options.AllowWarnings, options.AllowErrors);
+            run_ts = narwc.logging.run_timestamp();
+            obj.initializeErrorLog(options.AllowWarnings, options.AllowErrors, run_ts);
 
             for idx = 1:length(pending_survey_files)
                 survey_file_path = fullfile(pending_survey_files(idx).folder, pending_survey_files(idx).name);
@@ -283,12 +309,20 @@ classdef BatchUploader < handle
                 % Create validator config with override options
                 validator_config = struct();
                 validator_config.allow_warnings = options.AllowWarnings;
-                validator_config.allow_errors = options.AllowErrors;
+                validator_config.allow_errors   = options.AllowErrors;
 
                 % LegacyMode controls leniency flags that differ between legacy
                 % migration and modern strict ingestion.
                 validator_config.environmental = struct();
                 validator_config.environmental.visibility_allow_negative = obj.legacy_mode;
+
+                % Override file path from batch config (empty = no overrides)
+                if isfield(obj.batch_config, 'validation') && ...
+                        isfield(obj.batch_config.validation, 'overrides') && ...
+                        isfield(obj.batch_config.validation.overrides, 'csv_path')
+                    validator_config.override_file = ...
+                        obj.batch_config.validation.overrides.csv_path;
+                end
 
                 validator = narwc.validation.SurveyValidator(validator_config);
                 [is_valid, results] = validator.validate(survey_data);

@@ -273,9 +273,9 @@ classdef SurveyValidator < handle
         end
 
         function overrides = loadOverrides(obj, override_file)
-            % LOADOVERRIDES Read data/overrides.csv, skipping comment lines
+            % LOADOVERRIDES Read override CSV, skipping comment lines.
             %
-            % Returns an empty array if the file does not exist.
+            % Returns an empty array if override_file is empty or does not exist.
             % Empty eventno values are normalized to NaN (per-survey override sentinel).
 
             overrides = [];
@@ -352,7 +352,10 @@ classdef SurveyValidator < handle
             config.allow_errors   = false;
             config.allow_warnings = false;
 
-            config.override_file = fullfile('data', 'overrides.csv');
+            % Override file path — caller can supply via config struct or
+            % set via load_config() batch config (validation.overrides.csv_path).
+            % Empty string means no overrides are loaded.
+            config.override_file = '';
         end
 
         function merged = mergeConfig(obj, base, override)

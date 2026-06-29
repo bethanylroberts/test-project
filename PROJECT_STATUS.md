@@ -29,12 +29,14 @@ The project delivers two things:
 NARWC-DB/
 ├── startup.m                   # Adds all paths, checks toolboxes, creates data dirs — run first
 ├── config/
-│   ├── get_config.m            # Central config source (paths, validation params, DB settings)
+│   ├── load_config.m           # Layered config loader: defaults < local < batch
+│   ├── get_config.m            # Legacy config source (paths, validation params); still used by rule modules
 │   ├── get_lookup_table.m      # Loads CSV lookup tables from data/tables/ by name
-│   ├── db_config_template.m    # Copy to db_config.m and add credentials (gitignored)
-│   ├── logging_config.m        # Stub — logging not yet configured
-│   ├── validation_config.m     # DEAD CODE — intentionally throws; replaced by get_config
-│   └── reload_config.m         # Clears cached config to force reload
+│   ├── reload_config.m         # Clears cached get_config singleton
+│   ├── defaults/               # Version-controlled baseline values (db, validation, pipeline)
+│   ├── local/                  # Gitignored; contains db_config.local.m with credentials
+│   ├── batches/                # Per-workflow override files (migration.m, future: routine.m)
+│   └── overrides/              # Per-batch warning-override CSVs and README
 │
 ├── src/
 │   ├── +migration/
@@ -134,7 +136,6 @@ NARWC-DB/
 │   └── +logging/                       # Logging toolbox (Logger class + level functions)
 │
 ├── data/                               # Runtime data (mostly gitignored)
-│   ├── overrides.csv                   # Version-controlled warning acknowledgements
 │   ├── overrides.example.csv           # Example/template for overrides
 │   ├── tables/                         # Lookup table CSVs (committed)
 │   ├── legacy/                         # Source CSVs from SAS export
@@ -199,7 +200,7 @@ grep -rn 'TODO\|FIXME\|NOTE' src/ scripts/ tests/ --include='*.m'
 ## 7. Open questions
 
 - **`required_fields.m` accuracy**: `default_config()` lists `DDSOURCE, EVENTNO, FILEID, IDSOURCE, YEAR`; central config (`get_config`) lists `LAT_DD, LONG_DD, YEAR, MONTH, DAY`. Neither is confirmed against the database schema NOT NULL constraints. Blocks confidence in the required-field validation rule.
-- **`SurveyValidator` config split**: The right config structure for distinguishing legacy migration from ongoing curation is unresolved. `validation_config.m` is dead; the comments in `SurveyValidator.m` suggest a config-driven split was intended but not implemented.
+- **`SurveyValidator` config split**: Resolved. `load_config('migration')` returns permissive thresholds for the legacy migration; `load_config()` returns strict defaults for routine ingestion. Override CSV path comes from the batch config. `validation_config.m` deleted.
 - **`visibility_allow_negative` split**: `BatchUploader` sets this to `false` (strict) by default, `true` only in `LegacyMode`. The global `get_config` default remains `true` for backwards compatibility. Callers that construct `SurveyValidator` directly still get the permissive value.
 - **`temportal_rules.m` filename typo**: Will cause issues on case-sensitive filesystems; rename pending.
 - **ANHEAD=19 intent**: README says "ANHEAD = 19 is a valid error" — ambiguous. Clarify before adding to lookup table.
@@ -213,7 +214,7 @@ grep -rn 'TODO\|FIXME\|NOTE' src/ scripts/ tests/ --include='*.m'
 
 **Validator thresholds are data-driven.** NUMBER and NUMCALF thresholds for group-size warnings cascade: SPECCODE.typical_max_group → TAXCODE.typical_max_group → config global default (1000 / 100). Curators adjust thresholds by editing `data/tables/SPECCODE.csv` or `TAXCODE.csv` and running `push_lookup_tables.m` — no MATLAB code change needed.
 
-**Warning override philosophy.** Validation warnings block upload unless explicitly acknowledged. Acknowledgements are stored in `data/overrides.csv` (version-controlled), keyed by `(fileid, eventno, field, rule_id)`. A per-row entry suppresses exactly one warning instance. A per-survey entry (empty `eventno`) suppresses a `(fileid, field, rule_id)` combination across the entire survey. The `AllowWarnings = true` flag is preserved as an emergency escape valve but is not the intended workflow. Curator workflow documented in `docs/warning_overrides.md`.
+**Warning override philosophy.** Validation warnings block upload unless explicitly acknowledged. Acknowledgements are stored in `config/overrides/<batch>_overrides.csv` (version-controlled), keyed by `(fileid, eventno, field, rule_id)`. A per-row entry suppresses exactly one warning instance. A per-survey entry (empty `eventno`) suppresses a `(fileid, field, rule_id)` combination across the entire survey. The `AllowWarnings = true` flag is preserved as an emergency escape valve but is not the intended workflow. Curator workflow documented in `docs/warning_overrides.md`.
 
 **Data correction philosophy.** Preserve what was originally recorded; do not silently transform data. Manual corrections are opt-in, audited, and tracked via `overrides.csv` or an explicit correction script. Speed and climb-rate threshold violations are warnings only (data recorded; threshold is advisory). The migration does not clean data in flight — it validates and rejects, forcing explicit correction decisions.
 

@@ -14,7 +14,8 @@ function test_connection()
     % Test 1: Load configuration
     fprintf('Test 1: Loading configuration...\n');
     try
-        config = db_config();
+        full_config = load_config();
+        config = full_config.db;
         fprintf('  ✓ Configuration loaded\n');
         fprintf('    Type: %s\n', config.Type);
         fprintf('    Server: %s\n', config.Server);
@@ -23,7 +24,7 @@ function test_connection()
     catch ME
         fprintf('  ✗ Failed to load configuration\n');
         fprintf('    Error: %s\n', ME.message);
-        fprintf('    Make sure config/db_config.m exists and is on the path\n');
+        fprintf('    Make sure config/local/db_config.local.m exists (copy from .template)\n');
         return;
     end
     
@@ -36,7 +37,7 @@ function test_connection()
         fprintf('  ✗ Failed to create connection\n');
         fprintf('    Error: %s\n', ME.message);
         fprintf('\nTroubleshooting:\n');
-        fprintf('  - Check database credentials in config/db_config.m\n');
+        fprintf('  - Check database credentials in config/local/db_config.local.m\n');
         fprintf('  - Verify server is running and accessible\n');
         fprintf('  - Check firewall settings\n');
         fprintf('  - Verify Database Toolbox is installed\n');

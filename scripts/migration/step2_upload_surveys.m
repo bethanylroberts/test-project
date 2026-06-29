@@ -20,12 +20,14 @@ function stats = step2_upload_surveys(options)
     %
     % Usage:
     %   step2_upload_surveys()
+    %   step2_upload_surveys('Config', load_config('migration'))
     %   step2_upload_surveys('Overwrite', true)
     %   step2_upload_surveys('Validate', false)
     %   step2_upload_surveys('AllowWarnings', true)
     %   step2_upload_surveys('AllowWarnings', true, 'AllowErrors', true)
-    
+
     arguments
+        options.Config struct = struct()
         options.BaseDir char = 'data/legacy/surveys'
         options.Overwrite logical = false
         options.Validate logical = true
@@ -47,12 +49,17 @@ function stats = step2_upload_surveys(options)
     fprintf('\n');
     
     % Connect to database
-    conn = narwc.db.Connection.create();
-    
+    if ~isempty(fieldnames(options.Config)) && isfield(options.Config, 'db')
+        conn = narwc.db.Connection.create(options.Config.db);
+    else
+        conn = narwc.db.Connection.create();
+    end
+
     try
         % Create uploader — LegacyMode enables legacy-leniency validation
         % settings (e.g. negative visibility) appropriate for migration data.
-        converter = narwc.ingestion.BatchUploader(conn, options.BaseDir, 'LegacyMode', true);
+        converter = narwc.ingestion.BatchUploader(conn, options.BaseDir, ...
+            'LegacyMode', true, 'Config', options.Config);
 
         % Upload all from pending folder
         converter.uploadFromFolder(...

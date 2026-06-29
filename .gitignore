@@ -28,6 +28,11 @@ Thumbs.db
 config/db_config.m
 *.env
 
+# Local config (contains credentials — gitignored)
+config/local/*
+!config/local/.gitkeep
+!config/local/db_config.local.m.template
+
 # Created by https://www.toptal.com/developers/gitignore/api/matlab,visualstudiocode
 # Edit at https://www.toptal.com/developers/gitignore?templates=matlab,visualstudiocode
 

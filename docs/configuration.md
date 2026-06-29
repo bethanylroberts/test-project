@@ -1,0 +1,80 @@
+# Configuration System
+
+The pipeline loads configuration from three layers, merged in order:
+
+1. **Defaults** (`config/defaults/`) — version-controlled, baseline values for all settings
+2. **Local** (`config/local/`) — gitignored, user-specific including credentials
+3. **Batch** (`config/batches/`) — version-controlled, per-workflow overrides
+
+## Setup
+
+After cloning the repository:
+
+1. Copy `config/local/db_config.local.m.template` to `config/local/db_config.local.m`
+2. Edit `db_config.local.m` to add your database username and password
+3. The file is gitignored and will not be committed
+
+## Loading config in code
+
+```matlab
+config = load_config();              % defaults + local, no batch overrides
+config = load_config('migration');   % adds migration batch overrides
+```
+
+## Available batches
+
+- `migration` — permissive thresholds for legacy data import (year_min=1970,
+  allows unknown lookup codes, points to migration_overrides.csv)
+
+## Adding a new batch
+
+1. Create `config/batches/<name>.m` returning a struct with override fields
+2. Create `config/overrides/<name>_overrides.csv` for batch-specific warning overrides
+3. Update this file to list the new batch
+
+## Config struct sections
+
+The merged config has three top-level sections:
+
+| Section             | Description                                         |
+|---------------------|-----------------------------------------------------|
+| `config.db`         | Database connection settings (Type, Server, Port, …)|
+| `config.validation` | Validator thresholds and override behavior           |
+| `config.pipeline`   | Pipeline settings (chunk_size, logging, known_fixes)|
+
+### config.db
+
+| Field          | Default    | Description                               |
+|----------------|------------|-------------------------------------------|
+| `Type`         | `'MySQL'`  | Database driver type                      |
+| `Server`       | `'localhost'` | Database host                          |
+| `Port`         | `3306`     | Port number                               |
+| `DatabaseName` | `'NARWCDB'` | Target database                          |
+| `DataSource`   | `'NARWCDB_DSN'` | ODBC DSN (SQL Server)               |
+| `Username`     | `''`       | Set in `local/db_config.local.m`          |
+| `Password`     | `''`       | Set in `local/db_config.local.m`          |
+
+### config.validation
+
+| Field                                  | Default | Migration |
+|----------------------------------------|---------|-----------|
+| `thresholds.year_min`                  | 1980    | 1970      |
+| `thresholds.year_max`                  | now+1   | now+1     |
+| `thresholds.group_size_default`        | 1000000 | —         |
+| `thresholds.calf_count_default`        | 100000  | —         |
+| `warnings_become_errors`               | false   | false     |
+| `allow_unknown_lookup_codes`           | false   | true      |
+| `overrides.enabled`                    | true    | true      |
+| `overrides.csv_path`                   | `''`    | `config/overrides/migration_overrides.csv` |
+
+### config.pipeline
+
+| Field                              | Default  | Description                               |
+|------------------------------------|----------|-------------------------------------------|
+| `chunk_size`                       | 10000    | Rows per processing chunk                 |
+| `known_fixes.enabled`              | true     | Apply `apply_known_fixes.m` pre-validation |
+| `logging.error_log_dir`            | `'logs/'`| Directory for log files                   |
+| `logging.use_datetime_filenames`   | true     | Stamp log filenames with run start time   |
+| `logging.level`                    | `'INFO'` | Logging verbosity                         |
+| `format_definitions_path`          | `'config/format_definitions.json'` | Parser format map |
+| `lookup_tables_dir`                | `'data/tables/'` | Lookup CSV directory            |

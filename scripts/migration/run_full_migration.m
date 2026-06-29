@@ -18,12 +18,15 @@ chunk_size  = 10000;
 pause_on_steps = false;
 
 % FIXME: use the logging toolbox
-    
+
 fprintf('=======================================================\n');
 fprintf('         NARWC Database Migration - Full Workflow      \n');
 fprintf('=======================================================\n\n');
 
 start_time = tic;
+
+% Load migration batch config (permissive thresholds, migration override CSV)
+config = load_config('migration');
 
 try
     % FIXME: first need STEP 0 to validate the csv database lines
@@ -31,9 +34,9 @@ try
     % Step 1: Extract
     fprintf('STEP 1 OF 3: Extracting surveys...\n');
     fprintf('-------------------------------------------------------\n');
-    step1_extract_surveys(csv_file, 'Overwrite', overwrite,'ChunkSize', chunk_size);
+    step1_extract_surveys(csv_file, 'Overwrite', overwrite, 'ChunkSize', chunk_size);
     % FIXME: I am not sure that the overwrite option works here
-    
+
 
     if pause_on_steps
         fprintf('\nPress any key to continue to Step 2...\n');
@@ -43,7 +46,7 @@ try
     % Step 2: Upload
     fprintf('\nSTEP 2 OF 3: Uploading to database...\n');
     fprintf('-------------------------------------------------------\n');
-    step2_upload_surveys('Overwrite', overwrite, 'Validate', validate);
+    step2_upload_surveys('Config', config, 'Overwrite', overwrite, 'Validate', validate);
     
     if pause_on_steps
         fprintf('\nPress any key to continue to Step 3...\n');
