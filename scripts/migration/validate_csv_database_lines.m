@@ -23,7 +23,7 @@
 input_csv = 'data/legacy/original_csv/RUSS_24.CSV';
 valid_output = 'data/legacy/original_csv/RUSS_24_VALID.CSV';
 invalid_output = 'data/legacy/original_csv/RUSS_24_INVALID.CSV';
-error_log = 'data/legacy/original_csv/RUSS_24_ERRORS.txt';
+error_log = 'data/legacy/RUSS_24_ERRORS.txt';
 
 % Expected number of fields (columns)
 expected_num_fields = 55;

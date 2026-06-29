@@ -16,6 +16,9 @@ function overrides = migration()
     overrides.validation.overrides.csv_path                           = fullfile('config', 'overrides', 'migration_overrides.csv');
     overrides.pipeline.known_fixes.enabled                            = true;
 
+    % NOTE: there are a lot of historical instances of calf associated behaviors
+    % which do not record numcalf. Dr Kenney reports that calfs were often not
+    % recorded, so these warnings must be ignored.
     overrides.validation.behavioral.calf_associated_behaviors   = [];
 
     % Additional fields — uncomment and adjust as needed:

@@ -58,6 +58,7 @@ classdef SurveyExtractor < handle
             
             % Start timing
             start_time = tic;
+            run_ts = narwc.logging.run_timestamp();
             
             % Create import options
             import_opts = obj.createImportOptions();
@@ -180,7 +181,7 @@ classdef SurveyExtractor < handle
             end
             
             % Write summary
-            obj.writeSummary(output_dir, survey_map, rows_processed, start_time);
+            obj.writeSummary(output_dir, survey_map, rows_processed, start_time, run_ts);
             
             % Display summary
             total_time = toc(start_time);
@@ -211,10 +212,12 @@ classdef SurveyExtractor < handle
             fclose(fid);
         end
         
-        function writeSummary(obj, output_dir, survey_map, rows_processed, start_time)
+        function writeSummary(obj, output_dir, survey_map, rows_processed, start_time, run_ts)
             % WRITESUMMARY Write summary file
-            
-            summary_filepath = fullfile(output_dir, '_split_summary.txt');
+
+            log_dir = fileparts(fileparts(output_dir));
+            if isempty(log_dir), log_dir = '.'; end
+            summary_filepath = fullfile(log_dir, sprintf('_split_summary_%s.log', run_ts));
             fid = fopen(summary_filepath, 'w');
             
             total_time = toc(start_time);
