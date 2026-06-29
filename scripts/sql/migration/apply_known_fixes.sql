@@ -10,9 +10,9 @@
  *             are deterministic but not easily reversible without the original data.
  * Last modified: 2026-06-26
  *
- * This is the SQL counterpart to src/+migration/apply_known_fixes.m (planned).
- * The MATLAB script applies these corrections to the CSV staging area before upload;
- * this SQL script applies them post-upload if a survey is already in the DB.
+ * This is the SQL counterpart to src/+migration/apply_known_fixes.m.
+ * The MATLAB function applies these corrections to the CSV staging area before upload;
+ * this SQL script applies them post-upload if a survey is already in Master.
  * Generally prefer the MATLAB path; this script exists for in-place correction.
  *
  * Keep this file in sync with apply_known_fixes.m. Add a parallel block to both
