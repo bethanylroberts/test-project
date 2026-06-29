@@ -4,17 +4,12 @@ function beaufort_rules(data, collector, config)
     % Inputs:
     %   data - Table with survey data
     %   collector - ErrorCollector instance
-    %   config - Configuration struct (optional)
+    %   config - Configuration struct
 
-    if nargin < 3 || isempty(config)
-        full_config = get_config('validation');
-        config = full_config.environmental;
-    elseif isfield(config, 'environmental')
-        config = config.environmental;
-    end
-
-    if ~isfield(config, 'valid_values')
-        config = default_config();
+    if isfield(config, 'beaufort')
+        config = config.beaufort;
+    elseif isfield(config, 'environmental') && isfield(config.environmental, 'beaufort_values')
+        config = struct('valid_values', config.environmental.beaufort_values);
     end
 
     if ~ismember('BEAUFORT', data.Properties.VariableNames)
@@ -33,8 +28,4 @@ function beaufort_rules(data, collector, config)
             min(config.valid_values), max(config.valid_values)), ...
             'error', 'beaufort_rules.beaufort_out_of_range');
     end
-end
-
-function config = default_config()
-    config.valid_values = 0:12;
 end

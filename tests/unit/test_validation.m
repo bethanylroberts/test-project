@@ -59,48 +59,51 @@ classdef test_validation < matlab.unittest.TestCase
         
         function testCoordinateValidation(testCase)
             % Test coordinate validation rules
-            
+
             % Create test data
             data = table();
             data.LAT_DD = [41.5; 100; NaN; 42.0];  % One out of range, one missing
             data.LONG_DD = [-70.0; -71.0; -72.0; NaN];  % One missing
-            
+
             collector = narwc.validation.ErrorCollector();
-            narwc.validation.rules.coordinate_rules(data, collector);
-            
+            config = load_config(); config = config.validation;
+            narwc.validation.rules.coordinate_rules(data, collector, config);
+
             % Should have errors
             testCase.verifyGreaterThan(collector.getErrorCount('error'), 0);
         end
-        
+
         function testRequiredFieldsValidation(testCase)
             % Test required fields validation
-            
+
             % Create test data missing required fields
             data = table();
             data.LAT_DD = [41.5; 42.0];
             data.LONG_DD = [-70.0; -71.0];
             % Missing FILEID, YEAR, etc.
-            
+
             collector = narwc.validation.ErrorCollector();
-            narwc.validation.rules.required_fields(data, collector);
-            
+            config = load_config(); config = config.validation;
+            narwc.validation.rules.required_fields(data, collector, config);
+
             % Should have errors for missing required fields
             testCase.verifyGreaterThan(collector.getErrorCount('error'), 0);
         end
-        
+
         function testDateTimeValidation(testCase)
             % Test datetime validation rules
-            
+
             % Create test data with invalid dates
             data = table();
             data.YEAR = [2020; 2021; 3000; 2022];  % One invalid year
             data.MONTH = [1; 13; 6; 2];  % One invalid month
             data.DAY = [15; 20; 32; 10];  % One invalid day
             data.TIME = [120000; 240000; 93000; 150000];  % One invalid time
-            
+
             collector = narwc.validation.ErrorCollector();
-            narwc.validation.rules.datetime_rules(data, collector);
-            
+            config = load_config(); config = config.validation;
+            narwc.validation.rules.datetime_rules(data, collector, config);
+
             % Should have errors
             testCase.verifyGreaterThan(collector.getErrorCount('error'), 0);
         end
@@ -116,7 +119,8 @@ classdef test_validation < matlab.unittest.TestCase
             data.TIME  = [120000; 0; 0; 0];
 
             collector = narwc.validation.ErrorCollector();
-            narwc.validation.rules.datetime_rules(data, collector);
+            config = load_config(); config = config.validation;
+            narwc.validation.rules.datetime_rules(data, collector, config);
 
             errors = collector.getErrors('error');
             % row may be a vector when multiple rows fail a single rule;
@@ -141,35 +145,37 @@ classdef test_validation < matlab.unittest.TestCase
 
         function testBeaufortValidation(testCase)
             % Test Beaufort scale validation
-            
+
             % Create test data
             data = table();
             data.BEAUFORT = [0; 5; 12; 15; NaN];  % One invalid (15)
-            
+
             collector = narwc.validation.ErrorCollector();
-            narwc.validation.rules.beaufort_rules(data, collector);
-            
+            config = load_config(); config = config.validation;
+            narwc.validation.rules.beaufort_rules(data, collector, config);
+
             % Should have 1 error
             testCase.verifyEqual(collector.getErrorCount('error'), 1);
         end
-        
+
         function testSpeciesValidation(testCase)
             % Test species validation rules
-            
+
             % Create test data
             data = table();
             data.SPECCODE = {'RIWH'; 'FIWH'; 'TOOLONG'; 'BA'};  % One too long
             data.TAXCODE = [1; 2; 99; 3];  % One invalid
             data.NUMBER = [5; -1; 10; 2000];  % One negative, one large
-            data.NUMCALF = [1; 0; 2; 20];  % Last one exceeds NUMBER
-            
+            data.NUMCALF = [1; 0; 2; 20];
+
             collector = narwc.validation.ErrorCollector();
-            narwc.validation.rules.species_rules(data, collector);
-            
+            config = load_config(); config = config.validation;
+            narwc.validation.rules.species_rules(data, collector, config);
+
             % Should have multiple errors
             testCase.verifyGreaterThan(collector.getErrorCount('error'), 0);
         end
-        
+
         function testEnvironmentalValidation(testCase)
             % Test environmental rules.
             %
@@ -187,7 +193,8 @@ classdef test_validation < matlab.unittest.TestCase
             data.WX = {'C'; 'R'; 'F'; 'LONG'};
 
             collector = narwc.validation.ErrorCollector();
-            narwc.validation.rules.environmental_rules(data, collector);
+            config = load_config(); config = config.validation;
+            narwc.validation.rules.environmental_rules(data, collector, config);
 
             % Function generates warnings for out-of-range SURFTEMP and VISIBLTY
             testCase.verifyGreaterThan(collector.getErrorCount('warning'), 0);

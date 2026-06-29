@@ -10,37 +10,41 @@ need attention.
 
 The config layer works as follows:
 
-1. **`get_config.m`** is the single entry point for all runtime configuration. It builds
-   a config struct once on first call and caches it in a `persistent` variable for the
-   rest of the session.
-2. **`user_config.m`** (not in version control; created from `user_config.m.template`)
-   provides per-user overrides that are deep-merged on top of the defaults.
-3. **`db_config.m`** (not in version control; created from `db_config_template.m`)
-   holds database credentials. **Note:** `get_config.m` currently does not read this
-   file — the database section of `get_config` has its own hardcoded defaults. See
-   the discrepancies section.
-4. **`format_definitions.json`** defines the three recognized input file formats for
+1. **`load_config.m`** is the primary config entry point. It merges defaults, local
+   overrides, and an optional batch config and returns a plain struct. Use this for
+   all new code.
+2. **`config/defaults/validation_config_default.m`** (and `db_config_default.m`,
+   `pipeline_config_default.m`) are the canonical source of truth for all defaults.
+   Every tunable parameter must be defined here.
+3. **`config/local/db_config_local.m`** (gitignored; created from the `.template`)
+   holds per-machine overrides and database credentials.
+4. **`config/batches/<name>.m`** (e.g. `migration.m`) hold per-run overrides that
+   are applied on top of defaults and local config.
+5. **`format_definitions.json`** defines the three recognized input file formats for
    the parser layer.
-5. **`reload_config.m`** is a utility function to clear the cache and reload, needed
-   after any config file is changed mid-session.
-6. **`validation_config.m`** and **`logging_config.m`** are dead stubs (see below).
+6. **`get_config.m`** is an older cached system still used by some non-validation
+   code paths. Do not add new calls to it; prefer `load_config`.
 
----
+### Merge order
 
-## `get_config.m` — Main configuration hub
+```
+defaults/* < config/local/db_config_local.m < config/batches/<name>.m
+```
+
+Later layers win. Merge is deep (struct fields recursively merged).
 
 **Usage:**
 ```matlab
-config = get_config()              % Returns full config struct
-config = get_config('paths')       % Returns paths section only
-config = get_config('validation')  % Returns validation section only
-config = get_config('processing')  % Returns processing section only
-config = get_config('database')    % Returns database section only
-config = get_config('logging')     % Returns logging section only
-```
+config = load_config()              % defaults + local
+config = load_config('migration')   % adds migration batch overrides
 
-The config is persistent for the session. After modifying any config file, call
-`reload_config()` to pick up the changes.
+% SurveyValidator accepts a batch name directly:
+validator = narwc.validation.SurveyValidator('migration');
+
+% When calling rule functions directly in tests or scripts:
+cfg = load_config(); cfg = cfg.validation;
+narwc.validation.rules.coordinate_rules(data, collector, cfg);
+```
 
 ---
 
@@ -183,10 +187,25 @@ as out of range (hard error), making 1990 the more conservative choice.
 | `validation.species.speccode_table_path`    | `data/tables/SPECCODE.csv` | Redundant with `paths`; passed for rules that read it directly |
 | `validation.species.taxcode_table_path`     | `data/tables/TAXCODE.csv`  | Same                                                           |
 
-**Note:** The `species_rules.m` function has many additional configurable parameters
-(group size thresholds, right whale thresholds, calf limits, etc.) with defaults in its
-own `default_config()`. These are not set in `get_config.m` — the rule's own defaults
-are used. To override them, add a `validation.species.*` field to `user_config.m`.
+**Note:** The `species_rules.m` function has additional configurable parameters with
+defaults in its own `default_config()`. These are not set in `validation_config_default.m`
+— the rule's own defaults are used. To override them, add a `validation.species.*` field
+to `user_config.m` or a batch config.
+
+Key species sub-config fields (all live in `validation.species.*`):
+
+| Field                                       | Default  | Notes                                                              |
+| ------------------------------------------- | -------- | ------------------------------------------------------------------ |
+| `thresholds.group_size_default`             | `100000` | Fallback when neither SPECCODE nor TAXCODE provides a per-taxon threshold |
+| `thresholds.calf_count_default`             | `100`    | Fallback calf count threshold                                      |
+| `right_whale_max_group`                     | `50`     | Warning threshold for RIWH/NARW/SARW group size                   |
+| `right_whale_max_calves`                    | `5`      | Warning threshold for right whale calf count                       |
+| `require_speccode_for_sightings`            | `true`   | SPECCODE required on sighting records                              |
+| `require_taxcode_for_sightings`             | `true`   | TAXCODE required on sighting records                               |
+| `validate_speccode_lookup`                  | `true`   | Flag unknown SPECCODEs                                             |
+| `validate_taxcode_lookup`                   | `true`   | Flag unknown TAXCODEs                                              |
+| `validate_speccode_taxcode_match`           | `true`   | Flag TAXCODE mismatch against SPECCODE lookup                      |
+| `allow_numcalf_exceeds_half`                | `false`  | When `true`, suppresses the warning that NUMCALF > NUMBER/2. Set to `true` in the migration batch config because small historical groups with one calf routinely exceed this ratio. |
 
 #### Environmental validation
 
@@ -286,43 +305,41 @@ Controls console and file logging.
 
 ---
 
-## `user_config.m` — Per-user overrides
+## `config/local/db_config_local.m` — Per-machine overrides
 
-**Template:** `config/user_config.m.template`
-**Actual file:** `config/user_config.m` (gitignored; not in version control)
+**Template:** `config/local/db_config_local.m.template`
+**Actual file:** `config/local/db_config_local.m` (gitignored; not in version control)
 
 Create this file by copying the template. Any field set here is deep-merged on top
-of the `get_config.m` defaults. Only fields you want to change need to be included;
-unspecified fields retain their defaults.
+of the defaults by `load_config()`. Only fields you want to change need to be included.
 
 ```matlab
-function config = user_config()
+function config = db_config_local()
     % Override database connection for a local SQL Server instance
-    config.database.server = 'MYPC\SQLEXPRESS';
-    config.database.database = 'NARWCDB';
+    config.db.server = 'MYPC\SQLEXPRESS';
+    config.db.database = 'NARWCDB';
+end
+```
 
+Validation and pipeline overrides that are specific to your machine (not to a batch
+run) can also go here:
+
+```matlab
     % Tighten survey area bounds to match SAS system
     config.validation.coordinates.survey_lat_min = 25;
     config.validation.coordinates.survey_lat_max = 48;
     config.validation.coordinates.survey_lon_min = -81;
     config.validation.coordinates.survey_lon_max = -58;
 
-    % Enable debug logging
-    config.logging.level = 'DEBUG';
-
     % Fix legacy visibility flag after migration is complete
     config.validation.environmental.visibility_allow_negative = false;
-end
 ```
-
-After creating or editing `user_config.m`, call `reload_config()` to pick up the
-changes in the current session.
 
 ---
 
-## `db_config_template.m` — Database credential template
+## `config/local/db_config_local.m.template` — Database credential template
 
-**Actual file:** `config/db_config.m` (gitignored; must be created before first use)
+**Actual file:** `config/local/db_config_local.m` (gitignored; must be created before first use)
 
 Used by `narwc.db.Connection.create()` to establish the database connection. Fields:
 
@@ -430,17 +447,8 @@ This file exists but immediately throws an error:
 error("Unexpected call of validation config")
 ```
 It is not called from anywhere in the codebase. It was an earlier, abandoned approach
-to configuration. The validation settings it contains are superseded by the
-`validation` section of `get_config.m`. This file can be removed.
-
-### `logging_config.m`
-
-Contains only:
-```matlab
-% TODO: impliment logging config
-```
-It is not called from anywhere. Logging config is embedded in `get_config.m`'s
-`get_logging_config()` function. This file can be removed.
+to configuration. The validation settings it contains are superseded by
+`config/defaults/validation_config_default.m`. This file can be removed.
 
 ---
 
@@ -448,14 +456,13 @@ It is not called from anywhere. Logging config is embedded in `get_config.m`'s
 
 | Issue                                                                           | Location                 | Impact                                                                  |
 | ------------------------------------------------------------------------------- | ------------------------ | ----------------------------------------------------------------------- |
-| `database.database = 'NARWC'` should be `'NARWCDB'`                             | `get_config.m` line ~198 | Connection to wrong database using `get_config` path                    |
+| `database.database = 'NARWC'` should be `'NARWCDB'`                             | `get_config.m` line ~198 | Connection to wrong database using the old `get_config` path            |
 | `duplicate_fields` contains `'LON_DD'` instead of `'LONG_DD'`                   | `get_config.m` line ~182 | Duplicate detection silently misses all records                         |
 | `output_dir` points to non-existent `output/`                                   | `get_config.m` line ~68  | Processing output goes to wrong or missing directory                    |
-| `beaufort_values` field name doesn't match what `beaufort_rules.m` reads        | `get_config.m`           | Field has no effect; rule uses its own internal default                 |
-| `visibility_allow_negative = true` (FIXME comment)                              | `get_config.m` line ~160 | Negative visibility values not flagged during legacy migration          |
-| `year_warning = 1980` vs. `datetime_rules.m` default of 1990                    | `get_config.m` vs. rule  | `get_config` wins; 1980 is more permissive than SAS behavior            |
-| Survey area bounds (20–55 / −85 to −40) wider than SAS (25–48 / −81 to −58)     | `get_config.m`           | More records pass the survey-area check than the SAS system would allow |
-| `db_config_template.m` `Type` defaults to `'MySQL'`                             | `db_config_template.m`   | New users may create config for wrong database engine                   |
+| `visibility_allow_negative` set in `get_config.m` no longer applies             | `get_config.m`           | Validation now reads from `load_config()` / `validation_config_default.m`; the default there is `false` (correct for new surveys) |
+| `year_warning = 1980` vs. old `datetime_rules.m` internal default of 1990       | Resolved                 | `validation_config_default.m` is now authoritative; set to 1980        |
+| Survey area bounds (20–55 / −85 to −40) wider than SAS (25–48 / −81 to −58)     | `validation_config_default.m` | More records pass the survey-area check than the SAS system would allow |
+| `db_config_local.m.template` `Type` defaults to `'MySQL'`                       | template file            | New users may create config for wrong database engine; change to `'SQLServer'` |
 | `DTYPE`, `LEGGOOD`, `OLDVIZ` missing from `paths.lookup_tables`                 | `get_config.m`           | `foreign_key_rules.m` silently skips validation for these fields        |
-| `validation_config.m` and `logging_config.m` are dead stubs                     | `config/`                | Dead code; safe to delete                                               |
+| `validation_config.m` is a dead stub                                            | `config/`                | Dead code; safe to delete                                               |
 | `db_config.m` and `get_config.m` database sections use incompatible field names | Both                     | Connection code must know which config path it is using                 |

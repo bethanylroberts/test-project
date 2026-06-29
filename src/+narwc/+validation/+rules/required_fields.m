@@ -4,17 +4,12 @@ function required_fields(data, collector, config)
     % Inputs:
     %   data - Table with survey data
     %   collector - ErrorCollector instance
-    %   config - Configuration struct (optional)
+    %   config - Configuration struct
 
-    if nargin < 3 || isempty(config)
-        full_config = get_config('validation');
-        fields_to_check = full_config.required_fields;
-    elseif isfield(config, 'required_fields') && iscell(config.required_fields)
+    if isfield(config, 'required_fields') && iscell(config.required_fields)
         fields_to_check = config.required_fields;
-    elseif iscell(config)
-        fields_to_check = config;
     else
-        fields_to_check = {'LAT_DD', 'LON_DD', 'YEAR', 'MONTH', 'DAY'};
+        fields_to_check = {'LAT_DD', 'LONG_DD', 'YEAR', 'MONTH', 'DAY'};
     end
 
     for i = 1:length(fields_to_check)
@@ -41,16 +36,4 @@ function required_fields(data, collector, config)
                 'required_fields.value_missing');
         end
     end
-end
-
-function config = default_config() %#ok<DEFNU>
-    % FIXME: move to central config file
-    % FIXME: these are not accurate
-    config.required_fields = {
-        'DDSOURCE'
-        'EVENTNO'
-        'FILEID'
-        'IDSOURCE'
-        'YEAR'
-    };
 end
