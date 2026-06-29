@@ -2,7 +2,7 @@ function db = db_config_default()
 % DB_CONFIG_DEFAULT Default database connection settings.
 %
 % Credentials (Username, Password) are empty here and must be supplied
-% via config/local/db_config.local.m (gitignored).
+% via config/local/db_config_local.m (gitignored).
 
     db.Type         = 'MySQL';
     db.Server       = 'localhost';

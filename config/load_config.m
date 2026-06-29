@@ -32,7 +32,7 @@ function config = load_config(batch_name)
     config.pipeline   = pipeline_config_default();
 
     % Apply local overrides (gitignored, contains credentials)
-    local_db_path = fullfile(this_dir, 'local', 'db_config.local.m');
+    local_db_path = fullfile(this_dir, 'local', 'db_config_local.m');
     if exist(local_db_path, 'file')
         addpath(fullfile(this_dir, 'local'));
         local_db    = db_config_local();

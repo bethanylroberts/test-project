@@ -111,19 +111,14 @@ function startup()
     
     % Check for configuration files
     fprintf('\nChecking configuration files...\n');
-    local_config = fullfile(project_root, 'config', 'local', 'db_config.local.m');
+    local_config = fullfile(project_root, 'config', 'local', 'db_config_local.m');
     if ~exist(local_config, 'file')
-        fprintf('  ✗ config/local/db_config.local.m not found\n');
-        fprintf('    Copy config/local/db_config.local.m.template to db_config.local.m and add credentials\n');
-    local_config = fullfile(project_root, 'config', 'local', 'db_config.local.m');
-    if ~exist(local_config, 'file')
-        fprintf('  ✗ config/local/db_config.local.m not found\n');
-        fprintf('    Copy config/local/db_config.local.m.template to db_config.local.m and add credentials\n');
+        fprintf('  ✗ config/local/db_config_local.m not found\n');
+        fprintf('    Copy config/local/db_config_local.m.template to db_config_local.m and add credentials\n');
     else
-        fprintf('  ✓ config/local/db_config.local.m found\n');
-        fprintf('  ✓ config/local/db_config.local.m found\n');
+        fprintf('  ✓ config/local/db_config_local.m found\n');
     end
-    
+
     % Test database connection (if configured)
     fprintf('\nTesting database connection...\n');
     try
@@ -132,8 +127,7 @@ function startup()
         conn.close();
     catch ME
         fprintf('  ✗ Database connection failed: %s\n', ME.message);
-        fprintf('    Configure config/local/db_config.local.m with your database credentials\n');
-        fprintf('    Configure config/local/db_config.local.m with your database credentials\n');
+        fprintf('    Configure config/local/db_config_local.m with your database credentials\n');
     end
     
     % Display available functions

@@ -34,7 +34,7 @@ NARWC-DB/
 │   ├── get_lookup_table.m      # Loads CSV lookup tables from data/tables/ by name
 │   ├── reload_config.m         # Clears cached get_config singleton
 │   ├── defaults/               # Version-controlled baseline values (db, validation, pipeline)
-│   ├── local/                  # Gitignored; contains db_config.local.m with credentials
+│   ├── local/                  # Gitignored; contains db_config_local.m with credentials
 │   ├── batches/                # Per-workflow override files (migration.m, future: routine.m)
 │   └── overrides/              # Per-batch warning-override CSVs and README
 │

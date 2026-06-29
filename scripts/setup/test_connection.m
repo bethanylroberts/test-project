@@ -24,7 +24,7 @@ function test_connection()
     catch ME
         fprintf('  ✗ Failed to load configuration\n');
         fprintf('    Error: %s\n', ME.message);
-        fprintf('    Make sure config/local/db_config.local.m exists (copy from .template)\n');
+        fprintf('    Make sure config/local/db_config_local.m exists (copy from .template)\n');
         return;
     end
     
@@ -37,7 +37,7 @@ function test_connection()
         fprintf('  ✗ Failed to create connection\n');
         fprintf('    Error: %s\n', ME.message);
         fprintf('\nTroubleshooting:\n');
-        fprintf('  - Check database credentials in config/local/db_config.local.m\n');
+        fprintf('  - Check database credentials in config/local/db_config_local.m\n');
         fprintf('  - Verify server is running and accessible\n');
         fprintf('  - Check firewall settings\n');
         fprintf('  - Verify Database Toolbox is installed\n');

@@ -10,8 +10,8 @@ The pipeline loads configuration from three layers, merged in order:
 
 After cloning the repository:
 
-1. Copy `config/local/db_config.local.m.template` to `config/local/db_config.local.m`
-2. Edit `db_config.local.m` to add your database username and password
+1. Copy `config/local/db_config_local.m.template` to `config/local/db_config_local.m`
+2. Edit `db_config_local.m` to add your database username and password
 3. The file is gitignored and will not be committed
 
 ## Loading config in code
@@ -51,8 +51,8 @@ The merged config has three top-level sections:
 | `Port`         | `3306`     | Port number                               |
 | `DatabaseName` | `'NARWCDB'` | Target database                          |
 | `DataSource`   | `'NARWCDB_DSN'` | ODBC DSN (SQL Server)               |
-| `Username`     | `''`       | Set in `local/db_config.local.m`          |
-| `Password`     | `''`       | Set in `local/db_config.local.m`          |
+| `Username`     | `''`       | Set in `local/db_config_local.m`          |
+| `Password`     | `''`       | Set in `local/db_config_local.m`          |
 
 ### config.validation
 
