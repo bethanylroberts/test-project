@@ -34,7 +34,7 @@ BEGIN TRY
     BEGIN
         CREATE TABLE ANHEAD (
             Value       int             NOT NULL,
-            Direction   varchar(50)     NULL,       -- compass direction label (e.g., "NNE")
+            Direction   varchar(255)     NULL,       -- compass direction label (e.g., "NNE")
             LowDeg      numeric(18,0)   NULL,       -- low end of degree range
             HighDeg     numeric(18,0)   NULL,       -- high end of degree range
             CONSTRAINT PK_ANHEAD PRIMARY KEY (Value)

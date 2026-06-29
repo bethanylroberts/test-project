@@ -56,7 +56,6 @@ try
     % Step 3: Validate
     fprintf('\nSTEP 3 OF 3: Validating migration...\n');
     fprintf('-------------------------------------------------------\n');
-    % step3_validate_migration(csv_file, 'SampleSize', sample_size, 'GenerateCharts', true,'ReportFormat', 'markdown');
     step3_validate_migration('GenerateCharts', true, 'ReportFormat', 'markdown','DetailedErrorAnalysis', true);
     
     % Summary
