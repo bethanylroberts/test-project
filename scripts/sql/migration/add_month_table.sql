@@ -12,6 +12,8 @@
  * server permission. Values 13-16 are season codes (Winter/Spring/Summer/Fall).
  */
 
+--  FIXME: this is done by 03_create lookup tables now
+
 USE NARWCDB;
 GO
 
@@ -19,9 +21,9 @@ BEGIN TRY
     BEGIN TRANSACTION;
 
     -- Create MONTH table
-    IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = N'MONTH' AND type = 'U')
+    IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = N'[MONTH]' AND type = 'U')
     BEGIN
-        CREATE TABLE MONTH (
+        CREATE TABLE [MONTH] (
             Value       tinyint         NOT NULL,
             Description varchar(255)    NULL,
             CONSTRAINT PK_MONTH PRIMARY KEY CLUSTERED (Value ASC)
@@ -32,8 +34,8 @@ BEGIN TRY
         PRINT 'Table MONTH already exists; skipping creation.';
 
     -- Populate
-    TRUNCATE TABLE MONTH;
-    INSERT INTO MONTH (Value, Description) VALUES
+    TRUNCATE TABLE [MONTH];
+    INSERT INTO [MONTH] (Value, Description) VALUES
         (1,  'January'),
         (2,  'February'),
         (3,  'March'),
@@ -60,7 +62,7 @@ BEGIN TRY
     )
     BEGIN
         ALTER TABLE Master ADD CONSTRAINT FK_Master_MONTH
-            FOREIGN KEY (MONTH) REFERENCES MONTH(Value);
+            FOREIGN KEY ([MONTH]) REFERENCES [MONTH](Value);
         PRINT 'FK_Master_MONTH added.';
     END
     ELSE

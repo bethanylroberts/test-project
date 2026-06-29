@@ -355,7 +355,7 @@ BEGIN TRY
     )
     BEGIN
         ALTER TABLE Master ADD CONSTRAINT FK_Master_MONTH
-            FOREIGN KEY (MONTH) REFERENCES MONTH(Value);
+            FOREIGN KEY ([MONTH]) REFERENCES [MONTH](Value);
         PRINT 'FK_Master_MONTH added.';
     END
 

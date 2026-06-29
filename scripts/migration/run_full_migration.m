@@ -11,7 +11,7 @@
 % definitely unique to the migration purpose. Step3 is unclear
     
 csv_file = 'data/legacy/original_csv/RUSS_24_VALID.CSV';
-overwrite   = true;
+overwrite   = false;
 validate    = true;
 sample_size = inf;
 chunk_size  = 10000;

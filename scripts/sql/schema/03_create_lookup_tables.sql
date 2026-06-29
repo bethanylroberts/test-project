@@ -214,12 +214,14 @@ BEGIN TRY
     END
 
     -- ── MONTH ─────────────────────────────────────────────────────────────────
-    -- Note: includes 4 season codes (13-16) in addition to the 12 calendar months.
+    -- Note: MONTH is a T-SQL reserved keyword (date function); table name must
+    -- be bracketed in references. Includes 4 season codes (13-16) in addition
+    -- to the 12 calendar months.
     IF NOT EXISTS (
         SELECT * FROM sys.tables WHERE name = N'MONTH' AND type = 'U'
     )
     BEGIN
-        CREATE TABLE MONTH (
+        CREATE TABLE [MONTH] (
             Value       tinyint         NOT NULL,
             Description varchar(255)    NULL,
             CONSTRAINT PK_MONTH PRIMARY KEY CLUSTERED (Value ASC)

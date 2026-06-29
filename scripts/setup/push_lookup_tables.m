@@ -13,7 +13,7 @@
 %
 % 2026 russ.shomberg@marineacoustics.com
 
-log = logging.Logger('narwc.setup.push_lookup_tables');
+logger = logging.Logger('narwc.setup.push_lookup_tables');
 
 tablesDir = fullfile('.', 'data', 'tables');
 if ~isfolder(tablesDir)
@@ -26,7 +26,7 @@ if isempty(files)
     error('push_lookup_tables:noFiles', 'No CSV files found in %s', tablesDir);
 end
 
-log.info('Connecting to database...');
+logger.info('Connecting to database...');
 conn = narwc.db.Connection.create();
 
 nPushed  = 0;
@@ -40,13 +40,13 @@ try
         tableName = fname(1:end-4);  % strip .csv
 
         if strcmp(tableName, 'sysdiagrams')
-            log.debug('Skipping %s (system table)', tableName);
+            logger.debug(sprintf('Skipping %s (system table)', tableName));
             nSkipped = nSkipped + 1;
             continue
         end
 
         csvPath = fullfile(tablesDir, fname);
-        log.info('[%d/%d] Pushing %s ...', i, length(files), tableName);
+        logger.info(sprintf('[%d/%d] Pushing %s ...', i, length(files), tableName));
 
         try
             % Explicit delimiter avoids MATLAB auto-detection errors on files
@@ -54,20 +54,36 @@ try
             data = readtable(csvPath, 'Delimiter', ',', 'VariableNamingRule', 'preserve');
 
             if height(data) == 0
-                log.warn('  %s: CSV has no data rows — skipping', tableName);
+                logger.warning(sprintf('  %s: CSV has no data rows — skipping', tableName));
                 nSkipped = nSkipped + 1;
                 continue
+            end
+
+            % Coerce Value column to string for tables whose DB schema has varchar Value
+            % but whose CSV values look numeric to readtable
+            string_value_tables = {'Contrib', 'LEGGOOD', 'OLDVIZ'};
+            if ismember(tableName, string_value_tables) && ...
+                    ismember('Value', data.Properties.VariableNames) && ...
+                    isnumeric(data.Value)
+                data.Value = arrayfun(@(x) {num2str(x)}, data.Value);
+            end
+
+            % SPECCODE has a TAXCODE column that needs the same treatment
+            if strcmp(tableName, 'SPECCODE') && ...
+                    ismember('TAXCODE', data.Properties.VariableNames) && ...
+                    isnumeric(data.TAXCODE)
+                data.TAXCODE = arrayfun(@(x) {num2str(x)}, data.TAXCODE);
             end
 
             % Clear existing rows before re-inserting.
             conn.execute(sprintf('DELETE FROM [dbo].[%s]', tableName));
 
             conn.insert(tableName, data);
-            log.info('  %s: %d rows inserted', tableName, height(data));
+            logger.info(sprintf('  %s: %d rows inserted', tableName, height(data)));
             nPushed = nPushed + 1;
 
         catch ME
-            log.error('  %s: FAILED — %s', tableName, ME.message);
+            logger.error(sprintf('  %s: FAILED — %s', tableName, ME.message));
             failed{end+1} = tableName; %#ok<AGROW>
             nFailed = nFailed + 1;
         end
