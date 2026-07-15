@@ -1,0 +1,30 @@
+{
+  "formats": {
+    "standard": {
+      "name": "Standard NARWC Format",
+      "delimiter": ",",
+      "header_row": 1,
+      "parser": "StandardFormat",
+      "description": "Tab-delimited with all 55 standard fields"
+    },
+    "legacy": {
+      "name": "Legacy Format",
+      "delimiter": ",",
+      "header_row": 1,
+      "parser": "LegacyFormat",
+      "description": "Comma-delimited legacy database export"
+    },
+    "neaq": {
+      "name": "NEAQ Format",
+      "delimiter": ",",
+      "header_row": 2,
+      "parser": "NEAQFormat",
+      "description": "New England Aquarium survey format",
+      "field_mapping": {
+        "LAT_DD": "Latitude",
+        "LONG_DD": "Longitude",
+        "SPECCODE": "Species"
+      }
+    }
+  }
+}
