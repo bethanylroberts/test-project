@@ -29,7 +29,7 @@ classdef test_config_loader < matlab.unittest.TestCase
 
         function testDefaultYearMin(testCase)
             config = load_config();
-            testCase.verifyEqual(config.validation.datetime.year_min, 1970);
+            testCase.verifyEqual(config.validation.datetime.year_min, 1900);
         end
 
         function testDefaultYearWarning(testCase)
