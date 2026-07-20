@@ -5,15 +5,11 @@
 % reports the errors.
 % 
 % 2026 russ.shomberg@marineacoustics.com
-
-% TODO: this should stay here as script for the legacy migration. However, most
-% of the code should be moved into a function that can be used by the batch
-% upload for the general tools
-
-% FIXME: this is too abstract as it just calls the single
-% narwc.ingestion.BatchUploader.uploadFromFolder method.
-% - [ ] batch uploader should be more generic. It just needs to pull from a pending folder
-% - [ ] batch uploader can be less abstract. Currently reads like java code not matlab
+%
+% The connect/upload/stats/close logic lives in
+% narwc.ingestion.run_batch_upload, shared with
+% scripts/ingestion/upload_contributor_batch.m (routine ingestion). This
+% script is just the migration-flavored defaults/messaging wrapper.
 
 function stats = step2_upload_surveys(options)
     % STEP2_UPLOAD_SURVEYS Step 2: Upload surveys from pending folder to database
@@ -48,35 +44,13 @@ function stats = step2_upload_surveys(options)
     fprintf('  AllowErrors:   %s\n', string(options.AllowErrors));
     fprintf('\n');
     
-    % Connect to database
-    if ~isempty(fieldnames(options.Config)) && isfield(options.Config, 'db')
-        conn = narwc.db.Connection.create(options.Config.db);
-    else
-        conn = narwc.db.Connection.create();
-    end
+    stats = narwc.ingestion.run_batch_upload(options.BaseDir, options.Config, ...
+        'Overwrite', options.Overwrite, ...
+        'Validate', options.Validate, ...
+        'StopOnError', options.StopOnError, ...
+        'AllowWarnings', options.AllowWarnings, ...
+        'AllowErrors', options.AllowErrors);
 
-    try
-        converter = narwc.ingestion.BatchUploader(conn, options.BaseDir, ...
-            'Config', options.Config);
-
-        % Upload all from pending folder
-        converter.uploadFromFolder(...
-            'Overwrite', options.Overwrite, ...
-            'Validate', options.Validate, ...
-            'StopOnError', options.StopOnError, ...
-            'AllowWarnings', options.AllowWarnings, ...
-            'AllowErrors', options.AllowErrors);
-        
-        % Get stats
-        stats = converter.getStats();
-        
-        fprintf('\nStep 2 complete. Ready for Step 3 (validation)\n');
-        fprintf('  Run: step3_validate_migration\n\n');
-        
-    catch ME
-        conn.close();
-        rethrow(ME);
-    end
-    
-    conn.close();
+    fprintf('\nStep 2 complete. Ready for Step 3 (validation)\n');
+    fprintf('  Run: step3_validate_migration\n\n');
 end
