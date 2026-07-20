@@ -387,7 +387,7 @@ F098027_validation_20250115_143025.html
 - [ ] Test schema creation
 
 ### 1.3 Survey Extraction
-- [ ] Create `src/+narwc/+migration/SurveyExtractor.m`
+- [x] Create `src/+narwc/+ingestion/SurveyExtractor.m`
   - [ ] Extract surveys by FILEID
   - [ ] Handle NULL values properly
   - [ ] Preserve data types

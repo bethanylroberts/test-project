@@ -1,14 +1,29 @@
-%VALIDATE_CSV_DATABASE_LINES Validate CSV lines and split into valid/invalid files
+%VALIDATE_CSV_DATABASE_LINES Validate CSV lines and splits valid/invalid files
 %
-% This script reads a CSV file line by line, validates each line's format,
-% and writes valid lines to one file and invalid lines to another.
-% Useful for debugging malformed CSV files.
+% This script reads a CSV file line by line, validates each line's format, and
+% writes valid lines to one file and invalid lines to another. Useful for
+% debugging malformed CSV files. However, this lets a lot of errors through. It
+% only provides very basic checks to ensure the other validators can open the
+% files.
+% 
+% 2026 russ.shomberg@marineacoustics.com
+
+% FIXME: this is basically step0 and my steps are off anyway. It would make the
+% most sense to get rid of the step labeling and just put everything relevant in
+% the "run_full_migration.m" script or else into a README file.
+
+% NOTE: this is a pretty good script. It does not have a ton of abstraction.
+% Chances are it will only be used once or twice. Once migration is complete,
+% there is no reason to keep it. Therefore, everything should be kept internal
+% to the script.
+
+% ???: should configuration options be exposed as function arguments or kept like this?
 
 %% Configuration
 input_csv = 'data/legacy/original_csv/RUSS_24.CSV';
 valid_output = 'data/legacy/original_csv/RUSS_24_VALID.CSV';
 invalid_output = 'data/legacy/original_csv/RUSS_24_INVALID.CSV';
-error_log = 'data/legacy/original_csv/RUSS_24_ERRORS.txt';
+error_log = 'data/legacy/RUSS_24_ERRORS.txt';
 
 % Expected number of fields (columns)
 expected_num_fields = 55;
@@ -52,6 +67,7 @@ if fid_errors == -1
     error('Cannot create error log file: %s', error_log);
 end
 
+% FIXME: correct fprintf to logging.info
 % Write error log header
 fprintf(fid_errors, 'CSV Line Validation Error Log\n');
 fprintf(fid_errors, '=============================\n');
@@ -212,6 +228,8 @@ function [is_valid, error_msg] = validate_line(line, expected_num_fields, strict
     end
     
     % If strict validation, check field content
+    % FIXME: either remove strict validation option or include more results. 
+    % - Ensuring the FILEID is probably a top priority
     if strict
         % Check FILEID (field 27) - should not be empty
         if isempty(strtrim(fields{27}))

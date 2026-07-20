@@ -30,14 +30,22 @@ function results = test_runner(test_type, options)
     project_root = fileparts(test_dir);
     
     % Ensure required paths are available for all tests
-    config_dir = fullfile(project_root, 'config');
-    src_dir = fullfile(project_root, 'src');
-    
+    config_dir   = fullfile(project_root, 'config');
+    src_dir      = fullfile(project_root, 'src');
+    fixtures_dir = fullfile(test_dir, 'fixtures');
+    utils_dir    = fullfile(test_dir, 'utils');
+
     if ~contains(path, config_dir)
         addpath(config_dir);
     end
     if ~contains(path, src_dir)
         addpath(genpath(src_dir));
+    end
+    if ~contains(path, fixtures_dir)
+        addpath(fixtures_dir);
+    end
+    if ~contains(path, utils_dir)
+        addpath(utils_dir);
     end
     
     % Build test suite based on type

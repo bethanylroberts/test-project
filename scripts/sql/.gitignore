@@ -1,0 +1,2 @@
+# The global ~/.gitignore_global excludes *.sql; override it for this directory.
+!*.sql

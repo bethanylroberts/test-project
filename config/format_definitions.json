@@ -2,7 +2,7 @@
   "formats": {
     "standard": {
       "name": "Standard NARWC Format",
-      "delimiter": "\t",
+      "delimiter": ",",
       "header_row": 1,
       "parser": "StandardFormat",
       "description": "Tab-delimited with all 55 standard fields"

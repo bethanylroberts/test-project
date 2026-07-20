@@ -1,3 +1,20 @@
+% STEP3_VALIDATE_MIGRATION validates the migration by looking at the database and report
+% 
+% TODO: fill in details
+% 
+% 2026 russ.shomberg@marineacoustics.com
+
+% FIXME: this script generates a single report, but it doesn't have a clear
+% method for analyzing a after multiple runs or for distinguishing between those
+% runs. Need to think through how to handle this.
+
+% FIXME: where does this compare the splitting of the database into surveys vs
+% the upload process. I think right now, it just produces a report. A true
+% validator would look at the results and compare the old database to the new
+% one. I'm not sure that will be possible without doing a targeted pull from the
+% old SAS database and replicating that pull on the SQL database. I can maybe
+% write a script that generates equivalent pulls and another that compares the results.
+
 function results = step3_validate_migration(options)
     % STEP3_VALIDATE_MIGRATION Step 3: Validate migration and generate report
     %
@@ -14,13 +31,17 @@ function results = step3_validate_migration(options)
         options.ReportFormat char {mustBeMember(options.ReportFormat, {'markdown', 'text', 'html'})} = 'markdown'
         options.DetailedErrorAnalysis logical = true
     end
+
+    % FIXME: need to more easily expose these options when the scripts are run separately which is likely to be the norm
     
+    % FIXME: correct `fprint` to utlize logging
     fprintf('=== Step 3: Validating Migration ===\n\n');
     
     % Define directories
     processed_dir = fullfile(options.BaseDir, 'processed');
     failed_dir = fullfile(options.BaseDir, 'failed');
     pending_dir = fullfile(options.BaseDir, 'pending');
+    log_dir = fileparts(options.BaseDir);
     
     % Verify directories exist
     if ~exist(processed_dir, 'dir')
@@ -43,12 +64,12 @@ function results = step3_validate_migration(options)
         % Analyze errors in detail if requested
         if options.DetailedErrorAnalysis && results.metrics.failed_uploads > 0
             fprintf('Analyzing errors...\n');
-            results.error_analysis = analyze_failed_surveys(failed_dir);
+            results.error_analysis = analyze_failed_surveys(failed_dir, log_dir);
             results.metrics.error_breakdown = results.error_analysis.error_breakdown;
         end
-        
+
         % Display summary
-        display_validation_summary(results, failed_dir);
+        display_validation_summary(results, failed_dir, log_dir);
         
         % Generate visualizations
         if options.GenerateCharts
@@ -85,7 +106,7 @@ function results = step3_validate_migration(options)
             end
             
             generate_migration_report(results, report_file, options.ReportFormat);
-            fprintf('✓ Report saved to: %s\n', report_file);
+            fprintf('Report saved to: %s\n', report_file);
         catch reportErr
             warning('Failed to generate report: %s', reportErr.message);
         end
@@ -94,7 +115,7 @@ function results = step3_validate_migration(options)
         
     catch ME
         % Detailed error reporting
-        fprintf(2, '\n❌ ERROR during validation:\n');
+        fprintf(2, '\nERROR during validation:\n');
         fprintf(2, 'Message: %s\n', ME.message);
         fprintf(2, 'Location: %s (line %d)\n\n', ME.stack(1).name, ME.stack(1).line);
         
@@ -249,9 +270,9 @@ function type_metrics = analyze_survey_types(results)
 end
 
 
-function error_analysis = analyze_failed_surveys(failed_dir)
+function error_analysis = analyze_failed_surveys(failed_dir, log_dir)
     % ANALYZE_FAILED_SURVEYS Analyze error logs from failed surveys
-    
+
     error_analysis = struct();
     error_analysis.error_breakdown = struct();
     error_analysis.error_breakdown.parsing_errors = 0;
@@ -261,13 +282,13 @@ function error_analysis = analyze_failed_surveys(failed_dir)
     error_analysis.error_breakdown.data_type_mismatches = 0;
     error_analysis.error_breakdown.constraint_violations = 0;
     error_analysis.error_breakdown.other_errors = 0;
-    
+
     error_analysis.detailed_errors = {};
     error_analysis.survey_errors = struct('filename', {}, 'error_type', {}, 'message', {});
-    
+
     % Look for error log file
-    error_log_file = fullfile(failed_dir, '_errors.log');
-    
+    error_log_file = fullfile(log_dir, '_errors.log');
+
     if ~exist(error_log_file, 'file')
         fprintf('⚠️  No error log found at: %s\n', error_log_file);
         fprintf('   Counting failed files instead...\n');
@@ -285,7 +306,7 @@ function error_analysis = analyze_failed_surveys(failed_dir)
     end
     
     % Read entire error log
-    fprintf('📄 Reading error log: %s\n', error_log_file);
+    fprintf('Reading error log: %s\n', error_log_file);
     fid = fopen(error_log_file, 'r');
     all_lines = {};
     while ~feof(fid)
@@ -371,8 +392,8 @@ function error_analysis = analyze_failed_surveys(failed_dir)
         end
     end
     
-    fprintf('   ✅ Analyzed %d error entries\n', error_count);
-    fprintf('   📊 Error categories:\n');
+    fprintf('   Analyzed %d error entries\n', error_count);
+    fprintf('   Error categories:\n');
     fprintf('      - Parsing: %d\n', error_analysis.error_breakdown.parsing_errors);
     fprintf('      - Validation: %d\n', error_analysis.error_breakdown.validation_errors);
     fprintf('      - Database: %d\n', error_analysis.error_breakdown.database_errors);
@@ -429,7 +450,7 @@ function db_stats = get_database_statistics(conn)
     end
 end
 
-function display_validation_summary(results, failed_dir)
+function display_validation_summary(results, failed_dir, log_dir)
     % Display comprehensive validation summary
     
     try
@@ -438,19 +459,19 @@ function display_validation_summary(results, failed_dir)
         fprintf('╚════════════════════════════════════════════════╝\n\n');
         
         if ~isfield(results, 'metrics')
-            fprintf('⚠️  No metrics available\n');
+            fprintf('No metrics available\n');
             return;
         end
         
         m = results.metrics;
         
         % Overall statistics
-        fprintf('📊 Overall Statistics:\n');
+        fprintf('Overall Statistics:\n');
         fprintf('   Total Surveys:            %d\n', m.total_records);
-        fprintf('   ✓ Successfully Processed: %d (%.2f%%)\n', m.successful_uploads, m.success_rate);
-        fprintf('   ✗ Failed:                 %d (%.2f%%)\n', m.failed_uploads, m.failure_rate);
+        fprintf('   Successfully Processed: %d (%.2f%%)\n', m.successful_uploads, m.success_rate);
+        fprintf('   Failed:                 %d (%.2f%%)\n', m.failed_uploads, m.failure_rate);
         if m.pending_uploads > 0
-            fprintf('   ⏳ Pending:                %d (%.2f%%)\n', m.pending_uploads, m.pending_rate);
+            fprintf('   Pending:                %d (%.2f%%)\n', m.pending_uploads, m.pending_rate);
         end
         fprintf('\n');
         
@@ -461,7 +482,7 @@ function display_validation_summary(results, failed_dir)
         
         % Error breakdown
         if isfield(results, 'error_analysis') && isfield(results.error_analysis, 'error_breakdown')
-            fprintf('🔍 Error Breakdown:\n');
+            fprintf('Error Breakdown:\n');
             error_breakdown = results.error_analysis.error_breakdown;
             error_fields = fieldnames(error_breakdown);
             total_errors = 0;
@@ -483,7 +504,7 @@ function display_validation_summary(results, failed_dir)
             
         % Show sample errors
         if isfield(results.error_analysis, 'detailed_errors') && ~isempty(results.error_analysis.detailed_errors)
-            fprintf('📝 Sample Errors:\n');
+            fprintf('Sample Errors:\n');
             num_to_show = min(10, length(results.error_analysis.detailed_errors));
             for i = 1:num_to_show
                 error_text = results.error_analysis.detailed_errors{i};
@@ -503,16 +524,16 @@ function display_validation_summary(results, failed_dir)
         
         % Show error log location
         if isfield(results, 'error_analysis')
-            error_log = fullfile(failed_dir, '_errors.log');
+            error_log = fullfile(log_dir, '_errors.log');
             if exist(error_log, 'file')
-                fprintf('📋 Full error log: %s\n\n', error_log);
+                fprintf('Full error log: %s\n\n', error_log);
             end
         end
         end
         
         % Survey type breakdown
         if isfield(m, 'by_survey_type') && ~isempty(fieldnames(m.by_survey_type))
-            fprintf('📋 Success Rates by Survey Type (2-char code):\n');
+            fprintf('Success Rates by Survey Type (2-char code):\n');
             type_fields = fieldnames(m.by_survey_type);
             
             % Sort by type name for consistent display
@@ -543,7 +564,7 @@ function display_validation_summary(results, failed_dir)
         
         % Database statistics
         if isfield(m, 'database_stats') && m.database_stats.available
-            fprintf('🗄️  Database Statistics:\n');
+            fprintf('Database Statistics:\n');
             fprintf('   Records in database: %d\n', m.database_stats.total_surveys);
             if isfield(m.database_stats, 'date_range')
                 fprintf('   Date range: %s to %s\n', ...
@@ -555,13 +576,13 @@ function display_validation_summary(results, failed_dir)
         
         % Overall status
         if m.success_rate >= 95
-            fprintf('✅ Migration Status: EXCELLENT (≥95%% success)\n');
+            fprintf('Migration Status: EXCELLENT (≥95%% success)\n');
         elseif m.success_rate >= 90
-            fprintf('✔️  Migration Status: GOOD (≥90%% success)\n');
+            fprintf('Migration Status: GOOD (≥90%% success)\n');
         elseif m.success_rate >= 80
-            fprintf('⚠️  Migration Status: ACCEPTABLE (≥80%% success)\n');
+            fprintf('Migration Status: ACCEPTABLE (≥80%% success)\n');
         else
-            fprintf('❌ Migration Status: NEEDS ATTENTION (<80%% success)\n');
+            fprintf('Migration Status: NEEDS ATTENTION (<80%% success)\n');
         end
         
         fprintf('\n%s\n', repmat('─', 1, 50));
@@ -827,7 +848,7 @@ function generate_validation_charts(results)
     fig_file = fullfile(charts_dir, 'validation_charts.fig');
     savefig(fig, fig_file);
     
-    fprintf('📊 Charts saved to:\n');
+    fprintf('Charts saved to:\n');
     fprintf('   - %s\n', chart_file);
     fprintf('   - %s\n', fig_file);
 end
@@ -893,12 +914,12 @@ end
 
 function status = get_status_text(success_rate)
     if success_rate >= 95
-        status = '✅ EXCELLENT';
+        status = 'EXCELLENT';
     elseif success_rate >= 90
-        status = '✔️ GOOD';
+        status = 'GOOD';
     elseif success_rate >= 80
-        status = '⚠️ ACCEPTABLE';
+        status = 'ACCEPTABLE';
     else
-        status = '❌ NEEDS ATTENTION';
+        status = 'NEEDS ATTENTION';
     end
 end

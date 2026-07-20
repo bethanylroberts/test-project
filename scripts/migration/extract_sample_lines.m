@@ -1,5 +1,13 @@
-% scripts/utils/extract_sample_lines.m
-% Extract sample lines from large CSV with filtering
+% EXTRACT_SAMPLE_LINES - extract sample lines from large CSV with filtering
+% 
+% 2026 russ.shomberg@marineacoustics.com
+
+% FIXME: I think I only use this file for auto-detection of file type. I would
+% like to remove that functionality entirely. The user will always know what
+% file type is being input. I would rather have the user run conversion scripts
+% to convert any inputs into the standard input format.
+
+% FIXME: delete - this is not used anywhere
 
 function extract_sample_lines(input_file, output_file, num_lines, filter_field, filter_type, filter_value)
     % EXTRACT_SAMPLE_LINES Extract sample lines from large CSV with optional filtering

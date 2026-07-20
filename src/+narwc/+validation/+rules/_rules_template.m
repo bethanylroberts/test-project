@@ -1,7 +1,7 @@
-function FIELDNAME_rules(data, collector, config)
-    % FIELDNAME_RULES Validate FIELDNAME field against lookup table
+function _template_rules(data, collector, config)
+    % TEMPLATE_RULES Validate template field against lookup table
     %
-    % Validates that FIELDNAME values exist in the FIELDNAME lookup table.
+    % Validates that template values exist in the template lookup table.
     % This is a foreign key constraint in the database.
     %
     % Inputs:
@@ -12,24 +12,24 @@ function FIELDNAME_rules(data, collector, config)
     % =====================================================================
     % CONFIGURE THESE FOR EACH FIELD:
     % =====================================================================
-    field_name = 'FIELDNAME';           % Database column name
-    lookup_table_name = 'fieldname';    % Lookup table name (lowercase)
+    field_name = 'template';           % Database column name
+    lookup_table_name = 'template';    % Lookup table name (lowercase)
     % =====================================================================
 
 
-    % TODO:
-    % Add to SurveyValidator.m:
+    % TODO: Add to SurveyValidator.m - when a new template is made, it needs to
+    % be added to to the list before it is run
 
     % matlab
-    % if obj.config.validate_FIELDNAME
-    %     obj.logger.debug('Validating FIELDNAME field...');
-    %     narwc.validation.rules.FIELDNAME_rules(data, obj.collector);
+    % if obj.config.validate_template
+    %     obj.logger.debug('Validating template field...');
+    %     narwc.validation.rules.template_rules(data, obj.collector);
     % end
 
     % Add flag to defaultConfig:
 
     % matlab
-    % config.validate_FIELDNAME = true;
+    % config.validate_template = true;
 
 
     
