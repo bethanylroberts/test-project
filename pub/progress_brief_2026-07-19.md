@@ -26,6 +26,51 @@ Roughly 65 commits landed on the `refactor` branch in this window. The work fall
 
 **Documentation and data auditing.** Added a pipeline walkthrough document for curator onboarding, a full database schema reference, and reorganized `PROJECT_STATUS.md` for readability. Completed a lookup-table audit identifying 19 missing codes across six tables (species, behavior, platform, block, glare, and header-angle codes) and catalogued specific per-survey data corrections needed for roughly a dozen individual surveys — both pending confirmation from the domain expert.
 
+## How the System Is Built
+
+At a basic level, the software is organized into a few clear layers:
+
+- **Parsers** — one per source format, each responsible for turning a
+  contributor's raw file into the standard field layout the database
+  expects. `StandardFormat` reads the historical legacy export;
+  `NEAQFormat` is the first parser for a live data contributor.
+- **Validation** — a shared framework of 9 rule modules that checks every
+  survey record for required fields, valid coordinates, dates, species and
+  behavior codes, and more, regardless of where the data came from.
+- **Database layer** — a thin wrapper around the SQL Server connection
+  that handles inserts, transactions, and rollback on failure.
+- **Ingestion** — the layer that ties parsing, validation, and upload
+  together into an actual pipeline.
+
+**The migration/routine split.** There are two ways surveys get into the
+database, and until this week they were built as two separate, overlapping
+pipelines. They're now unified so that only the very first step differs:
+
+1. **Legacy migration** (one-time) — the single, giant historical export
+   file gets split into one file per survey.
+2. **Routine ingestion** (ongoing) — each contributor's seasonal file gets
+   run through that contributor's own parser (translating their column
+   names/layout into the standard format), then split into one file per
+   survey the same way.
+
+From that point on, both paths are identical: every survey file —
+regardless of how it arrived — goes through the same validation rules and
+the same upload process, including the same warning-acknowledgement
+workflow. Practically, this means adding support for a new data
+contributor is just a matter of writing one small parser class; nothing
+about validation or uploading has to change or be duplicated.
+
+**Test suite.** The codebase has an automated test suite (MATLAB's
+built-in unit testing framework) currently passing 160 of 171 tests. Many
+of these are "characterization tests" — they lock in how key pieces of the
+pipeline behave today, so a future change can't silently alter that
+behavior without a test failing first to flag it. New capability (like the
+migration/routine unification above) is built test-first: the test is
+written to describe the expected behavior, confirmed to fail, and only
+then is the code written to make it pass. The 11 remaining failures either
+require a live database connection not available in this environment, or
+reflect one pre-existing, unrelated config/test mismatch.
+
 ## Where things stand now
 
 The pipeline is functional end-to-end: extract surveys from the legacy flat file, validate against nine rule modules, acknowledge expected warnings, and upload to SQL Server inside a transaction. What's blocking full historical migration:
