@@ -4,6 +4,8 @@ classdef ProcessingReport < handle
     % Usage:
     %   report = narwc.reports.ProcessingReport(tracker, survey_id);
     %   report.generate('report.md');
+
+    % NOTE: only used by test_reports
     
     properties (Access = private)
         tracker

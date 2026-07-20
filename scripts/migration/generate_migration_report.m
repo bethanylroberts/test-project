@@ -1,3 +1,10 @@
+% GENERATE_MIGRATION_REPORT creates a report after migrating the old files
+% 
+% This is run by step3_validate_migration.m and runs towards the end of the
+% migration process to generate a human readable report.
+% 
+% 2026 russ.shomberg@marinerobotics.com
+
 function generate_migration_report(validation_results, output_file, format)
     % GENERATE_MIGRATION_REPORT Generate migration report
     %
@@ -86,7 +93,7 @@ function md = generateMarkdown(results)
     % Success rate progress bar
     md = [md sprintf('### Success Rate Visualization\n\n')];
     md = [md sprintf('```\n')];
-    bar_width = 50;
+    bar_width = 50; % FIXME: magic number move to top of function or options
     filled = round((m.success_rate / 100) * bar_width);
     md = [md sprintf('[%s%s] %.1f%%\n', ...
         repmat('█', 1, filled), repmat('░', 1, bar_width - filled), m.success_rate)];

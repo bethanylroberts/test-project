@@ -157,15 +157,16 @@ classdef test_get_config < matlab.unittest.TestCase
         end
         
         function testValidationBeaufortRange(testCase)
-            % Test Beaufort scale range
-            
+            % Test Beaufort scale range — config now lives in validation.beaufort.valid_values
+
             validation = get_config('validation');
-            env = validation.environmental;
-            
-            testCase.verifyTrue(isfield(env, 'beaufort_values'), ...
-                'Should have beaufort_values setting');
-            testCase.verifyEqual(min(env.beaufort_values), 0);
-            testCase.verifyEqual(max(env.beaufort_values), 12);
+
+            testCase.verifyTrue(isfield(validation, 'beaufort'), ...
+                'Validation should have beaufort sub-struct');
+            testCase.verifyTrue(isfield(validation.beaufort, 'valid_values'), ...
+                'validation.beaufort should have valid_values field');
+            testCase.verifyEqual(min(validation.beaufort.valid_values), 0);
+            testCase.verifyEqual(max(validation.beaufort.valid_values), 12);
         end
         
         function testValidationBehavioralConfig(testCase)

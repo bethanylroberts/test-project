@@ -5,6 +5,8 @@ classdef ChangeTracker < handle
     %   tracker = narwc.processing.ChangeTracker();
     %   tracker.recordChange('remove_duplicates', 3, 'Removed duplicate row');
     %   changes = tracker.getChanges();
+
+    % TODO: figure out if this is being used. I do not want to be doing any changes manually or automatically. Just error checking
     
     properties (Access = private)
         changes = struct('step', {}, 'row', {}, 'field', {}, ...

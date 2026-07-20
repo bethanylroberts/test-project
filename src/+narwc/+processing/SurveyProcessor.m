@@ -4,6 +4,8 @@ classdef SurveyProcessor < handle
     % Usage:
     %   processor = narwc.processing.SurveyProcessor();
     %   [processed_data, tracker] = processor.process(raw_data);
+
+    % NOTE: only called by test_processing unit test right now. Not sure this will get used in the end
     
     properties (Access = private)
         config

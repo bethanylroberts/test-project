@@ -1,0 +1,58 @@
+# NARWC fixture source list
+#
+# Format: source_fileid,description
+#
+# source_fileid  - FILEID as it appears in the production survey CSV filename
+#                  (without .csv extension). Must not have 'T' in position 2
+#                  (that would indicate an already-anonymized fixture).
+# description    - Optional free-text note about the survey (for reference only).
+#
+# Lines starting with '#' are ignored. Blank lines are ignored.
+#
+# The test FILEID is computed automatically from the anonymized dates:
+#   pos 1   : preserved from source (survey type + era case)
+#   pos 2   : 'T' (marks as synthetic; real contributor codes never use T)
+#   pos 3-4 : two-digit year of first shifted data date
+#   pos 5-7 : Julian day of first shifted date (zero-padded to 3 digits)
+#   pos 8   : preserved from source (if present)
+#
+# Run with:
+#   anonymize_surveys('data/legacy/surveys/processed', 'tests/fixtures/source_list.txt', '../narwc_fixtures_manifest.txt')
+#
+# The manifest path MUST be outside the repository. The recommended location
+# is one directory above the repo root: ../narwc_fixtures_manifest.txt
+
+# --- Aerial surveys (a-type, contributor 1, 2011) ---
+a111282,Aerial survey 2011 day 282
+a111296,Aerial survey 2011 day 296
+a111310,Aerial survey 2011 day 310
+a111330,Aerial survey 2011 day 330
+a111339,Aerial survey 2011 day 339
+
+# --- Ship/platform surveys (f-type) ---
+f000007,Ship survey (sequential ID)
+f000020,Ship survey (sequential ID)
+f000023,Ship survey (sequential ID)
+f000027,Ship survey (sequential ID)
+f000030,Ship survey (sequential ID)
+
+# --- Opportunistic sightings (o-type) ---
+o001033,Opportunistic sightings
+o007053,Opportunistic sightings
+o009030,Opportunistic sightings
+o011006,Opportunistic sightings
+o014901,Opportunistic sightings
+
+# --- Platform of opportunity (p-type) ---
+p000190,POP survey
+p000207,POP survey
+p001219,POP survey
+p002120,POP survey
+p002199,POP survey
+
+# --- Historical/intermediate format (H-type, pre-2000 case) ---
+H063441,Historical survey
+H066139,Historical survey
+H066259,Historical survey
+H066401,Historical survey
+H066402,Historical survey
