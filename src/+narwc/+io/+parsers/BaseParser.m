@@ -16,7 +16,9 @@ classdef (Abstract) BaseParser < handle
     methods
         function obj = BaseParser()
             % obj.file_path = file_path;
-            obj.logger = logging.Logger(sprintf('narwc.io.parsers.%s', class(obj)));
+            % class(obj) is already fully-qualified (e.g.
+            % 'narwc.io.parsers.StandardFormat') -- do not prefix it again.
+            obj.logger = logging.Logger(class(obj));
             
             % if ~exist(file_path, 'file')
             %     error('File not found: %s', file_path);
