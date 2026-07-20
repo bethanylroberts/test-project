@@ -89,7 +89,21 @@ function md = generateMarkdown(results)
             m.pending_uploads, m.pending_rate)];
     end
     md = [md sprintf('\n')];
-    
+
+    % Stage Funnel (extraction baseline -> attempted -> uploaded), when a
+    % step1 split-summary log was available.
+    if isfield(m, 'extracted_surveys')
+        md = [md sprintf('## Stage Funnel\n\n')];
+        md = [md sprintf('| Stage | Surveys | Rows |\n')];
+        md = [md sprintf('|-------|---------|------|\n')];
+        md = [md sprintf('| Extracted (step 1) | %d | %d |\n', ...
+            m.extracted_surveys, m.extracted_rows)];
+        md = [md sprintf('| Attempted (step 2) | %d | — |\n', m.total_records)];
+        md = [md sprintf('| Uploaded | %d (%.1f%% of extracted) | — |\n', ...
+            m.successful_uploads, m.extraction_to_upload_rate)];
+        md = [md sprintf('\n')];
+    end
+
     % Success rate progress bar
     md = [md sprintf('### Success Rate Visualization\n\n')];
     md = [md sprintf('```\n')];
@@ -99,40 +113,37 @@ function md = generateMarkdown(results)
         repmat('█', 1, filled), repmat('░', 1, bar_width - filled), m.success_rate)];
     md = [md sprintf('```\n\n')];
     
-    % Error Breakdown
-    if isfield(results, 'error_analysis') && isfield(results.error_analysis, 'error_breakdown')
+    % Error Breakdown -- by rule_id, from re-validating failed/pending
+    % surveys in memory (see tally_validation_by_rule in step3_validate_migration.m),
+    % not from scraping free-text log files.
+    if isfield(results, 'error_analysis')
+        ea = results.error_analysis;
         md = [md sprintf('## Error Analysis\n\n')];
-        
-        error_breakdown = results.error_analysis.error_breakdown;
-        error_fields = fieldnames(error_breakdown);
-        total_errors = 0;
-        for i = 1:length(error_fields)
-            total_errors = total_errors + error_breakdown.(error_fields{i});
-        end
-        
-        if total_errors > 0
-            md = [md sprintf('### Error Distribution\n\n')];
-            md = [md sprintf('| Error Type | Count | Percentage |\n')];
-            md = [md sprintf('|------------|-------|------------|\n')];
-            
-            for i = 1:length(error_fields)
-                count = error_breakdown.(error_fields{i});
-                if count > 0
-                    field_name = format_field_name(error_fields{i});
-                    md = [md sprintf('| %s | %d | %.1f%% |\n', ...
-                        field_name, count, (count / total_errors) * 100)];
-                end
+        md = [md sprintf('Surveys re-validated for this breakdown: %d (%d with blocking errors, %d with outstanding warnings)\n\n', ...
+            ea.surveys_analyzed, ea.surveys_with_errors, ea.surveys_with_warnings)];
+
+        md = [md rule_table_markdown('Blocking Errors by Rule', ea.detail_errors_by_rule)];
+        md = [md rule_table_markdown('Outstanding (Unacknowledged) Warnings by Rule', ea.detail_warnings_outstanding_by_rule)];
+        md = [md rule_table_markdown('Acknowledged Warnings by Rule', ea.detail_warnings_acknowledged_by_rule)];
+
+        if ~isempty(ea.would_now_pass)
+            md = [md sprintf('### Surveys That Would Now Pass\n\n')];
+            md = [md sprintf(['%d survey(s) currently in `failed/` re-validate CLEAN under the ' ...
+                'current config/overrides/lookup tables. These need a re-run, not further investigation:\n\n'], ...
+                numel(ea.would_now_pass))];
+            for i = 1:numel(ea.would_now_pass)
+                md = [md sprintf('- `%s`\n', ea.would_now_pass{i})];
             end
             md = [md sprintf('\n')];
-            
-            % Sample errors
-            if isfield(results.error_analysis, 'detailed_errors') && ~isempty(results.error_analysis.detailed_errors)
-                md = [md sprintf('### Sample Errors\n\n')];
-                for i = 1:min(5, length(results.error_analysis.detailed_errors))
-                    md = [md sprintf('%d. `%s`\n', i, results.error_analysis.detailed_errors{i})];
-                end
-                md = [md sprintf('\n')];
+        end
+
+        % Sample errors
+        if isfield(ea, 'detailed_errors') && ~isempty(ea.detailed_errors)
+            md = [md sprintf('### Sample Errors\n\n')];
+            for i = 1:min(5, length(ea.detailed_errors))
+                md = [md sprintf('%d. `%s`\n', i, ea.detailed_errors{i})];
             end
+            md = [md sprintf('\n')];
         end
     end
     
@@ -248,6 +259,32 @@ function md = generateMarkdown(results)
     md = [md sprintf('*Generated at: %s*\n', char(datetime('now')))];
 end
 
+function md = rule_table_markdown(title, detail_struct)
+    % RULE_TABLE_MARKDOWN Render a rule_key -> struct(rule_id, count,
+    % survey_count) detail struct (see flatten_tally_map in
+    % step3_validate_migration.m) as a sorted Markdown table.
+    md = '';
+    rule_keys = fieldnames(detail_struct);
+    if isempty(rule_keys)
+        return;
+    end
+
+    counts = zeros(numel(rule_keys), 1);
+    for i = 1:numel(rule_keys)
+        counts(i) = detail_struct.(rule_keys{i}).count;
+    end
+    [~, order] = sort(counts, 'descend');
+
+    md = [md sprintf('### %s\n\n', title)];
+    md = [md sprintf('| rule_id | Count | Surveys |\n')];
+    md = [md sprintf('|---------|-------|---------|\n')];
+    for i = 1:numel(order)
+        e = detail_struct.(rule_keys{order(i)});
+        md = [md sprintf('| `%s` | %d | %d |\n', e.rule_id, e.count, e.survey_count)]; %#ok<AGROW>
+    end
+    md = [md sprintf('\n')];
+end
+
 function txt = generateText(results)
     % GENERATETEXT Generate plain text report
     
@@ -290,7 +327,19 @@ function txt = generateText(results)
             m.pending_uploads, sprintf('(%.2f%%)', m.pending_rate))];
     end
     txt = [txt sprintf('\n')];
-    
+
+    % Stage Funnel
+    if isfield(m, 'extracted_surveys')
+        txt = [txt sprintf('STAGE FUNNEL\n')];
+        txt = [txt sprintf('--------------------------------------------------------------------------------\n')];
+        txt = [txt sprintf('%-30s %15d surveys, %d rows\n', 'Extracted (step 1):', ...
+            m.extracted_surveys, m.extracted_rows)];
+        txt = [txt sprintf('%-30s %15d surveys\n', 'Attempted (step 2):', m.total_records)];
+        txt = [txt sprintf('%-30s %15d surveys %15s\n', 'Uploaded:', ...
+            m.successful_uploads, sprintf('(%.1f%% of extracted)', m.extraction_to_upload_rate))];
+        txt = [txt sprintf('\n')];
+    end
+
     % Success rate bar
     txt = [txt sprintf('Success Rate: ')];
     bar_width = 50;
@@ -298,28 +347,23 @@ function txt = generateText(results)
     txt = [txt sprintf('[%s%s] %.1f%%\n\n', ...
         repmat('#', 1, filled), repmat('-', 1, bar_width - filled), m.success_rate)];
     
-    % Error Breakdown
-    if isfield(results, 'error_analysis') && isfield(results.error_analysis, 'error_breakdown')
-        error_breakdown = results.error_analysis.error_breakdown;
-        error_fields = fieldnames(error_breakdown);
-        total_errors = 0;
-        for i = 1:length(error_fields)
-            total_errors = total_errors + error_breakdown.(error_fields{i});
-        end
-        
-        if total_errors > 0
-            txt = [txt sprintf('ERROR ANALYSIS\n')];
-            txt = [txt sprintf('--------------------------------------------------------------------------------\n')];
-            
-            for i = 1:length(error_fields)
-                count = error_breakdown.(error_fields{i});
-                if count > 0
-                    field_name = format_field_name(error_fields{i});
-                    txt = [txt sprintf('%-30s %10d %15s\n', field_name, count, ...
-                        sprintf('(%.1f%%)', (count / total_errors) * 100))];
-                end
-            end
-            txt = [txt sprintf('\n')];
+    % Error Breakdown -- by rule_id (see generateMarkdown's version for the
+    % full explanation of where this data comes from).
+    if isfield(results, 'error_analysis')
+        ea = results.error_analysis;
+        txt = [txt sprintf('ERROR ANALYSIS\n')];
+        txt = [txt sprintf('--------------------------------------------------------------------------------\n')];
+        txt = [txt sprintf('Surveys re-validated: %d (%d with errors, %d with outstanding warnings)\n\n', ...
+            ea.surveys_analyzed, ea.surveys_with_errors, ea.surveys_with_warnings)];
+
+        txt = [txt rule_table_text('Blocking Errors by Rule', ea.detail_errors_by_rule)];
+        txt = [txt rule_table_text('Outstanding Warnings by Rule', ea.detail_warnings_outstanding_by_rule)];
+        txt = [txt rule_table_text('Acknowledged Warnings by Rule', ea.detail_warnings_acknowledged_by_rule)];
+
+        if ~isempty(ea.would_now_pass)
+            txt = [txt sprintf('%d survey(s) in failed/ now re-validate CLEAN -- re-run, don''t investigate:\n', ...
+                numel(ea.would_now_pass))];
+            txt = [txt sprintf('   %s\n\n', strjoin(ea.would_now_pass, ', '))];
         end
     end
     
@@ -356,6 +400,28 @@ function txt = generateText(results)
     txt = [txt sprintf('Report generated by NARWC Database Migration Tools\n')];
     txt = [txt sprintf('Generated at: %s\n', char(datetime('now')))];
     txt = [txt sprintf('================================================================================\n')];
+end
+
+function txt = rule_table_text(title, detail_struct)
+    % RULE_TABLE_TEXT Plain-text counterpart to rule_table_markdown.
+    txt = '';
+    rule_keys = fieldnames(detail_struct);
+    if isempty(rule_keys)
+        return;
+    end
+
+    counts = zeros(numel(rule_keys), 1);
+    for i = 1:numel(rule_keys)
+        counts(i) = detail_struct.(rule_keys{i}).count;
+    end
+    [~, order] = sort(counts, 'descend');
+
+    txt = [txt sprintf('%s:\n', title)];
+    for i = 1:numel(order)
+        e = detail_struct.(rule_keys{order(i)});
+        txt = [txt sprintf('   %-55s %5d  (%d survey(s))\n', e.rule_id, e.count, e.survey_count)]; %#ok<AGROW>
+    end
+    txt = [txt sprintf('\n')];
 end
 
 function formatted = format_field_name(field_name)

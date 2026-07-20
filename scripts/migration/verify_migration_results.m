@@ -9,15 +9,17 @@
 % modify step1/step2/step3 or their output directories.
 %
 % Requires a live database connection (config/local/db_config_local.m) and at
-% least one data/legacy/_split_summary_*.log file from a prior extraction run.
+% least one _split_summary_<timestamp>.log file from a prior extraction run,
+% written by SurveyFileWriter.finalize() directly inside the extraction
+% output directory (default: data/legacy/surveys/pending/).
 %
 % Usage:
 %   results = verify_migration_results();
-%   results = verify_migration_results('SplitSummaryDir', 'data/legacy');
+%   results = verify_migration_results('SplitSummaryDir', 'data/legacy/surveys/pending');
 
 function results = verify_migration_results(options)
     arguments
-        options.SplitSummaryDir char = 'data/legacy'
+        options.SplitSummaryDir char = 'data/legacy/surveys/pending'
         options.ReportDir char = 'reports/migration'
         options.TableName char = 'Master'
         options.MaxListed double = 25   % cap on rows listed in the console summary
@@ -30,7 +32,7 @@ function results = verify_migration_results(options)
 
     % --- Source-of-truth: most recent split summary -----------------------
     fprintf('Loading source-of-truth split summary...\n');
-    [source, summary_file] = load_latest_split_summary(options.SplitSummaryDir);
+    [source, summary_file] = narwc.ingestion.load_split_summary(options.SplitSummaryDir);
     results.source = source;
     results.source_file = summary_file;
     fprintf('  Using: %s\n', summary_file);
@@ -68,63 +70,6 @@ function results = verify_migration_results(options)
 end
 
 %% Helper Functions
-
-function [source, summary_file] = load_latest_split_summary(split_summary_dir)
-    % LOAD_LATEST_SPLIT_SUMMARY Find and parse the most recent split summary log
-    % files = dir(fullfile(split_summary_dir, '_split_summary_*.log'));
-    files = dir(fullfile(split_summary_dir, '_split_summary*.txt'));
-    if isempty(files)
-        error('verify_migration_results:NoSplitSummary', ...
-            ['No _split_summary_*.log file found in %s. Run step1_extract_surveys ' ...
-             'first, or point SplitSummaryDir at the folder that contains it.'], ...
-            split_summary_dir);
-    end
-
-    [~, idx] = max([files.datenum]);
-    summary_file = fullfile(files(idx).folder, files(idx).name);
-
-    source = struct();
-    source.total_surveys = NaN;
-    source.total_rows = NaN;
-    source.elapsed_minutes = NaN;
-    source.counts = containers.Map('KeyType', 'char', 'ValueType', 'double');
-
-    fid = fopen(summary_file, 'r');
-    if fid == -1
-        error('verify_migration_results:CannotOpenSplitSummary', ...
-            'Could not open %s', summary_file);
-    end
-
-    in_survey_list = false;
-    try
-        while true
-            line = fgetl(fid);
-            if ~ischar(line)
-                break;
-            end
-
-            if startsWith(line, 'Total surveys:')
-                source.total_surveys = sscanf(line, 'Total surveys: %d');
-            elseif startsWith(line, 'Total rows:')
-                source.total_rows = sscanf(line, 'Total rows: %d');
-            elseif startsWith(line, 'Time elapsed:')
-                source.elapsed_minutes = sscanf(line, 'Time elapsed: %f');
-            elseif startsWith(line, 'Survey file row counts:')
-                in_survey_list = true;
-            elseif in_survey_list
-                tok = regexp(line, '^(.+): (\d+) rows$', 'tokens', 'once');
-                if ~isempty(tok)
-                    fileid = upper(strtrim(tok{1}));
-                    source.counts(fileid) = str2double(tok{2});
-                end
-            end
-        end
-    catch ME
-        fclose(fid);
-        rethrow(ME);
-    end
-    fclose(fid);
-end
 
 function db = query_database_counts(conn, table_name)
     % QUERY_DATABASE_COUNTS Pull total/distinct-survey/per-survey counts from Master
