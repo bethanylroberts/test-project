@@ -58,21 +58,20 @@ classdef SurveyExtractor < handle
             
             % Start timing
             start_time = tic;
-            run_ts = narwc.logging.run_timestamp();
-            
+
             % Create import options
             import_opts = obj.createImportOptions();
-            
+
             % Count total lines
             obj.logger.info('Counting total lines in file...');
             line_count = obj.countLines();
             obj.logger.info(sprintf('Total lines in file: %d', line_count));
-            
+
             % Process in chunks
             chunk_counter = 0;
             rows_processed = 0;
-            survey_map = containers.Map('KeyType', 'char', 'ValueType', 'double');
-            
+            writer = narwc.ingestion.SurveyFileWriter(output_dir);
+
             % TODO: skipping header should be an option
             current_chunk_start = 2;  % Skip header
             
@@ -113,60 +112,9 @@ classdef SurveyExtractor < handle
                     continue;
                 end
                 
-                % Get unique FILEIDs in this chunk
-                unique_fileids = unique(data_chunk.FILEID);
-                
-                % Remove empty/missing FILEIDs
-                unique_fileids = unique_fileids(~ismissing(unique_fileids));
-                unique_fileids = unique_fileids(strlength(unique_fileids) > 0);
-                % FIXME: empty / missing FILEIDs are significant errors if it occurs
-                
-                obj.logger.info(sprintf('  Found %d unique surveys in this chunk', ...
-                    length(unique_fileids)));
-                
-                % Process each FILEID
-                for idx = 1:length(unique_fileids)
-                    current_fileid = unique_fileids{idx};
-                    
-                    % Sanitize filename
-                    sanitized_fileid = narwc.utils.sanitize_filename(char(current_fileid));
-                    output_filepath = fullfile(output_dir, [sanitized_fileid '.csv']);
-                    
-                    % Get rows for this survey
-                    row_mask = strcmp(data_chunk.FILEID, current_fileid);
-                    survey_data = data_chunk(row_mask, :);
-                    
-                    try
-                        % Write to file
-                        if exist(output_filepath, 'file')
-                            % Append without header  
-                            % TODO: need to confirm that the folder was clean to
-                            % start. Otherwise, this is potentially appending to
-                            % an old file from a previous run
-                            obj.logger.debug(sprintf('  Appending to: %s', output_filepath));
-                            writetable(survey_data, output_filepath, ...
-                                'WriteMode', 'append', 'WriteVariableNames', false);
-                        else
-                            % Write with header (first time)
-                            writetable(survey_data, output_filepath);
-                            obj.logger.info(sprintf('  Created: %s', sanitized_fileid));
-                        end
-                        
-                        % Track statistics
-                        survey_row_count = height(survey_data);
-                        if isKey(survey_map, sanitized_fileid)
-                            survey_map(sanitized_fileid) = survey_map(sanitized_fileid) + survey_row_count;
-                        else
-                            survey_map(sanitized_fileid) = survey_row_count;
-                        end
-                        
-                    catch ME
-                        % FIXME: need to do something with this error
-                        obj.logger.error(sprintf('  Failed to write %s: %s', ...
-                            sanitized_fileid, ME.message));
-                    end
-                end
-                
+                % Group by FILEID and write/append per-survey CSVs
+                writer.writeChunk(data_chunk);
+
                 % Progress update
                 elapsed = toc(start_time);
                 completion_pct = (rows_processed / line_count) * 100;
@@ -181,20 +129,17 @@ classdef SurveyExtractor < handle
             end
             
             % Write summary
-            obj.writeSummary(output_dir, survey_map, rows_processed, start_time, run_ts);
-            
+            summary = writer.finalize(obj.legacy_file);
+
             % Display summary
-            total_time = toc(start_time);
-            num_surveys = length(survey_map);
-            
             obj.logger.info('======================================');
             obj.logger.info('Split operation completed successfully');
-            obj.logger.info(sprintf('Total surveys: %d', num_surveys));
-            obj.logger.info(sprintf('Total rows processed: %d', rows_processed));
-            obj.logger.info(sprintf('Time elapsed: %.1f minutes', total_time/60));
-            if num_surveys > 0
+            obj.logger.info(sprintf('Total surveys: %d', summary.total_surveys));
+            obj.logger.info(sprintf('Total rows processed: %d', summary.total_rows));
+            obj.logger.info(sprintf('Time elapsed: %.1f minutes', summary.elapsed_minutes));
+            if summary.total_surveys > 0
                 obj.logger.info(sprintf('Average rows per survey: %d', ...
-                    round(rows_processed/num_surveys)));
+                    round(summary.total_rows / summary.total_surveys)));
             end
             obj.logger.info(sprintf('Output directory: %s', output_dir));
             obj.logger.info('======================================');
@@ -210,47 +155,6 @@ classdef SurveyExtractor < handle
                 line_count = line_count + 1;
             end
             fclose(fid);
-        end
-        
-        function writeSummary(obj, output_dir, survey_map, rows_processed, start_time, run_ts)
-            % WRITESUMMARY Write summary file
-
-            log_dir = fileparts(fileparts(output_dir));
-            if isempty(log_dir), log_dir = '.'; end
-            summary_filepath = fullfile(log_dir, sprintf('_split_summary_%s.log', run_ts));
-            fid = fopen(summary_filepath, 'w');
-            
-            total_time = toc(start_time);
-            num_surveys = length(survey_map);
-            
-            fprintf(fid, 'CSV Split Summary\n');
-            fprintf(fid, '=================\n\n');
-            fprintf(fid, 'Date: %s\n', char(datetime('now')));
-            fprintf(fid, 'Input file: %s\n', obj.legacy_file);
-            fprintf(fid, 'Output directory: %s\n\n', output_dir);
-            fprintf(fid, 'Total surveys: %d\n', num_surveys);
-            fprintf(fid, 'Total rows: %d\n', rows_processed);
-            if num_surveys > 0
-                fprintf(fid, 'Average rows per survey: %d\n', ...
-                    round(rows_processed/num_surveys));
-            end
-            fprintf(fid, 'Time elapsed: %.1f minutes\n', total_time/60);
-            fprintf(fid, '\nSurvey file row counts:\n');
-            fprintf(fid, '-----------------------\n');
-            
-            % List all surveys sorted by name
-            survey_names = keys(survey_map);
-            survey_counts = cell2mat(values(survey_map));
-            [~, sort_idx] = sort(survey_names);
-            
-            for i = 1:length(survey_names)
-                idx = sort_idx(i);
-                fprintf(fid, '%s: %d rows\n', survey_names{idx}, survey_counts(idx));
-            end
-            
-            fclose(fid);
-            
-            obj.logger.info(sprintf('Summary written to: %s', summary_filepath));
         end
         
         function import_opts = createImportOptions(obj)

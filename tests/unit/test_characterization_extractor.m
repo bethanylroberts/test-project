@@ -102,16 +102,17 @@ classdef test_characterization_extractor < matlab.unittest.TestCase
         end
 
         function testExtractorWritesSummary(testCase)
-            % extractAll must write a _split_summary.txt file.
+            % extractAll must write a _split_summary_<timestamp>.log file
+            % inside output_dir (via SurveyFileWriter.finalize).
 
             combined = testCase.buildCombined({'aT11110.csv', 'fT00157.csv'});
 
             extractor = narwc.ingestion.SurveyExtractor(combined);
             extractor.extractAll(testCase.output_dir, 'Overwrite', true);
 
-            testCase.verifyTrue( ...
-                exist(fullfile(testCase.output_dir, '_split_summary.txt'), 'file') == 2, ...
-                '_split_summary.txt not written');
+            listing = dir(fullfile(testCase.output_dir, '_split_summary_*.log'));
+            testCase.verifyEqual(numel(listing), 1, ...
+                '_split_summary_*.log not written inside output_dir');
         end
 
     end
