@@ -3,6 +3,7 @@
 % Reconciles what's actually in the SQL Server Master table against the
 % per-survey counts recorded when the legacy CSV was split, and re-runs the
 % foreign-key integrity checks from scripts/sql/verification/check_fk_integrity.sql
+
 % directly against the database. Produces real, current numbers suitable for
 % a status report or presentation — safe to re-run at any time; does not
 % modify step1/step2/step3 or their output directories.
