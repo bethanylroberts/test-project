@@ -1,9 +1,10 @@
 # Database Connection Troubleshooting
 
-## Error: "db_config.m not found"
+## Error: "db_config_local.m not found"
 
 **Solution:**
-1. Copy the template: `copyfile('config/db_config_template.m', 'config/db_config.m')`
+1. Copy the template: `copyfile('config/local/db_config_local.m.template', 'config/local/db_config_local.m')`
+   and fill in your credentials (`Username`, `Password`). It's gitignored — never committed.
 2. Make sure `config` is on your MATLAB path (run `startup.m`)
 
 ## Error: "Failed to establish database connection"
@@ -55,10 +56,11 @@ Possible causes:
     Server is overloaded
 
 Solution:
-Increase timeout in config/db_config.m:
+Increase the timeout — either in `config/defaults/db_config_default.m` (project-wide
+default) or `config/local/db_config_local.m` (per-machine override):
 
 ```matlab
-config.Timeout = 30;  % seconds
+db.Timeout = 30;  % seconds
 ```
 
 SQL Server Specific Issues
@@ -84,8 +86,8 @@ For Windows authentication, use:
 
 ```matlab
 
-config.Username = '';
-config.Password = '';
+db.Username = '';
+db.Password = '';
 ```
 
 MySQL Specific Issues

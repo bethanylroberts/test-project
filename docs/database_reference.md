@@ -204,7 +204,7 @@ Identification source code, recording who or what made the species identificatio
 | Lookup  | —           |
 | Surveys | All         |
 
-Four-digit calendar year. Required for all records. Formerly stored as two digits; expanded to four digits for Y2K. `datetime_rules.m` enforces range 1970–(current year + 1) and issues a warning for values before 1990.
+Four-digit calendar year. Required for all records. Formerly stored as two digits; expanded to four digits for Y2K. `datetime_rules.m` enforces range 1900–(current year + 1) as an error (`validation.datetime.year_min/year_max`) and issues a warning for values before 1980 (`validation.datetime.year_warning`).
 
 #### MONTH
 |         |                                   |
@@ -250,7 +250,7 @@ Event clock time in HHMMSS format, 24-hour UTC. During a 2020 database update al
 | Lookup  | —                                                    |
 | Surveys | All                                                  |
 
-Latitude of the **survey platform** at the moment of the event, in decimal degrees north (positive = north). `coordinate_rules.m` enforces −90 ≤ LAT_DD ≤ 90 and issues a warning for values outside approximately 35–50°N. LAT_DD and LONG_DD must both be present or both absent.
+Latitude of the **survey platform** at the moment of the event, in decimal degrees north (positive = north). `coordinate_rules.m` enforces −90 ≤ LAT_DD ≤ 90 (error) and issues a warning for values outside the configured survey-area bounds (default 20–55°N, `validation.coordinates.study_area_lat_min/max`). LAT_DD and LONG_DD must both be present or both absent.
 
 #### LONG_DD
 |         |                                                      |
@@ -260,7 +260,7 @@ Latitude of the **survey platform** at the moment of the event, in decimal degre
 | Lookup  | —                                                    |
 | Surveys | All                                                  |
 
-Longitude of the survey platform at the moment of the event, in decimal degrees (negative = west). Western Atlantic survey data will have negative values. `coordinate_rules.m` enforces −180 ≤ LONG_DD ≤ 180 and issues a warning for values outside approximately 60–75°W.
+Longitude of the survey platform at the moment of the event, in decimal degrees (negative = west). Western Atlantic survey data will have negative values. `coordinate_rules.m` enforces −180 ≤ LONG_DD ≤ 180 (error) and issues a warning for values outside the configured survey-area bounds (default -85 to -40°W, `validation.coordinates.study_area_lon_min/max`).
 
 #### ALT
 |         |                              |
@@ -640,9 +640,9 @@ The following rules are checked by validation modules in `src/+narwc/+validation
 | LAT_DD and LONG_DD must both be present or both absent                        | LAT_DD, LONG_DD  | `coordinate_rules.m`    | error    |
 | LAT_DD must be in range −90 to 90                                             | LAT_DD           | `coordinate_rules.m`    | error    |
 | LONG_DD must be in range −180 to 180                                          | LONG_DD          | `coordinate_rules.m`    | error    |
-| Coordinates outside typical survey area (~35–50°N, 60–75°W)                   | LAT_DD, LONG_DD  | `coordinate_rules.m`    | warning  |
-| YEAR in range 1970 to current year + 1                                        | YEAR             | `datetime_rules.m`      | error    |
-| YEAR before 1990                                                              | YEAR             | `datetime_rules.m`      | warning  |
+| Coordinates outside configured survey area (default 20–55°N, -85 to -40°W)    | LAT_DD, LONG_DD  | `coordinate_rules.m`    | warning  |
+| YEAR in range 1900 to current year + 1                                        | YEAR             | `datetime_rules.m`      | error    |
+| YEAR before 1980                                                              | YEAR             | `datetime_rules.m`      | warning  |
 | MONTH must be 1–12                                                            | MONTH            | `datetime_rules.m`      | error    |
 | DAY must be 1–31                                                              | DAY              | `datetime_rules.m`      | error    |
 | YEAR/MONTH/DAY must form a valid calendar date                                | YEAR, MONTH, DAY | `datetime_rules.m`      | error    |
@@ -654,9 +654,17 @@ The following rules are checked by validation modules in `src/+narwc/+validation
 | VISIBLTY must be ≥ 0 (configuration dependent; currently allow_negative=true) | VISIBLTY         | `environmental_rules.m` | error    |
 | VISIBLTY > 50 n.mi. is unusually high                                         | VISIBLTY         | `environmental_rules.m` | warning  |
 | SURFTEMP outside −2 to 35°C                                                   | SURFTEMP         | `environmental_rules.m` | warning  |
-| Required fields (DDSOURCE, EVENTNO, FILEID, IDSOURCE, YEAR) non-NULL          | multiple         | `required_fields.m`     | error    |
+| Required fields (currently LAT_DD, LONG_DD, YEAR, MONTH, DAY) non-NULL        | multiple         | `required_fields.m`     | error    |
 
-The required-fields list in `required_fields.m` is marked with a FIXME noting it is incomplete and not fully accurate.
+The required-fields list is a genuinely open question, not settled fact — see
+`PROJECT_STATUS.md` §7 ("`required_fields.m` accuracy"). `required_fields.m`'s
+own fallback list (used when no `config.required_fields` override is supplied)
+is `{'LAT_DD', 'LONG_DD', 'YEAR', 'MONTH', 'DAY'}`, matching
+`validation_config_default.m`. This is a minimal baseline, not necessarily
+correct against the database schema's actual NOT NULL constraints (see
+`database_schema.md`'s Master Table section — only `FILEID`/`EVENTNO` are
+NOT NULL at the column level). Do not assume this list is final without
+checking the current code.
 
 ### 4.2 Rules Documented in PDF but Not Enforced in Code
 

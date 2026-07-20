@@ -1,14 +1,14 @@
 # NARWC Database Project — Status
 
-_Branch: refactor | Last updated: 2026-06-29_
+_Branch: main | Last updated: 2026-07-20_
 
 ---
 
 ## 1. Current state
 
-The system can extract per-survey CSV files from a monolithic legacy flat-file (SAS-era export), validate each survey against 9 rule modules covering required fields, coordinates, datetime, species, environmental conditions, Beaufort sea state, behavior codes, photos, and foreign-key constraints, acknowledge specific validation warnings via a version-controlled override file (`data/overrides.csv`), and upload validated surveys to a SQL Server `Master` table via transaction-safe inserts (rollback on failure). The override system supports per-row acknowledgements keyed on `(fileid, eventno, field, rule_id)` and per-survey acknowledgements (empty `eventno` to suppress a warning class across an entire survey). Test suite: 90 passing, 0 failing, 10 DB-skipped (require live SQL Server).
+The system can extract per-survey CSV files from a monolithic legacy flat-file (SAS-era export), validate each survey against 9 rule modules covering required fields, coordinates, datetime, species, environmental conditions, Beaufort sea state, behavior codes, photos, and foreign-key constraints, acknowledge specific validation warnings via a version-controlled override file (`config/overrides/<batch>_overrides.csv`, e.g. `migration_overrides.csv`), and upload validated surveys to a SQL Server `Master` table via transaction-safe inserts (rollback on failure). The override system supports per-row acknowledgements keyed on `(fileid, eventno, field, rule_id)` and per-survey acknowledgements (empty `eventno` to suppress a warning class across an entire survey). A second, routine-ingestion pipeline (`scripts/ingestion/`) now shares the same validate+upload code for per-contributor batches going forward. Test suite (as of 2026-07-20, `tests/unit`): 172 passing, 0 failing, 10 incomplete (DB-dependent tests self-skip without a live connection).
 
-What the system cannot do yet: ingest new-format surveys (NEAQFormat parser is a stub), apply Bob's known bulk corrections automatically, or provide a curator-facing GUI. Live SQL Server transaction behavior has not been verified end-to-end; the Mac-side mock tests verify control flow only.
+What the system cannot do yet: provide a curator-facing GUI, or apply Bob's known bulk corrections automatically. The `NEAQFormat` parser is implemented as the reference contributor-parser (see `src/+narwc/+io/+parsers/NEAQFormat.m`), but only for the 3 field renames confirmed against `format_definitions.json` — no real NEAQ export file has been available to verify anything beyond that. Live SQL Server transaction behavior has not been verified end-to-end; the Mac-side mock tests verify control flow only.
 
 ---
 
@@ -46,20 +46,22 @@ NARWC-DB/
 │   │
 │   └── +narwc/
 │       ├── +ingestion/
-│       │   ├── BatchUploader.m     # Workhorse: validates + uploads from pending/, transaction-safe overwrite
-│       │   └── SurveyExtractor.m   # Splits monolithic legacy CSV into per-survey CSV files
+│       │   ├── BatchUploader.m             # Workhorse: validates + uploads from pending/, transaction-safe overwrite
+│       │   ├── SurveyExtractor.m           # Splits monolithic legacy CSV into per-survey CSV files
+│       │   ├── SurveyFileWriter.m          # Shared per-FILEID chunk writer, used by SurveyExtractor and convert_contributor_batch
+│       │   ├── convert_contributor_batch.m # Routine ingestion: parses a contributor's raw files, splits by FILEID
+│       │   └── run_batch_upload.m          # Shared connect->upload->stats->close, used by both pipelines
 │       ├── +db/
 │       │   ├── Connection.m        # DB connection wrapper; includes beginTransaction/commit/rollback
 │       │   └── FieldDefinitions.m  # Single source of truth for all 55 field names and types
 │       ├── +io/
-│       │   ├── SurveyReader.m          # FIXME:DELETE
 │       │   ├── DataTypeConverter.m     # Type coercion before sqlwrite()
 │       │   └── +parsers/
 │       │       ├── BaseParser.m        # Abstract base class for all parsers
 │       │       ├── StandardFormat.m    # Parser for 55-column legacy CSV (Phase 1)
-│       │       ├── NEAQFormat.m        # Stub — needs to be filled in
-│       │       ├── TabDeliminatedFormat.m  # FIXME:DELETE — test artifact
-│       │       └── ParserFactory.m         # FIXME:REMOVE — manual selection preferred
+│       │       ├── NEAQFormat.m        # Reference contributor-parser implementation (header-row detection, confirmed field renames)
+│       │       ├── TemplateFormat.m    # Copy-this-file starting point for new contributor parsers
+│       │       └── ParserFactory.m     # Explicit createByName() selection — no content-based auto-detection
 │       ├── +validation/
 │       │   ├── SurveyValidator.m       # Orchestrates all rule modules; loads overrides.csv
 │       │   ├── FieldValidator.m        # Static field-level validators (range, set, missing)
@@ -95,13 +97,17 @@ NARWC-DB/
 │
 ├── scripts/
 │   ├── smoke_validate.m                # Quick end-to-end validation smoke test (TODO: move to tests)
-│   ├── migration/
+│   ├── migration/                       # One-time legacy migration
 │   │   ├── validate_csv_database_lines.m   # Step 0: per-line CSV sanity check
 │   │   ├── step1_extract_surveys.m         # Step 1: calls SurveyExtractor
-│   │   ├── step2_upload_surveys.m          # Step 2: calls BatchUploader
+│   │   ├── step2_upload_surveys.m          # Step 2: calls shared run_batch_upload
 │   │   ├── step3_validate_migration.m      # Step 3: analyzes results, generates report
 │   │   ├── run_full_migration.m            # Runs steps 1–3 in sequence
-│   │   └── generate_migration_report.m     # Produces markdown/HTML report + charts
+│   │   ├── generate_migration_report.m     # Produces markdown/HTML report + charts
+│   │   └── verify_migration_results.m      # Reconciles DB vs. split-summary source; FK integrity checks
+│   ├── ingestion/                       # Routine, per-contributor-season ingestion
+│   │   ├── convert_contributor_batch.m     # Resolves contributor parser, splits by FILEID into data/raw/pending/
+│   │   └── upload_contributor_batch.m      # Validates + uploads via shared run_batch_upload
 │   ├── sql/                            # T-SQL schema and operational scripts — see scripts/sql/README.md
 │   │   ├── schema/                     # 01–06: create DB → tables → indexes → FKs → populate lookups
 │   │   ├── verification/               # Row counts, FK integrity checks
@@ -221,7 +227,7 @@ grep -rn 'TODO\|FIXME\|NOTE' src/ scripts/ tests/ --include='*.m'
 
 **Data correction philosophy.** Preserve what was originally recorded; do not silently transform data. Manual corrections are opt-in, audited, and tracked via `overrides.csv` or an explicit correction script. Speed and climb-rate threshold violations are warnings only (data recorded; threshold is advisory). The migration does not clean data in flight — it validates and rejects, forcing explicit correction decisions.
 
-**Package layout target.** The intended layout before the August handoff: `+ingestion/` for parsers and `SurveyExtractor` (rename from `+io/`); `+db/` for writes including `BatchUploader` and a new single-survey `Uploader`; `+validation/` and `+processing/` unchanged. Rationale: align package names with data-flow stages (read → validate → process → write) so Curator can navigate the codebase without prior context.
+**Package layout (current state).** `+ingestion/` holds the write-side workhorses — `BatchUploader`, `SurveyExtractor`, `SurveyFileWriter`, `convert_contributor_batch`, `run_batch_upload` — shared by both the migration and routine-ingestion pipelines (see CLAUDE.md's "Ingestion Pipelines" section). Parsers stayed in `+io/+parsers/` rather than moving under `+ingestion/`; no separate single-survey `Uploader` was extracted from `BatchUploader`, and `BatchUploader` did not move to `+db/`. `+validation/` and `+processing/` are unchanged. See §8.3 for the relocation history that did land.
 
 ### 8.2 Known bugs
 

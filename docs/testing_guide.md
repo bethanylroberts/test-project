@@ -91,17 +91,15 @@ end
 - Should be fast (< 1 second per test)
 - No external dependencies if possible
 - Use mock data
-
-### Integration Tests (`tests/integration/`)
-- Test multiple components together
-- May use database connection
-- May take longer to run
-- Test realistic workflows
+- Tests that need a live database check `tests/utils/has_live_db.m` and skip
+  themselves when one isn't configured (see e.g. `test_db_connection.m`) —
+  there's currently no separate `tests/integration/` tier; live-DB-dependent
+  checks live alongside the rest of `tests/unit/` and self-skip instead.
 
 ### Test Fixtures (`tests/fixtures/`)
-- `sample_data/` - Sample input files
-- `expected_outputs/` - Expected results
-- `mock_data/` - Generated test data
+- `sample_data/` - Sample per-survey input CSVs, see `tests/fixtures/sample_data/README.md`
+- `TestFixtures.m` - Loads/generates mock survey data programmatically
+- `FakeParser.m`, `MockBatchConn.m` - Lightweight fakes for parser/connection tests
 
 ## Best Practices
 

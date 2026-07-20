@@ -20,16 +20,17 @@ every warning should be reviewed by a human before data goes into the database.
 ## The override workflow
 
 1. **Run validation.** Process surveys with `BatchUploader.uploadFromFolder()`.
-   Surveys with new warnings will be moved to `failed/` and logged to
-   `failed/_errors.log`.
+   Surveys with new warnings will be moved to `failed/` and logged to the
+   run's `_errors_<timestamp>.log` (see "Reviewing the run log" below for
+   its exact location).
 
-2. **Review each warning.** Open `failed/_errors.log` and read the warning
-   messages. For each warning, decide:
+2. **Review each warning.** Open that run's `_errors_<timestamp>.log` and
+   read the warning messages. For each warning, decide:
    - **Fix the data.** Correct the source CSV and re-run. This is the preferred path.
    - **Acknowledge the warning.** If the data is actually correct and the
-     warning is a false positive, add an override entry to `data/overrides.csv`.
+     warning is a false positive, add an override entry to `config/overrides/<batch>_overrides.csv`.
 
-3. **Add an override entry.** Open `data/overrides.csv` in a text editor and add
+3. **Add an override entry.** Open `config/overrides/<batch>_overrides.csv` in a text editor and add
    one row per acknowledged warning:
 
    ```
@@ -50,10 +51,10 @@ every warning should be reviewed by a human before data goes into the database.
 
 4. **Re-run the upload.** Move the survey CSV back to `pending/` and run the
    uploader again. Surveys whose warnings all match entries in
-   `data/overrides.csv` will now upload successfully. Surveys with any
+   `config/overrides/<batch>_overrides.csv` will now upload successfully. Surveys with any
    unacknowledged warnings will still fail.
 
-5. **Commit `data/overrides.csv`.** The override file is version-controlled.
+5. **Commit `config/overrides/<batch>_overrides.csv`.** The override file is version-controlled.
    After adding entries, commit it so other curators and future runs share the
    same acknowledged state.
 
@@ -61,20 +62,20 @@ every warning should be reviewed by a human before data goes into the database.
 
 ## Finding the rule_id for a warning
 
-The `rule_id` appears in the validation output and in `_errors.log`. It takes the form `<rule_file>.<check_name>`, for example:
+The `rule_id` appears in the validation output and in `_errors_<timestamp>.log`. It takes the form `<rule_file>.<check_name>`, for example:
 
 | rule_id                                         | What it checks                                |
 | ----------------------------------------------- | --------------------------------------------- |
 | `coordinate_rules.outside_survey_lat`           | Latitude outside typical survey area          |
 | `coordinate_rules.outside_survey_lon`           | Longitude outside typical survey area         |
-| `datetime_rules.year_too_old`                   | Year before warning threshold (default: 1990) |
+| `datetime_rules.year_too_old`                   | Year before warning threshold (default: 1980) |
 | `environmental_rules.visibility_too_high`       | Visibility above maximum                      |
 | `environmental_rules.surftemp_too_cold`         | Surface temperature below minimum             |
 | `environmental_rules.surftemp_too_hot`          | Surface temperature above maximum             |
 | `species_rules.taxcode_not_in_table`            | TAXCODE not found in lookup table             |
 | `species_rules.number_zero_for_sighting`        | NUMBER=0 for a sighting record                |
-| `species_rules.number_large_group`              | Group size unusually large                    |
-| `species_rules.numcalf_exceeds_max`             | Calf count above maximum threshold            |
+| `species_rules.number_unusual`                  | Group size exceeds the SPECCODE/TAXCODE/global threshold cascade (see `docs/validation_rules_guide.md`) |
+| `species_rules.numcalf_unusual`                 | Calf count exceeds the SPECCODE/TAXCODE/global threshold cascade |
 | `species_rules.numcalf_non_mammal`              | Calf count for non-mammal species             |
 | `species_rules.numcalf_exceeds_half`            | Calf count more than half the group — can be suppressed globally by setting `validation.species.allow_numcalf_exceeds_half = true` in a batch config (already set in `migration.m`) |
 | `species_rules.right_whale_large_group`         | Right whale group unusually large             |
@@ -88,7 +89,7 @@ The `rule_id` appears in the validation output and in `_errors.log`. It takes th
 ## How to remove an incorrect override
 
 If you acknowledged a warning by mistake, delete the corresponding row from
-`data/overrides.csv` and commit the change. The next validation run will treat
+`config/overrides/<batch>_overrides.csv` and commit the change. The next validation run will treat
 that warning as new again.
 
 ---
@@ -158,14 +159,19 @@ fix the data or add proper override entries afterward.
 
 ## Reviewing the run log
 
-After each batch run, two files in `failed/` record what happened:
+After each batch run, two files record what happened. They land one level
+above the `pending/`/`processed/`/`failed/` folders — e.g. if surveys live
+in `data/legacy/surveys/`, the logs land in `data/legacy/`
+(`BatchUploader.initializeErrorLog`), not inside `failed/` itself:
 
-- `_errors.log` — Human-readable log, one entry per failed survey. Accumulates
-  across runs (never overwritten). Each run is separated by a header with
-  timestamp and options.
-- `_run_summary.csv` — Machine-readable CSV with one row per survey per run:
-  fileid, status, error count, new warning count, acknowledged warning count,
-  notes.
+- `_errors_<timestamp>.log` — Human-readable log, one entry per failed
+  survey for that run. Each run gets its own timestamped file by default
+  (`config.pipeline.logging.use_datetime_filenames = true`); setting that
+  to `false` accumulates all runs into a single non-timestamped `_errors.log`
+  instead.
+- `_run_summary_<timestamp>.csv` — Machine-readable CSV with one row per
+  survey per run: fileid, status, error count, new warning count,
+  acknowledged warning count (split into per-row/per-survey), notes.
 
-Use `_run_summary.csv` to track progress across migration runs and confirm that
-override additions are having the expected effect.
+Use `_run_summary_<timestamp>.csv` to track progress across migration runs
+and confirm that override additions are having the expected effect.
