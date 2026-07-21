@@ -152,8 +152,8 @@ Validates YEAR, MONTH, DAY, and TIME fields individually and as a calendar date.
 
 | Check                         | Severity | Rule ID                            | Threshold                         |
 | ----------------------------- | -------- | ---------------------------------- | --------------------------------- |
-| YEAR outside configured range | error    | `datetime_rules.year_out_of_range` | Default: 1970 to current year + 1 |
-| YEAR before warning threshold | warning  | `datetime_rules.year_too_old`      | Default: before 1990              |
+| YEAR outside configured range | error    | `datetime_rules.year_out_of_range` | Default: 1900 to current year + 1 (`validation.datetime.year_min/year_max`) |
+| YEAR before warning threshold | warning  | `datetime_rules.year_too_old`      | Default: before 1980 (`validation.datetime.year_warning`) |
 
 #### MONTH
 
@@ -200,7 +200,7 @@ Validates LAT_DD and LONG_DD (decimal degrees). The schema stores these as
 | ---------------------------------- | -------- | ------------------------------------- | -------------------- |
 | LAT_DD is missing                  | error    | `coordinate_rules.lat_missing`        | —                    |
 | LAT_DD outside global range        | error    | `coordinate_rules.lat_out_of_range`   | Default: −90 to 90   |
-| LAT_DD outside typical survey area | warning  | `coordinate_rules.outside_survey_lat` | Default: 35 to 50 °N |
+| LAT_DD outside typical survey area | warning  | `coordinate_rules.outside_survey_lat` | Default: 20 to 55 °N (`validation.coordinates.study_area_lat_min/max`) |
 
 #### Longitude
 
@@ -208,7 +208,7 @@ Validates LAT_DD and LONG_DD (decimal degrees). The schema stores these as
 | ----------------------------------- | -------- | ------------------------------------- | ---------------------- |
 | LONG_DD is missing                  | error    | `coordinate_rules.lon_missing`        | —                      |
 | LONG_DD outside global range        | error    | `coordinate_rules.lon_out_of_range`   | Default: −180 to 180   |
-| LONG_DD outside typical survey area | warning  | `coordinate_rules.outside_survey_lon` | Default: −75 to −60 °W |
+| LONG_DD outside typical survey area | warning  | `coordinate_rules.outside_survey_lon` | Default: −85 to −40 °W (`validation.coordinates.study_area_lon_min/max`) |
 
 #### Coordinate pair consistency
 
@@ -379,8 +379,7 @@ Validates SPECCODE, TAXCODE, NUMBER, NUMCALF, and cross-field consistency among 
 | ----------------------------------- | -------- | ---------------------------------------- | -------------------------------------- |
 | NUMBER is negative                  | error    | `species_rules.number_negative`          | —                                      |
 | NUMBER is 0 on a sighting record    | warning  | `species_rules.number_zero_for_sighting` | Sighting with no animals is suspicious |
-| NUMBER exceeds very large threshold | error    | `species_rules.number_exceeds_maximum`   | Default: > 1,000                       |
-| NUMBER exceeds large threshold      | warning  | `species_rules.number_large_group`       | Default: > 500                         |
+| NUMBER exceeds threshold            | warning  | `species_rules.number_unusual`           | Data-driven SPECCODE → TAXCODE → global-default cascade (`typical_max_group`, default 1000); see `docs/validation_rules_guide.md`. Not a fixed number, and not a two-tier error/warning split — one warning-level check. |
 | NUMBER is not an integer            | error    | `species_rules.number_not_integer`       | Fractional counts are not valid        |
 
 #### NUMCALF (calf count)
@@ -388,7 +387,7 @@ Validates SPECCODE, TAXCODE, NUMBER, NUMCALF, and cross-field consistency among 
 | Check                                | Severity | Rule ID                               | Notes                                              |
 | ------------------------------------ | -------- | ------------------------------------- | -------------------------------------------------- |
 | NUMCALF is negative                  | error    | `species_rules.numcalf_negative`      | —                                                  |
-| NUMCALF exceeds maximum threshold    | warning  | `species_rules.numcalf_exceeds_max`   | Default: > 50                                      |
+| NUMCALF exceeds threshold            | warning  | `species_rules.numcalf_unusual`       | Same SPECCODE → TAXCODE → global-default cascade as NUMBER (`typical_max_calf`, default 100) |
 | NUMCALF > 0 for a non-mammal taxcode | warning  | `species_rules.numcalf_non_mammal`    | Calves only valid for marine mammals (TAXCODE 1–4) |
 | NUMCALF is not an integer            | error    | `species_rules.numcalf_not_integer`   | —                                                  |
 | NUMCALF exceeds total NUMBER         | error    | `species_rules.numcalf_exceeds_total` | Calves cannot outnumber the group                  |
@@ -464,9 +463,9 @@ enforced by a MATLAB validation rule; **Gap** = not yet implemented.
 | CLOUD out of range (SAS valid: 0–4 and 9)                       | **Schema** FK to Cloud table (pending CLOUD scale resolution); `foreign_key_rules` checks against Cloud.csv                                                                                    |
 | DAY out of range (0, > 31, calendar invalids)                   | **MATLAB** — `datetime_rules.day_out_of_range` (bounds) + `datetime_rules.invalid_date_combination` (calendar)                                                                                 |
 | HEADING > 359                                                   | **Gap** — not implemented in any MATLAB rule                                                                                                                                                   |
-| LATDEG out of range (25–48)                                     | **MATLAB** — `coordinate_rules.outside_survey_lat` (warning) checks 35–50; exact SAS bounds (25–48) differ                                                                                     |
+| LATDEG out of range (25–48)                                     | **MATLAB** — `coordinate_rules.outside_survey_lat` (warning) checks 20–55; exact SAS bounds (25–48) differ                                                                                     |
 | LATMIN ≥ 60                                                     | **Gap** — MATLAB validates only decimal-degree LAT_DD; minute components not checked                                                                                                           |
-| LONGDEG out of range (58–81)                                    | **MATLAB** — `coordinate_rules.outside_survey_lon` (warning) checks −75 to −60; exact SAS bounds differ                                                                                        |
+| LONGDEG out of range (58–81)                                    | **MATLAB** — `coordinate_rules.outside_survey_lon` (warning) checks −85 to −40; exact SAS bounds differ                                                                                        |
 | LONGMIN ≥ 60                                                    | **Gap** — same as LATMIN                                                                                                                                                                       |
 | MONTH > 12                                                      | **MATLAB** — `datetime_rules.month_out_of_range` (1–16); **Schema** FK to MONTH table                                                                                                          |
 | SURFTEMP out of range (−2 to 35 °C)                             | **MATLAB** — `environmental_rules` warnings at −2/35 °C (matches SAS thresholds)                                                                                                               |
@@ -475,7 +474,7 @@ enforced by a MATLAB validation rule; **Gap** = not yet implemented.
 | TIME minutes ≥ 60                                               | **MATLAB** — `datetime_rules.time_invalid_minutes`                                                                                                                                             |
 | TIME seconds ≥ 60                                               | **MATLAB** — `datetime_rules.time_invalid_seconds`                                                                                                                                             |
 | WX invalid code                                                 | **Schema** FK to WX table; **MATLAB** — `foreign_key_rules.wx_invalid`                                                                                                                         |
-| YEAR < 1990 or > 2018                                           | **MATLAB** — `datetime_rules.year_out_of_range` (range 1970 to current+1); `datetime_rules.year_too_old` warning before 1990; upper bound is now dynamic rather than 2018                      |
+| YEAR < 1990 or > 2018                                           | **MATLAB** — `datetime_rules.year_out_of_range` (range 1900 to current+1); `datetime_rules.year_too_old` warning before 1980; upper bound is now dynamic rather than 2018                      |
 
 ---
 
@@ -618,8 +617,8 @@ All checks from ChkCCSA apply (see above), plus:
 | IDREL = 1 for unidentified species (SPECCODE starts with 'UN')             | **Gap** — not implemented                                                                                                                                                                                |
 | NUMBER missing when CONFIDNC ≠ 11                                          | **Gap** — conditional required-field check not implemented                                                                                                                                               |
 | NUMBER = 0                                                                 | **MATLAB** — `species_rules.number_zero_for_sighting` (warning)                                                                                                                                          |
-| NUMBER too high by TAXCODE (per-taxcode matrix)                            | **Partial gap** — `species_rules` flags NUMBER > 500 (warning) and > 1000 (error) with generic thresholds; per-taxcode thresholds from SAS (TAXCODE 1/2: > 30; TAXCODE 5: > 5; etc.) are not implemented |
-| NUMCALF ≥ 5                                                                | **Partial** — `species_rules.right_whale_high_calf_count` (warning at > 5 for right whales); generic `species_rules.numcalf_exceeds_max` triggers at > 50 for all species                                |
+| NUMBER too high by TAXCODE (per-taxcode matrix)                            | **Partial gap** — `species_rules.number_unusual` flags NUMBER exceeding the SPECCODE/TAXCODE/global-default cascade threshold (warning-only, data-driven, not a fixed number); per-taxcode thresholds from SAS (TAXCODE 1/2: > 30; TAXCODE 5: > 5; etc.) are not implemented |
+| NUMCALF ≥ 5                                                                | **Partial** — `species_rules.right_whale_high_calf_count` (warning at > 5 for right whales); generic `species_rules.numcalf_unusual` triggers at the SPECCODE/TAXCODE/global-default cascade threshold for all species                                |
 | NUMCALF not less than NUMBER                                               | **MATLAB** — `species_rules.numcalf_exceeds_total` (error)                                                                                                                                               |
 | PHOTOS missing                                                             | **MATLAB** — `required_fields` if configured                                                                                                                                                             |
 | PHOTOS > 5                                                                 | **Schema** FK to PHOTOS table; **MATLAB** `foreign_key_rules.photos_invalid` and `photos_rules.photos_invalid`                                                                                           |

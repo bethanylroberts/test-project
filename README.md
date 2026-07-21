@@ -38,20 +38,22 @@ NARWC-DB/
 │   ├── load_config.m               # Layered config: defaults < local < batch
 │   ├── defaults/                   # Baseline values (db, validation, pipeline)
 │   ├── local/                      # Gitignored — db_config_local.m with credentials
-│   ├── batches/migration.m         # Permissive overrides for legacy migration run
-│   └── overrides/migration_overrides.csv  # Per-warning acknowledgements
+│   ├── batches/                    # Per-run overrides: migration.m (permissive), routine.m (strict)
+│   └── overrides/                  # Per-batch warning-acknowledgement CSVs (migration_overrides.csv, routine_overrides.csv)
 ├── src/
 │   ├── +migration/
 │   │   └── apply_known_fixes.m     # Category C pre-validation corrections
 │   └── +narwc/
-│       ├── +ingestion/             # BatchUploader, SurveyExtractor
+│       ├── +ingestion/             # BatchUploader, SurveyExtractor, SurveyFileWriter,
+│       │                           # convert_contributor_batch, run_batch_upload
 │       ├── +db/                    # Connection, FieldDefinitions
-│       ├── +io/+parsers/           # StandardFormat, NEAQFormat (stub), ParserFactory
+│       ├── +io/+parsers/           # StandardFormat, NEAQFormat, TemplateFormat, ParserFactory
 │       ├── +validation/            # SurveyValidator, ErrorCollector, +rules/
 │       ├── +processing/            # SurveyProcessor, ChangeTracker, +steps/
 │       └── +reports/               # ValidationReport, ProcessingReport, SummaryStatistics
 ├── scripts/
-│   ├── migration/                  # Steps 0–3 + run_full_migration.m
+│   ├── migration/                  # Steps 0–3 + run_full_migration.m (one-time legacy migration)
+│   ├── ingestion/                  # convert/upload_contributor_batch (routine per-contributor ingestion)
 │   ├── sql/                        # Schema, curation, verification, teardown scripts
 │   └── setup/                      # test_connection, pull/push_lookup_tables
 ├── tests/                          # test_runner.m, fixtures/, unit/

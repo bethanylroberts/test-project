@@ -8,6 +8,14 @@ Covers loading a survey CSV, running validation, inspecting warnings, writing ov
 path for a personal pipeline shakedown before onboarding team members. See
 `docs/warning_overrides.md` for conceptual background on the override system.
 
+**Important:** `narwc.validation.SurveyValidator()` called with no arguments uses
+`load_config()`'s defaults, where `validation.overrides.csv_path` is empty — no
+override file is read at all in that case. Every example below constructs the
+validator with an explicit override path instead, so the override workflow
+actually takes effect. In a real batch run this path comes from the active
+batch config (e.g. `config/batches/migration.m` sets it to
+`config/overrides/migration_overrides.csv`) rather than being passed by hand.
+
 ---
 
 ## Prerequisites
@@ -15,7 +23,6 @@ path for a personal pipeline shakedown before onboarding team members. See
 - MATLAB R2020b or later
 - Database Toolbox installed (not required for validation-only steps; required for DB write)
 - `data/tables/` populated with lookup CSVs (shipped in the repo)
-- `data/overrides.csv` present (header-only is fine; `startup` creates it if absent)
 - `startup.m` has been run in the current MATLAB session
 
 ---
@@ -24,14 +31,17 @@ path for a personal pipeline shakedown before onboarding team members. See
 
 ```matlab
 startup();
+override_path = fullfile('config', 'overrides', 'walkthrough_overrides.csv');
 parser = narwc.io.parsers.StandardFormat();
 [data, ~] = parser.parse('tests/fixtures/sample_data/oT06129.csv');
-validator = narwc.validation.SurveyValidator();
+validator = narwc.validation.SurveyValidator(struct('override_file', override_path));
 [is_valid, results] = validator.validate(data);
 results.summary
 ```
 
 Expect: `is_valid` is `true` or `false`; `results.summary` shows error/warning counts.
+(`walkthrough_overrides.csv` doesn't need to exist yet — `loadOverrides` returns no
+overrides, not an error, when the file is missing.)
 
 ---
 
@@ -41,10 +51,11 @@ Expect: `is_valid` is `true` or `false`; `results.summary` shows error/warning c
 
 ```matlab
 startup();
+override_path = fullfile('config', 'overrides', 'walkthrough_overrides.csv');
 ```
 
-**What to observe:** No error output. `get_config` and `logging.Logger` should be on
-the path. If you see `Undefined function 'get_config'`, re-run `startup` from the
+**What to observe:** No error output. `load_config` and `logging.Logger` should be on
+the path. If you see `Undefined function 'load_config'`, re-run `startup` from the
 repo root.
 
 ---
@@ -68,7 +79,7 @@ file's row count.
 ### Step 3 — Validate the Loaded Survey
 
 ```matlab
-validator = narwc.validation.SurveyValidator();
+validator = narwc.validation.SurveyValidator(struct('override_file', override_path));
 [is_valid, results] = validator.validate(data);
 disp(results.summary)
 ```
@@ -108,8 +119,7 @@ fprintf('Message: %s\n', w.message);
 
 **What to observe:** `w.eventno` is the integer EVENTNO you need to write a per-row
 override. `w.rule_id` is the stable rule identifier (e.g.,
-`behavioral_rules.behav_without_sighting`). Both values go directly into
-`data/overrides.csv`.
+`behavioral_rules.calf_behavior_no_calf`). Both values go directly into the override CSV.
 
 To list all warnings in a readable format:
 
@@ -128,9 +138,11 @@ end
 A per-row override suppresses a specific warning for a specific EVENTNO in a specific
 survey. Fill in the values from Step 4.
 
-Open `data/overrides.csv` in a text editor and append one line:
+Open `override_path` (`config/overrides/walkthrough_overrides.csv`) in a text editor
+and append one line (create the file with just a header row first if it doesn't exist):
 
 ```
+fileid,eventno,field,rule_id,acknowledged_by,acknowledged_date,reason
 oT06129,<EVENTNO>,<field>,<rule_id>,rss,2026-06-26,walkthrough test override
 ```
 
@@ -139,13 +151,14 @@ Replace `<EVENTNO>`, `<field>`, and `<rule_id>` with the values from Step 4.
 Then re-validate (a new validator instance is needed to reload the overrides file):
 
 ```matlab
-validator2 = narwc.validation.SurveyValidator();
+validator2 = narwc.validation.SurveyValidator(struct('override_file', override_path));
 [is_valid2, results2] = validator2.validate(data);
 fprintf('Warnings after per-row override: %d new, %d acknowledged\n', ...
     results2.summary.warnings_new, results2.summary.warnings_acknowledged_per_row);
 ```
 
-Note, you need to make a new `SurveyValidator` instance or it will not update the overrides.
+Note, you need to make a new `SurveyValidator` instance or it will not reload the
+overrides file.
 
 **What to observe:** `results2.summary.warnings_acknowledged_per_row` increments by 1.
 The overridden warning moves from `results2.warnings` to `results2.info`. If
@@ -158,7 +171,7 @@ The overridden warning moves from `results2.warnings` to `results2.info`. If
 A per-survey override suppresses all warnings of a given `(field, rule_id)` combination
 for a survey, regardless of EVENTNO. Leave the `eventno` column empty.
 
-Append to `data/overrides.csv`:
+Append to `override_path`:
 
 ```
 oT06129,,<field>,<rule_id>,rss,2026-06-26,per-survey walkthrough test
@@ -167,7 +180,7 @@ oT06129,,<field>,<rule_id>,rss,2026-06-26,per-survey walkthrough test
 Re-validate:
 
 ```matlab
-validator3 = narwc.validation.SurveyValidator();
+validator3 = narwc.validation.SurveyValidator(struct('override_file', override_path));
 [is_valid3, results3] = validator3.validate(data);
 fprintf('Per-survey acknowledged: %d\n', results3.summary.warnings_acknowledged_per_survey);
 ```
@@ -180,19 +193,18 @@ for override precedence.
 
 ### Step 7 — Run Validation on the High-Volume Fixture
 
-
 ```matlab
 file_vol = 'tests/fixtures/sample_data/aT99001_volume.csv';
 parser_vol = narwc.io.parsers.StandardFormat();
 [data_vol, meta_vol] = parser_vol.parse(file_vol);
 fprintf('Volume fixture: %d rows\n', meta_vol.row_count);
 
-validator_vol = narwc.validation.SurveyValidator();
+validator_vol = narwc.validation.SurveyValidator(struct('override_file', override_path));
 [is_valid_vol, results_vol] = validator_vol.validate(data_vol);
 disp(results_vol.summary)
 ```
 
-Add line to `data/overrides.csv`.
+Add a line to `override_path`:
 ```
 aT99001,,BEHAV,behavioral_rules.calf_behavior_no_calf,rjs,2026-06-26,walkthrough test override
 ```
@@ -207,7 +219,7 @@ performance regressions; a reasonable run should complete in a few seconds.
 
 ### Step 8 — Run the Smoke Test Driver
 
-`validate_fixtures` runs validation over every survey fixture in
+`scripts/validate_fixtures.m` runs validation over every survey fixture in
 `tests/fixtures/sample_data/` and prints a summary table.
 
 ```matlab
@@ -219,29 +231,24 @@ validate_fixtures()
 ROWS, ERRORS, WARN, ACK_ROW, ACK_SURV, VALID, and elapsed time. TOTALS row at
 the bottom. Any fixture in the FAILED state indicates a parser or validator
 crash — investigate that fixture before proceeding. Correct it by investigating
-each and adding a line to `data/overrides.csv`
+each and adding a line to your override CSV.
 
 ---
 
 ### Step 9 — Cleanup
 
-Remove the walkthrough override entries added in Steps 5 and 6. Open
-`data/overrides.csv` and delete the lines containing `walkthrough test override`
-and `per-survey walkthrough test`. Alternatively, reset to header-only:
+Remove the walkthrough override entries added in Steps 5–7. Open `override_path`
+and delete the lines containing `walkthrough test override` and `per-survey
+walkthrough test`. Alternatively, reset to header-only:
 
 ```matlab
-% Reset overrides.csv to header only (removes ALL override entries)
-header = ['# NARWC Warning Override Store\n' ...
-    '# fileid,eventno,field,rule_id,acknowledged_by,acknowledged_date,reason\n' ...
-    '#\n' ...
-    'fileid,eventno,field,rule_id,acknowledged_by,acknowledged_date,reason\n'];
-fid = fopen('data/overrides.csv', 'w');
-fprintf(fid, header);
+fid = fopen(override_path, 'w');
+fprintf(fid, 'fileid,eventno,field,rule_id,acknowledged_by,acknowledged_date,reason\n');
 fclose(fid);
 ```
 
-**What to observe:** A fresh `narwc.validation.SurveyValidator()` will load 0
-overrides. The log line `Loaded N override(s)` will not appear.
+**What to observe:** A fresh `narwc.validation.SurveyValidator(struct('override_file', override_path))`
+will load 0 overrides. The log line `Loaded N override(s)` will not appear.
 
 ---
 
@@ -259,7 +266,7 @@ end
 **How do I check whether my override took effect?**
 
 ```matlab
-validator = narwc.validation.SurveyValidator();
+validator = narwc.validation.SurveyValidator(struct('override_file', override_path));
 [~, results] = validator.validate(data);
 fprintf('Per-row acknowledged: %d\n', results.summary.warnings_acknowledged_per_row);
 fprintf('Per-survey acknowledged: %d\n', results.summary.warnings_acknowledged_per_survey);
@@ -278,24 +285,21 @@ end
 
 **How do I remove an override I added by mistake?**
 
-Open `data/overrides.csv` in a text editor and delete the relevant line.
+Open the override CSV in a text editor and delete the relevant line.
 Alternatively, view current overrides:
 
 ```matlab
-t = readtable('data/overrides.csv', 'CommentStyle', '#', 'Delimiter', ',', ...
+t = readtable(override_path, 'CommentStyle', '#', 'Delimiter', ',', ...
     'TextType', 'char', 'VariableNamingRule', 'preserve');
 disp(t)
 ```
 
 Then delete the row by line number in the file.
 
-**How do I reset `data/overrides.csv` to header-only?**
+**How do I reset an override CSV to header-only?**
 
 ```matlab
-fid = fopen('data/overrides.csv', 'w');
-fprintf(fid, '# NARWC Warning Override Store\n');
-fprintf(fid, '# fileid,eventno,field,rule_id,acknowledged_by,acknowledged_date,reason\n');
-fprintf(fid, '#\n');
+fid = fopen(override_path, 'w');
 fprintf(fid, 'fileid,eventno,field,rule_id,acknowledged_by,acknowledged_date,reason\n');
 fclose(fid);
 ```
