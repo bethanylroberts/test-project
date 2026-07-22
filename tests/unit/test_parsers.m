@@ -40,5 +40,12 @@ classdef test_parsers < matlab.unittest.TestCase
             confidence = narwc.io.parsers.StandardFormat.detectFormat(testCase.test_file);
             testCase.verifyGreaterThan(confidence, 0);
         end
+
+        function testParserFactoryCreateByName(testCase)
+            parser = narwc.io.parsers.ParserFactory.createByName('StandardFormat');
+
+            testCase.verifyClass(parser, 'narwc.io.parsers.StandardFormat');
+            testCase.verifyEqual(parser.FORMAT_NAME, 'Standard NARWC Format');
+        end
     end
 end

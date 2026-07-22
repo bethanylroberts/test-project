@@ -1,8 +1,8 @@
 function db = db_config_local()
 % DB_CONFIG_LOCAL Local database credentials.
 %
-% Copy this file to db_config.local.m and fill in your actual credentials.
-% db_config.local.m is gitignored and will never be committed.
+% Copy this file to db_config_local.m and fill in your actual credentials.
+% db_config_local.m is gitignored and will never be committed.
 
     db.Username = 'your_username';
     db.Password = 'your_password';

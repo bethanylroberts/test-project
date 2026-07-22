@@ -5,7 +5,7 @@ data/*
 !data/tables
 reports/
 logs/
-pub/
+handoffs/
 
 # MATLAB
 *.asv
@@ -18,6 +18,7 @@ Thumbs.db
 
 # IDE
 .vscode/
+.claude/
 *.code-workspace
 
 # Database
@@ -92,3 +93,4 @@ octave-workspace
 
 handoffs/
 CLAUDE.md
+*.pptx

@@ -161,9 +161,10 @@ function validate_speccode(data, collector, config, is_sighting)
     for i = 1:num_records
         speccode = safe_get_speccode(data, i);
         if length(speccode) > 4
+            eventno = get_eventno(data, i);
             collector.addError('SPECCODE', i, ...
                 sprintf('SPECCODE "%s" exceeds 4 characters', speccode), 'error', ...
-                'species_rules.speccode_too_long');
+                'species_rules.speccode_too_long', eventno);
         end
     end
     if config.require_speccode_for_sightings
@@ -171,9 +172,10 @@ function validate_speccode(data, collector, config, is_sighting)
             if is_sighting(i)
                 speccode = safe_get_speccode(data, i);
                 if isempty(speccode) || strcmp(strtrim(speccode), '')
+                    eventno = get_eventno(data, i);
                     collector.addError('SPECCODE', i, ...
                         'SPECCODE is required for sighting records', 'error', ...
-                        'species_rules.speccode_missing_for_sighting');
+                        'species_rules.speccode_missing_for_sighting', eventno);
                 end
             end
         end
@@ -182,9 +184,10 @@ function validate_speccode(data, collector, config, is_sighting)
         for i = 1:num_records
             speccode = safe_get_speccode(data, i);
             if ~isempty(speccode) && ~isKey(config.speccode_map, speccode)
+                eventno = get_eventno(data, i);
                 collector.addError('SPECCODE', i, ...
                     sprintf('SPECCODE "%s" not found in species lookup table', speccode), ...
-                    'error', 'species_rules.speccode_not_in_table');
+                    'error', 'species_rules.speccode_not_in_table', eventno);
             end
         end
     end
@@ -193,9 +196,10 @@ function validate_speccode(data, collector, config, is_sighting)
         if ~isempty(speccode)
             invalid_chars = regexprep(speccode, '[A-Za-z0-9\-]', '');
             if ~isempty(invalid_chars)
+                eventno = get_eventno(data, i);
                 collector.addError('SPECCODE', i, ...
                     sprintf('SPECCODE "%s" contains invalid characters: "%s"', speccode, invalid_chars), ...
-                    'error', 'species_rules.speccode_invalid_chars');
+                    'error', 'species_rules.speccode_invalid_chars', eventno);
             end
         end
     end
@@ -207,9 +211,10 @@ function validate_taxcode(data, collector, config, is_sighting)
         taxcode = data.TAXCODE(i);
         if ~isnan(taxcode) && ~ismissing(taxcode)
             if ~ismember(taxcode, config.valid_taxcodes)
+                eventno = get_eventno(data, i);
                 collector.addError('TAXCODE', i, ...
                     sprintf('TAXCODE %d is not valid (must be 0-9)', taxcode), 'error', ...
-                    'species_rules.taxcode_out_of_range');
+                    'species_rules.taxcode_out_of_range', eventno);
             end
         end
     end
@@ -218,9 +223,10 @@ function validate_taxcode(data, collector, config, is_sighting)
             if is_sighting(i)
                 taxcode = data.TAXCODE(i);
                 if isnan(taxcode) || ismissing(taxcode)
+                    eventno = get_eventno(data, i);
                     collector.addError('TAXCODE', i, ...
                         'TAXCODE is required for sighting records', 'error', ...
-                        'species_rules.taxcode_missing_for_sighting');
+                        'species_rules.taxcode_missing_for_sighting', eventno);
                 end
             end
         end
@@ -270,10 +276,11 @@ function validate_speccode_taxcode_match(data, collector, config)
                 expected_taxcode = str2double(expected_taxcode);
             end
             if ~isnan(expected_taxcode) && expected_taxcode ~= taxcode
+                eventno = get_eventno(data, i);
                 collector.addError('TAXCODE', i, ...
                     sprintf('TAXCODE mismatch: got %d, expected %d for SPECCODE "%s"', ...
                     taxcode, expected_taxcode, speccode), ...
-                    'error', 'species_rules.speccode_taxcode_mismatch');
+                    'error', 'species_rules.speccode_taxcode_mismatch', eventno);
             end
         end
     end

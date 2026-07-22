@@ -864,6 +864,38 @@ classdef test_validation < matlab.unittest.TestCase
             testCase.verifyTrue(contains(detail, '[WARNING]'), ...
                 'Formatted detail must start with [WARNING]');
         end
+
+        function testSpeciesErrorsIncludeEventno(testCase)
+            % species_rules per-row ERRORS (not just warnings) must carry
+            % EVENTNO -- same as behavioral_rules already does for warnings.
+
+            data = table();
+            data.EVENTNO  = [10; 20];
+            data.SPECCODE = {'RIWH'; 'TOOLONGCODE'};   % row 2 exceeds 4 chars
+            data.TAXCODE  = [1; 1];
+            data.NUMBER   = [1; 1];
+            data.NUMCALF  = [0; 0];
+
+            collector = narwc.validation.ErrorCollector();
+            config = load_config(); config = config.validation;
+            narwc.validation.rules.species_rules(data, collector, config);
+
+            errors = collector.getErrors('error');
+            too_long = errors(strcmp({errors.rule_id}, 'species_rules.speccode_too_long'));
+
+            testCase.verifyFalse(isempty(too_long), ...
+                'Expected a species_rules.speccode_too_long error');
+            testCase.verifyEqual(too_long(1).eventno, 20, ...
+                'SPECCODE-too-long error must carry EVENTNO from the offending row');
+        end
+
+        % NOTE: datetime_rules.validate_date_combination's try/catch around
+        % datetime(YEAR,MONTH,DAY) is effectively unreachable in this MATLAB
+        % version -- datetime() silently rolls invalid days over (e.g.
+        % Feb 30 -> Mar 1) rather than throwing, confirmed empirically.
+        % eventno-passing was still added there for consistency/safety, but
+        % no test is written against it since the catch block cannot
+        % currently be exercised. Worth a closer look separately.
     end
 end
 

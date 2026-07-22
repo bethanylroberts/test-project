@@ -106,10 +106,11 @@ function validate_date_combination(data, collector, config) %#ok<INUSD>
         try
             datetime(data.YEAR(idx), data.MONTH(idx), data.DAY(idx));
         catch
+            eventno = get_eventno(data, idx);
             collector.addError('YEAR/MONTH/DAY', idx, ...
                 sprintf('Invalid date: %d-%02d-%02d', ...
                 data.YEAR(idx), data.MONTH(idx), data.DAY(idx)), ...
-                'error', 'datetime_rules.invalid_date_combination');
+                'error', 'datetime_rules.invalid_date_combination', eventno);
         end
     end
 end

@@ -42,3 +42,14 @@ Position 2 = `T` is the canonical marker for synthetic fixture data.
 Real contributor codes in the production database never use `T`.
 `narwc.ingestion.BatchUploader.uploadSurvey()` rejects any FILEID with position 2 = `T`
 before attempting a database write.
+
+## `neaq_sample.csv`
+
+Unlike the other fixtures above, this file is **entirely hand-built, not
+derived from a real survey** — no real NEAQ-format file exists anywhere in
+this repo to anonymize. Its layout (a title line before the header, then
+`FILEID,Latitude,Longitude,Species`) is based only on the one confirmed lead
+in `config/format_definitions.json`'s `neaq` entry (`header_row: 2`, and the
+`field_mapping` renaming `Latitude`/`Longitude`/`Species`). Columns beyond
+those three plus `FILEID` are not confirmed against any real file. Replace
+this fixture once a real (anonymized) NEAQ export is available.

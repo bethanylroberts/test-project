@@ -1,99 +1,43 @@
 classdef ParserFactory
-    % PARSERFACTORY Auto-detect format and return appropriate parser
+    % PARSERFACTORY Explicit, by-name parser selection.
     %
     % Usage:
-    %   parser = narwc.io.parsers.ParserFactory.create('survey.csv');
-    %   [data, metadata] = parser.read();
+    %   parser = narwc.io.parsers.ParserFactory.createByName('StandardFormat');
+    %   [data, metadata] = parser.parse('survey.csv');
+    %
+    % Deliberately does NOT auto-detect format from file content -- the
+    % caller (a migration script, or a routine-ingestion script mapping a
+    % contributor's subfolder to its parser) always knows which parser to
+    % use. See CLAUDE.md and NEAQFormat.m for how per-contributor parsers
+    % plug into this.
 
-    % FIXME: get rid of this (and remove from tests). I do not want to auto-detect. The user should be selecting the correct parser when they set up the converter
-    
     methods (Static)
-        function parser = create(file_path, format_hint)
-            % CREATE Create appropriate parser for file
-            %
-            % Inputs:
-            %   file_path - Path to survey file
-            %   format_hint - Optional format name (bypasses auto-detection)
-            %
-            % Outputs:
-            %   parser - Parser instance
-            
-            if nargin > 1 && ~isempty(format_hint)
-                % Use specified format
-                parser = narwc.io.parsers.ParserFactory.createByName(file_path, format_hint);
-            else
-                % Auto-detect format
-                parser = narwc.io.parsers.ParserFactory.detectAndCreate(file_path);
-            end
-        end
-        
-        function parser = detectAndCreate(file_path)
-            % DETECTANDCREATE Auto-detect format and create parser
-            
-            % Get all available parsers
-            parsers = narwc.io.parsers.ParserFactory.getAvailableParsers();
-            
-            % Test each parser
-            best_confidence = 0;
-            best_parser = '';
-            
-            for i = 1:length(parsers)
-                parser_name = parsers{i};
-                parser_class = str2func(['narwc.io.parsers.' parser_name]);
-                
-                try
-                    confidence = parser_class.detectFormat(file_path);
-                    
-                    if confidence > best_confidence
-                        best_confidence = confidence;
-                        best_parser = parser_name;
-                    end
-                catch ME
-                    warning('Format detection failed for %s: %s', parser_name, ME.message);
-                end
-            end
-            
-            % Create parser
-            if best_confidence > 0.5
-                fprintf('Auto-detected format: %s (confidence: %.2f)\n', ...
-                    best_parser, best_confidence);
-                parser = narwc.io.parsers.ParserFactory.createByName(file_path, best_parser);
-            else
-                error('Could not detect file format. Please specify format explicitly.');
-            end
-        end
-        
-        function parser = createByName(file_path, format_name)
-            % CREATEBYNAME Create parser by format name
-            
+        function parser = createByName(format_name)
+            % CREATEBYNAME Create a parser instance for an explicit format name.
             parser_class = str2func(['narwc.io.parsers.' format_name]);
-            parser = parser_class(file_path);
+            parser = parser_class();
         end
-        
+
         function parsers = getAvailableParsers()
-            % GETAVAILABLEPARSERS Get list of available parser classes
-            
+            % GETAVAILABLEPARSERS Get list of available parser class names.
             parsers = {
                 'StandardFormat'
-                'TabDeliminatedFormat'
                 'NEAQFormat'
-                % TODO: Add more as implemented
+                % TODO: Add more as contributor parsers are implemented.
             };
         end
-        
+
         function listFormats()
-            % LISTFORMATS Display available formats
-            
+            % LISTFORMATS Display available formats.
             parsers = narwc.io.parsers.ParserFactory.getAvailableParsers();
-            
+
             fprintf('\nAvailable Survey Formats:\n');
             fprintf('=========================\n\n');
-            
+
             for i = 1:length(parsers)
                 try
                     parser_class = str2func(['narwc.io.parsers.' parsers{i}]);
-                    % Create dummy instance to get properties
-                    temp = parser_class('dummy.txt');
+                    temp = parser_class();
                     fprintf('%d. %s\n', i, temp.FORMAT_NAME);
                     fprintf('   %s\n\n', temp.DESCRIPTION);
                 catch
