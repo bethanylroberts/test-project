@@ -75,10 +75,9 @@ validator = narwc.validation.SurveyValidator();
 [is_valid, results] = validator.validate(data);
 
 % Migration (run in order)
-config = load_config('migration');
-step1_extract_surveys(csv_file)
-step2_upload_surveys('Config', config)
-step3_validate_migration()
+summary = step1_extract_surveys(csv_file);
+step2_upload_surveys('BatchId', summary.batch_id);
+step3_validate_migration('BatchId', summary.batch_id);
 
 % Tests
 test_runner()                       % Run all tests

@@ -32,6 +32,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   contributor format) and `TemplateFormat.m` as the starting point for new
   contributor parsers.
 - SQL schema, verification, curation, and teardown scripts under `scripts/sql/`.
+- Batch ledger (`data/surveys/batch_log.csv`, `narwc.ingestion.append_batch_log`/
+  `read_batch_log`/`check_prior_conversion`): every `convert_contributor_batch`
+  run mints a `batch_id` and logs it, plus later `upload_contributor_batch`/
+  `validate_batch` runs against it, so it's always answerable which raw
+  sources have already been converted and what the current batch is.
+  `upload_contributor_batch`/`BatchUploader.uploadFromFolder` can scope a run
+  to one batch's FILEIDs via `'BatchId'`.
+- `scripts/ingestion/validate_batch.m`: generalized version of the old
+  migration-only `step3_validate_migration.m` — validates and reports on any
+  batch, any source, writing to `reports/batches/<batch_id>/` so reports never
+  get silently overwritten by a later run.
 
 ### Changed
 
@@ -41,6 +52,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `apply_known_fixes.m` promoted to the primary Category C correction path
   (previously planned as SQL-only); the SQL version is now the post-upload
   fallback.
+- Unified `data/raw/` (routine ingestion) and `data/legacy/` (one-time
+  migration) into a single `data/surveys/{raw,pending,processed,rejected,skipped}`
+  pipeline — the legacy monolith is just another raw source
+  (`data/surveys/raw/legacy/`) that happens to need chunked reading given its
+  size. `failed/` renamed to `rejected/` for consistency with the run-summary
+  status column, which already used that name. `step1_extract_surveys.m`/
+  `step2_upload_surveys.m`/`step3_validate_migration.m` are now thin wrappers
+  over the shared `convert_contributor_batch.m`/`upload_contributor_batch.m`/
+  `validate_batch.m`.
 
 ### Deprecated
 

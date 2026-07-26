@@ -11,7 +11,7 @@ function summary = convert_contributor_batch(parser, input_files, output_dir)
     % Usage:
     %   parser = narwc.io.parsers.ParserFactory.createByName('NEAQFormat');
     %   summary = narwc.ingestion.convert_contributor_batch(parser, ...
-    %       {'season1.csv', 'season2.csv'}, 'data/raw/pending');
+    %       {'season1.csv', 'season2.csv'}, 'data/surveys/pending');
 
     arguments
         parser

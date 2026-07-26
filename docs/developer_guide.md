@@ -27,11 +27,13 @@ src/
     │       ├── TemplateFormat.m   # Copy this to add a new contributor parser
     │       └── ParserFactory.m    # Explicit createByName() selection — no auto-detection
     ├── +ingestion/
-    │   ├── SurveyExtractor.m          # One-time legacy CSV split (migration)
-    │   ├── SurveyFileWriter.m         # Shared per-FILEID chunk writer (both pipelines)
-    │   ├── convert_contributor_batch.m # Routine ingestion: parse + split a contributor's batch
+    │   ├── SurveyExtractor.m          # Chunked CSV split, used only for the 'legacy' source
+    │   ├── SurveyFileWriter.m         # Shared per-FILEID chunk writer (every source)
+    │   ├── convert_contributor_batch.m # Parse + split one contributor's (or legacy's) batch
     │   ├── run_batch_upload.m         # Shared connect→upload→stats→close
-    │   └── BatchUploader.m            # Validates + uploads survey CSVs to SQL Server, transaction-safe
+    │   ├── BatchUploader.m            # Validates + uploads survey CSVs to SQL Server, transaction-safe
+    │   ├── load_split_summary.m       # Parses a _split_summary_*.log (by dir or exact file path)
+    │   ├── append_batch_log.m / read_batch_log.m / check_prior_conversion.m  # Batch ledger (data/surveys/batch_log.csv)
     ├── +validation/
     │   ├── SurveyValidator.m       # Orchestrates rule modules + override matching
     │   ├── FieldValidator.m        # Static field-level validators
@@ -55,7 +57,7 @@ src/
 ```matlab
 % Parse a raw file with an explicit, known parser (no auto-detection)
 parser = narwc.io.parsers.ParserFactory.createByName('StandardFormat');
-[data, metadata] = parser.parse('data/legacy/original_csv/survey.csv');
+[data, metadata] = parser.parse('data/surveys/raw/legacy/survey.csv');
 
 % Validate
 config = load_config('migration');   % or load_config() for strict defaults
@@ -74,10 +76,10 @@ if is_valid
 end
 ```
 
-In practice you rarely call `BatchUploader` directly — both pipelines drive
+In practice you rarely call `BatchUploader` directly — every source drives
 it through `narwc.ingestion.run_batch_upload()`, which handles the
-connect/upload/stats/close sequence (see `scripts/migration/step2_upload_surveys.m`
-and `scripts/ingestion/upload_contributor_batch.m` for the two callers).
+connect/upload/stats/close sequence (see `scripts/ingestion/upload_contributor_batch.m`,
+the single caller for both the legacy migration batch and routine contributor batches).
 
 ## Adding a new validation rule
 

@@ -8,7 +8,7 @@ _Branch: main | Last updated: 2026-07-20_
 
 The system can extract per-survey CSV files from a monolithic legacy flat-file (SAS-era export), validate each survey against 9 rule modules covering required fields, coordinates, datetime, species, environmental conditions, Beaufort sea state, behavior codes, photos, and foreign-key constraints, acknowledge specific validation warnings via a version-controlled override file (`config/overrides/<batch>_overrides.csv`, e.g. `migration_overrides.csv`), and upload validated surveys to a SQL Server `Master` table via transaction-safe inserts (rollback on failure). The override system supports per-row acknowledgements keyed on `(fileid, eventno, field, rule_id)` and per-survey acknowledgements (empty `eventno` to suppress a warning class across an entire survey). A second, routine-ingestion pipeline (`scripts/ingestion/`) now shares the same validate+upload code for per-contributor batches going forward. Test suite (as of 2026-07-20, `tests/unit`): 172 passing, 0 failing, 10 incomplete (DB-dependent tests self-skip without a live connection).
 
-What the system cannot do yet: provide a curator-facing GUI, or apply Bob's known bulk corrections automatically. The `NEAQFormat` parser is implemented as the reference contributor-parser (see `src/+narwc/+io/+parsers/NEAQFormat.m`), but only for the 3 field renames confirmed against `format_definitions.json` — no real NEAQ export file has been available to verify anything beyond that. Live SQL Server transaction behavior has not been verified end-to-end; the Mac-side mock tests verify control flow only.
+What the system cannot do yet: provide a curator-facing GUI, or apply Bob's known bulk corrections automatically. The `NEAQFormat` parser is implemented as the reference contributor-parser (see `src/+narwc/+io/+parsers/NEAQFormat.m`), but only for the 3 field renames confirmed against `format_definitions.json` — real NEAQ Aerial and NEAQ & CWI vessel export files are now available at `data/surveys/raw/` (2026-07-26), which unblocks extending `NEAQFormat.m` and writing the remaining contributor parsers (CCS, NMFS-NEFSC, SEUS EWS also have real raw files now — see `data/README.md` for per-contributor schema notes and known quirks); none of those parsers are written yet. Live SQL Server transaction behavior has not been verified end-to-end; the Mac-side mock tests verify control flow only.
 
 ---
 
@@ -50,7 +50,11 @@ NARWC-DB/
 │       │   ├── SurveyExtractor.m           # Splits monolithic legacy CSV into per-survey CSV files
 │       │   ├── SurveyFileWriter.m          # Shared per-FILEID chunk writer, used by SurveyExtractor and convert_contributor_batch
 │       │   ├── convert_contributor_batch.m # Routine ingestion: parses a contributor's raw files, splits by FILEID
-│       │   └── run_batch_upload.m          # Shared connect->upload->stats->close, used by both pipelines
+│       │   ├── run_batch_upload.m          # Shared connect->upload->stats->close, every source
+│       │   ├── load_split_summary.m        # Parses a _split_summary_*.log (by dir-most-recent or exact file path)
+│       │   ├── append_batch_log.m          # Appends one row to the batch ledger (data/surveys/batch_log.csv)
+│       │   ├── read_batch_log.m            # Reads the batch ledger as a table
+│       │   └── check_prior_conversion.m    # Looks up prior 'convert' ledger rows matching a raw input path
 │       ├── +db/
 │       │   ├── Connection.m        # DB connection wrapper; includes beginTransaction/commit/rollback
 │       │   └── FieldDefinitions.m  # Single source of truth for all 55 field names and types
@@ -97,17 +101,18 @@ NARWC-DB/
 │
 ├── scripts/
 │   ├── smoke_validate.m                # Quick end-to-end validation smoke test (TODO: move to tests)
-│   ├── migration/                       # One-time legacy migration
-│   │   ├── validate_csv_database_lines.m   # Step 0: per-line CSV sanity check
-│   │   ├── step1_extract_surveys.m         # Step 1: calls SurveyExtractor
-│   │   ├── step2_upload_surveys.m          # Step 2: calls shared run_batch_upload
-│   │   ├── step3_validate_migration.m      # Step 3: analyzes results, generates report
-│   │   ├── run_full_migration.m            # Runs steps 1–3 in sequence
-│   │   ├── generate_migration_report.m     # Produces markdown/HTML report + charts
+│   ├── migration/                       # One-time legacy migration -- thin wrappers + reporting/reconciliation
+│   │   ├── validate_csv_database_lines.m   # Step 0: per-line CSV sanity check on the raw legacy CSV
+│   │   ├── step1_extract_surveys.m         # Thin wrapper: convert_contributor_batch('legacy', 'StandardFormat', ...)
+│   │   ├── step2_upload_surveys.m          # Thin wrapper: upload_contributor_batch('Config', load_config('migration'), ...)
+│   │   ├── step3_validate_migration.m      # Thin wrapper: validate_batch('Source', 'legacy', 'ConfigProfile', 'migration', ...)
+│   │   ├── run_full_migration.m            # Runs step1 -> step2 -> step3, threading batch_id through
+│   │   ├── generate_migration_report.m     # Produces markdown/HTML report + charts (called by validate_batch)
 │   │   └── verify_migration_results.m      # Reconciles DB vs. split-summary source; FK integrity checks
-│   ├── ingestion/                       # Routine, per-contributor-season ingestion
-│   │   ├── convert_contributor_batch.m     # Resolves contributor parser, splits by FILEID into data/raw/pending/
-│   │   └── upload_contributor_batch.m      # Validates + uploads via shared run_batch_upload
+│   ├── ingestion/                       # One shared convert/upload/validate pipeline, every source
+│   │   ├── convert_contributor_batch.m     # Resolves parser (or, for 'legacy', chunked SurveyExtractor), splits by FILEID into data/surveys/pending/; mints batch_id, logs to the ledger
+│   │   ├── upload_contributor_batch.m      # Validates + uploads via shared run_batch_upload; optional BatchId scoping; logs to the ledger
+│   │   └── validate_batch.m                # Analyzes one batch's processed/rejected/pending files + DB, writes reports/batches/<batch_id>/report.<ext>; logs to the ledger
 │   ├── sql/                            # T-SQL schema and operational scripts — see scripts/sql/README.md
 │   │   ├── schema/                     # 01–06: create DB → tables → indexes → FKs → populate lookups
 │   │   ├── verification/               # Row counts, FK integrity checks
@@ -136,16 +141,23 @@ NARWC-DB/
 │       ├── test_characterization_batch.m
 │       ├── test_characterization_extractor.m
 │       ├── test_characterization_parser.m
-│       └── test_upload_guardrail.m
+│       ├── test_upload_guardrail.m
+│       ├── test_batch_log.m            # append_batch_log/read_batch_log/check_prior_conversion
+│       └── test_batch_scoped_upload.m  # BatchUploader.uploadFromFolder BatchId/SplitSummaryFile filtering
 │
 ├── lib/
 │   └── +logging/                       # Logging toolbox (Logger class + level functions)
 │
 ├── data/                               # Runtime data (mostly gitignored)
+│   ├── README.md                       # Full data/ layout + per-contributor raw-file notes (committed)
 │   ├── overrides.example.csv           # Example/template for overrides
 │   ├── tables/                         # Lookup table CSVs (committed)
-│   ├── legacy/                         # Source CSVs from SAS export
-│   └── raw/pending|processed|rejected/ # Staging dirs for new survey ingestion
+│   └── surveys/                        # One unified ingestion pipeline, every source
+│       ├── raw/
+│       │   ├── legacy/                 # Source CSV from SAS export (untouched original)
+│       │   └── <contributor>/          # Raw per-contributor files as delivered, awaiting a parser
+│       ├── pending|processed|rejected|skipped/ # Staging dirs, shared by every source
+│       └── batch_log.csv               # Append-only ledger: every convert/upload/validate run
 │
 ├── docs/                               # Architecture docs, rule guide, testing guide, override guide
 ├── scripts/sas/                        # SAS QC scripts (Chk*.sas) + legacy PRG/DBF files

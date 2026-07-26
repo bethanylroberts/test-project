@@ -1,14 +1,14 @@
 function stats = run_batch_upload(base_dir, config, options)
     % RUN_BATCH_UPLOAD Connect, validate+upload from base_dir/pending, return stats.
     %
-    % Shared by scripts/migration/step2_upload_surveys.m (migration) and
-    % scripts/ingestion/upload_contributor_batch.m (routine ingestion) --
-    % the only difference between the two callers is the default base_dir
-    % and console messaging. BatchUploader itself needs no changes; this
-    % just extracts the connect/upload/stats/close glue both scripts need.
+    % Shared connect/upload/stats/close glue used by
+    % scripts/ingestion/upload_contributor_batch.m for every source -- legacy
+    % migration and routine contributor ingestion alike, since both now share
+    % the same data/surveys base_dir. Only the validation config profile
+    % (load_config('migration') vs. load_config('routine')) differs per run.
     %
     % Usage:
-    %   stats = narwc.ingestion.run_batch_upload('data/raw', load_config('routine'));
+    %   stats = narwc.ingestion.run_batch_upload('data/surveys', load_config('routine'));
 
     arguments
         base_dir char
@@ -18,6 +18,8 @@ function stats = run_batch_upload(base_dir, config, options)
         options.StopOnError logical = false
         options.AllowWarnings logical = false
         options.AllowErrors logical = false
+        options.BatchId char = ''
+        options.SplitSummaryFile char = ''
     end
 
     if ~isempty(fieldnames(config)) && isfield(config, 'db')
@@ -34,7 +36,9 @@ function stats = run_batch_upload(base_dir, config, options)
             'Validate', options.Validate, ...
             'StopOnError', options.StopOnError, ...
             'AllowWarnings', options.AllowWarnings, ...
-            'AllowErrors', options.AllowErrors);
+            'AllowErrors', options.AllowErrors, ...
+            'BatchId', options.BatchId, ...
+            'SplitSummaryFile', options.SplitSummaryFile);
 
         stats = uploader.getStats();
     catch ME

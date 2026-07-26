@@ -86,11 +86,11 @@ function startup()
     % Create necessary directories if they don't exist
     fprintf('\nChecking directory structure...\n');
     required_dirs = {
-        'data/raw/pending'
-        'data/raw/processed'
-        'data/raw/rejected'
-        'data/legacy/original_csv'
-        'data/legacy/extracted_surveys'
+        'data/surveys/raw'
+        'data/surveys/pending'
+        'data/surveys/processed'
+        'data/surveys/rejected'
+        'data/surveys/skipped'
         'data/exports/surveys'
         'data/exports/reports'
         'data/archives'
@@ -98,6 +98,7 @@ function startup()
         'reports/validation'
         'reports/migration'
         'reports/quality'
+        'reports/batches'
         'logs'
     };
     

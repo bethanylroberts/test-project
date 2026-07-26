@@ -62,15 +62,15 @@ itself, so the project can be moved without changing any paths manually.
 | `paths.tests_dir`     | `<root>/tests`                      | Test files                                    |
 | `paths.output_dir`    | `<root>/output`                     | Processed output (**stale** — see note below) |
 | `paths.tables_dir`    | `<root>/data/tables`                | Lookup table CSVs                             |
-| `paths.raw_dir`       | `<root>/data/raw`                   | Incoming raw survey files                     |
-| `paths.processed_dir` | `<root>/data/processed`             | Processed survey files                        |
+| `paths.raw_dir`       | `<root>/data/surveys/raw`           | Untouched raw survey files, every source      |
+| `paths.processed_dir` | `<root>/data/surveys/processed`     | Successfully uploaded survey files            |
 | `paths.user_config`   | `<root>/config/user_config.m`       | Per-user override file                        |
 
 **Stale note:** `paths.output_dir` points to `output/`, but `startup.m` creates
 `data/exports/` and `reports/` as the actual output destinations. The `output/`
-directory does not exist and is not created by startup. The `processing` section's
-`output_dir` inherits from `paths.processed_dir`, which is `data/processed/` — also
-not created by startup. This should be reconciled.
+directory does not exist and is not created by startup. This should be reconciled.
+(`paths.raw_dir`/`paths.processed_dir` above now match what `startup.m` actually
+creates under `data/surveys/`, unlike before.)
 
 #### Lookup table paths
 

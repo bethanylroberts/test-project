@@ -77,8 +77,8 @@ function paths = build_path_config()
     paths.tests_dir     = fullfile(paths.project_root, 'tests');
     paths.output_dir    = fullfile(paths.project_root, 'output');
     paths.tables_dir    = fullfile(paths.data_dir, 'tables');
-    paths.raw_dir       = fullfile(paths.data_dir, 'raw');
-    paths.processed_dir = fullfile(paths.data_dir, 'processed');
+    paths.raw_dir       = fullfile(paths.data_dir, 'surveys', 'raw');
+    paths.processed_dir = fullfile(paths.data_dir, 'surveys', 'processed');
 
     t = struct();
     t.behave   = fullfile(paths.tables_dir, 'Behave.csv');

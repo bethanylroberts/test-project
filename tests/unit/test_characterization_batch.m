@@ -45,7 +45,7 @@ classdef test_characterization_batch < matlab.unittest.TestCase
 
         function testUploadFromFolderRejectsAllTestFixtures(testCase)
             % uploadFromFolder must reject every T-FILEID survey before any
-            % DB operation.  Both files go to failed/.
+            % DB operation.  Both files go to rejected/.
 
             import matlab.unittest.fixtures.WorkingFolderFixture
             testCase.applyFixture(WorkingFolderFixture);
@@ -66,17 +66,17 @@ classdef test_characterization_batch < matlab.unittest.TestCase
 
             stats = converter.getStats();
 
-            testCase.verifyEqual(stats.failed, 2, ...
-                'Both T-FILEID files must be counted as failed');
+            testCase.verifyEqual(stats.rejected, 2, ...
+                'Both T-FILEID files must be counted as rejected');
             testCase.verifyEqual(conn.insert_call_count, 0, ...
                 'No DB insert must occur for T-FILEID fixtures');
 
             testCase.verifyTrue( ...
-                exist(fullfile(base_dir, 'failed', 'fT00157.csv'), 'file') == 2, ...
-                'fT00157.csv must be moved to failed/');
+                exist(fullfile(base_dir, 'rejected', 'fT00157.csv'), 'file') == 2, ...
+                'fT00157.csv must be moved to rejected/');
             testCase.verifyTrue( ...
-                exist(fullfile(base_dir, 'failed', 'HT63070.csv'), 'file') == 2, ...
-                'HT63070.csv must be moved to failed/');
+                exist(fullfile(base_dir, 'rejected', 'HT63070.csv'), 'file') == 2, ...
+                'HT63070.csv must be moved to rejected/');
         end
 
         function testUploadFromFolderNoDbCallOnGuardrail(testCase)
@@ -234,7 +234,7 @@ classdef test_characterization_batch < matlab.unittest.TestCase
 
             % Verify run summary CSV gets split columns
             uploader.uploadFromFolder('Validate', false);
-            run_summary = fullfile(base_dir, 'failed', '_run_summary.csv');
+            run_summary = fullfile(base_dir, 'rejected', '_run_summary.csv');
             if exist(run_summary, 'file')
                 tbl = readtable(run_summary, 'Delimiter', ',', 'TextType', 'char', ...
                     'VariableNamingRule', 'preserve');
@@ -391,8 +391,8 @@ classdef test_characterization_batch < matlab.unittest.TestCase
 
             testCase.verifyFalse(success, ...
                 'upload must report failure when insert throws');
-            testCase.verifyEqual(category, 'failed', ...
-                'category must be ''failed'' when insert throws');
+            testCase.verifyEqual(category, 'rejected', ...
+                'category must be ''rejected'' when insert throws');
             testCase.verifyEqual(conn.rollback_count, 1, ...
                 'rollback must be called when insert fails');
             testCase.verifyEqual(conn.commit_count, 0, ...

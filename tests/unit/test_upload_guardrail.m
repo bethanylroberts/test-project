@@ -27,8 +27,8 @@ classdef test_upload_guardrail < matlab.unittest.TestCase
 
             testCase.verifyFalse(success, ...
                 'uploadSurvey should return success=false for a T-position-2 FILEID');
-            testCase.verifyEqual(category, 'failed', ...
-                'uploadSurvey should categorize T-FILEID surveys as failed');
+            testCase.verifyEqual(category, 'rejected', ...
+                'uploadSurvey should categorize T-FILEID surveys as rejected');
 
             % Confirm no DB write was attempted
             testCase.verifyEqual(conn.insert_call_count, 0, ...
@@ -57,7 +57,7 @@ classdef test_upload_guardrail < matlab.unittest.TestCase
 
         function testUploadFromFolderRejectsTestFileid(testCase)
             % uploadFromFolder must also reject T-position-2 FILEIDs before
-            % calling uploadSurvey, and move the file to the failed folder.
+            % calling uploadSurvey, and move the file to the rejected folder.
             import matlab.unittest.fixtures.WorkingFolderFixture
             testCase.applyFixture(WorkingFolderFixture);
 
@@ -74,14 +74,14 @@ classdef test_upload_guardrail < matlab.unittest.TestCase
             converter.uploadFromFolder('Validate', false);
 
             stats = converter.getStats();
-            testCase.verifyEqual(stats.failed, 1, ...
-                'uploadFromFolder should count the T-FILEID survey as failed');
+            testCase.verifyEqual(stats.rejected, 1, ...
+                'uploadFromFolder should count the T-FILEID survey as rejected');
             testCase.verifyEqual(conn.insert_call_count, 0, ...
                 'No DB insert should occur for a T-FILEID survey in uploadFromFolder');
 
-            failed_file = fullfile(base_dir, 'failed', 'fT00007.csv');
-            testCase.verifyTrue(exist(failed_file, 'file') == 2, ...
-                'Rejected survey file should be moved to the failed/ folder');
+            rejected_file = fullfile(base_dir, 'rejected', 'fT00007.csv');
+            testCase.verifyTrue(exist(rejected_file, 'file') == 2, ...
+                'Rejected survey file should be moved to the rejected/ folder');
         end
 
     end
