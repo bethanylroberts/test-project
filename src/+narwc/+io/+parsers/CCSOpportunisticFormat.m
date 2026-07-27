@@ -77,7 +77,17 @@ classdef CCSOpportunisticFormat < narwc.io.parsers.BaseParser
 
             if ~ismember('MONTH', raw_data.Properties.VariableNames) ...
                     && ismember('DATE', raw_data.Properties.VariableNames)
-                dates = datetime(string(raw_data.DATE), 'InputFormat', 'dd-MMM-yy');
+                if isdatetime(raw_data.DATE)
+                    % See CCSVesselFormat.m's parse() for why this branch
+                    % exists: detectImportOptions often auto-detects a
+                    % dd-MMM-yy-shaped column as a native datetime already,
+                    % and round-tripping that through string()+re-parse with
+                    % a strict 2-digit-year InputFormat silently produces
+                    % garbage years for every row.
+                    dates = raw_data.DATE;
+                else
+                    dates = datetime(string(raw_data.DATE), 'InputFormat', 'dd-MMM-yy');
+                end
                 raw_data.MONTH = month(dates);
                 raw_data.DAY = day(dates);
                 raw_data.YEAR = year(dates);

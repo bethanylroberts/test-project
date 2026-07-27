@@ -68,7 +68,19 @@ classdef CCSVesselFormat < narwc.io.parsers.BaseParser
             end
 
             if ismember('DATE', raw_data.Properties.VariableNames)
-                dates = datetime(string(raw_data.DATE), 'InputFormat', 'dd-MMM-yy');
+                if isdatetime(raw_data.DATE)
+                    % detectImportOptions often auto-detects a column this
+                    % date-like (dd-MMM-yy) as a native datetime already --
+                    % use it directly. Round-tripping it through
+                    % string(datetime) and re-parsing with a strict 2-digit-
+                    % year InputFormat is fragile: string() renders using
+                    % datetime's default (4-digit-year) display format, which
+                    % a 'dd-MMM-yy' re-parse does not match correctly,
+                    % silently producing garbage years for every row.
+                    dates = raw_data.DATE;
+                else
+                    dates = datetime(string(raw_data.DATE), 'InputFormat', 'dd-MMM-yy');
+                end
                 raw_data.MONTH = month(dates);
                 raw_data.DAY = day(dates);
                 raw_data.YEAR = year(dates);
