@@ -86,7 +86,12 @@ classdef CCSOpportunisticFormat < narwc.io.parsers.BaseParser
                     % garbage years for every row.
                     dates = raw_data.DATE;
                 else
-                    dates = datetime(string(raw_data.DATE), 'InputFormat', 'dd-MMM-yy');
+                    % 'PivotYear' set explicitly -- see CCSVesselFormat.m's
+                    % parse() for why: confirmed against real data that
+                    % datetime's default century window for a 2-digit-year
+                    % InputFormat does NOT reliably expand e.g. "22" to
+                    % 2022 on its own.
+                    dates = datetime(string(raw_data.DATE), 'InputFormat', 'dd-MMM-yy', 'PivotYear', 2000);
                 end
                 raw_data.MONTH = month(dates);
                 raw_data.DAY = day(dates);

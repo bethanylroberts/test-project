@@ -79,7 +79,13 @@ classdef CCSVesselFormat < narwc.io.parsers.BaseParser
                     % silently producing garbage years for every row.
                     dates = raw_data.DATE;
                 else
-                    dates = datetime(string(raw_data.DATE), 'InputFormat', 'dd-MMM-yy');
+                    % 'PivotYear' is set explicitly rather than relying on
+                    % datetime's default century window for a 2-digit-year
+                    % InputFormat -- confirmed against real data that the
+                    % implicit default does NOT reliably expand e.g. "22" to
+                    % 2022 (it silently produced literal year 22 for every
+                    % row instead). All CCS survey dates fall in 2000-2099.
+                    dates = datetime(string(raw_data.DATE), 'InputFormat', 'dd-MMM-yy', 'PivotYear', 2000);
                 end
                 raw_data.MONTH = month(dates);
                 raw_data.DAY = day(dates);
