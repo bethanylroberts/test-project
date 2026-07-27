@@ -4,6 +4,7 @@ _archive/
 data/*
 !data/tables
 !data/README.md
+!data/reorganize_data_folder.m
 reports/
 logs/
 handoffs/
