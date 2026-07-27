@@ -87,6 +87,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   with an existing TAXCODE in the lookup table. Called by every parser
   with a SPECCODE field (all 5 new contributor parsers), right after
   `clearSpuriousSightno()`. See `data/README.md`.
+- `validation.species.taxcode_optional_when_lookup_blank` (default `true`):
+  `species_rules.m`'s `taxcode_missing_for_sighting` check no longer flags a
+  sighting's missing TAXCODE if SPECCODE.csv has a real entry for that row's
+  SPECCODE whose own TAXCODE column is blank by design (vessels, fishing
+  gear, debris, birds — `Type=HUMAN`/`DEBRI`/`BIR`, not `Type=NARWC`).
+  Investigated against real data (2026-07-27): once `fillTaxcodeFromSpeccode()`
+  filled every TAXCODE the lookup table actually had, the remaining
+  `taxcode_missing_for_sighting` errors across all 5 new parsers were 100%
+  non-cetacean object types with no TAXCODE concept at all — not a data gap.
+  A SPECCODE absent from the lookup entirely still requires TAXCODE as
+  before. Curator-flagged future work: these object types should eventually
+  get real TAXCODE values assigned in SPECCODE.csv (a lookup-table content
+  decision, out of scope for this change); set the flag to `false` to revert
+  to the strict pre-2026-07-27 behavior. See `PROJECT_STATUS.md` §8.4 and
+  `docs/validation_reference.md`.
 
 ### Changed
 

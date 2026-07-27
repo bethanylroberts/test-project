@@ -219,10 +219,33 @@ function validate_taxcode(data, collector, config, is_sighting)
         end
     end
     if config.require_taxcode_for_sightings
+        % Curator-flagged future work (2026-07-27): SPECCODE.csv leaves
+        % TAXCODE blank for every non-cetacean entry (vessels, fishing
+        % gear, debris, birds -- Type=HUMAN/DEBRI or Type=BIR, not
+        % Type=NARWC). Confirmed against real contributor data that 100%
+        % of remaining taxcode_missing_for_sighting errors (after fixing
+        % SIGHTNO/SPECCODE upstream) were these object types, not a
+        % parsing gap. The curator's view is that these types should
+        % eventually get real TAXCODE values assigned in the lookup table
+        % -- this is a deliberate, reversible relaxation pending that
+        % lookup-table content decision (see PROJECT_STATUS.md §8.4), not
+        % a permanent design call: taxcode_optional_for_row() only exempts
+        % a row when SPECCODE.csv has a REAL entry with TAXCODE genuinely
+        % blank; a SPECCODE absent from the table entirely still requires
+        % TAXCODE (validate_speccode's speccode_not_in_table flags that
+        % separately). Toggle off via
+        % config.taxcode_optional_when_lookup_blank once the lookup table
+        % is backfilled -- at that point this becomes a no-op for those
+        % rows anyway, since the lookup will no longer be blank.
+        taxcode_optional_enabled = ~isfield(config, 'taxcode_optional_when_lookup_blank') || ...
+            config.taxcode_optional_when_lookup_blank;
         for i = 1:num_records
             if is_sighting(i)
                 taxcode = data.TAXCODE(i);
                 if isnan(taxcode) || ismissing(taxcode)
+                    if taxcode_optional_enabled && taxcode_optional_for_row(data, i, config)
+                        continue;
+                    end
                     eventno = get_eventno(data, i);
                     collector.addError('TAXCODE', i, ...
                         'TAXCODE is required for sighting records', 'error', ...
@@ -244,6 +267,38 @@ function validate_taxcode(data, collector, config, is_sighting)
             end
         end
     end
+end
+
+function optional = taxcode_optional_for_row(data, idx, config)
+    % TAXCODE_OPTIONAL_FOR_ROW True only when SPECCODE.csv has a REAL entry
+    % for this row's SPECCODE and that entry's own TAXCODE is blank -- i.e.
+    % the lookup table itself says TAXCODE doesn't apply (vessels, debris,
+    % birds), not that this is an unconfirmed gap. A SPECCODE absent from
+    % the table entirely is NOT covered here (returns false, so TAXCODE
+    % stays required) -- validate_speccode's speccode_not_in_table already
+    % flags that as its own, separate problem. See the call site in
+    % validate_taxcode for the full rationale.
+    %
+    % Mirrors validate_speccode_taxcode_match's expected_taxcode
+    % extraction/coercion below for consistency.
+    optional = false;
+    if isempty(config.speccode_table) || isempty(config.speccode_map) || ...
+            ~ismember('TAXCODE', config.speccode_table.Properties.VariableNames)
+        return;
+    end
+    speccode = safe_get_speccode(data, idx);
+    if isempty(speccode) || ~isKey(config.speccode_map, speccode)
+        return;
+    end
+    table_row = config.speccode_map(speccode);
+    expected_taxcode = config.speccode_table.TAXCODE(table_row);
+    if iscell(expected_taxcode)
+        expected_taxcode = expected_taxcode{1};
+    end
+    if ischar(expected_taxcode) || isstring(expected_taxcode)
+        expected_taxcode = str2double(expected_taxcode);
+    end
+    optional = isempty(expected_taxcode) || isnan(expected_taxcode);
 end
 
 function validate_speccode_taxcode_match(data, collector, config)

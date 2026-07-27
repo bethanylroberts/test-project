@@ -133,6 +133,66 @@ end
 
 
 %% =========================================================================
+%  TAXCODE REQUIRED-FOR-SIGHTING: LOOKUP-BLANK EXCEPTION
+%% =========================================================================
+
+function test_taxcode_optional_when_lookup_blank(testCase)
+% SPECCODE found in lookup table but the lookup's own TAXCODE is blank
+% (e.g. a vessel or debris object type) -- row's TAXCODE is blank too.
+% Should NOT error: the lookup table itself says TAXCODE doesn't apply.
+config = make_config_for_taxcode_required('RECV', true, NaN);
+data   = make_data('RECV', NaN, 1, NaN);
+collector = narwc.validation.ErrorCollector();
+narwc.validation.rules.species_rules(data, collector, config);
+e = get_warnings_by_rule(collector, 'species_rules.taxcode_missing_for_sighting');
+testCase.assertEmpty(e, ...
+    'No taxcode_missing_for_sighting error expected when lookup TAXCODE is genuinely blank');
+end
+
+
+function test_taxcode_still_required_when_lookup_populated(testCase)
+% SPECCODE found in lookup table with a real TAXCODE (e.g. RIWH -> 1) but
+% the row's own TAXCODE is blank. This is a real gap and must still error,
+% unaffected by the lookup-blank exception.
+config = make_config_for_taxcode_required('RIWH', true, 1);
+data   = make_data('RIWH', NaN, 1, NaN);
+collector = narwc.validation.ErrorCollector();
+narwc.validation.rules.species_rules(data, collector, config);
+e = get_warnings_by_rule(collector, 'species_rules.taxcode_missing_for_sighting');
+testCase.assertGreaterThan(length(e), 0, ...
+    'Expected taxcode_missing_for_sighting error when lookup TAXCODE is populated but row TAXCODE is blank');
+end
+
+
+function test_taxcode_still_required_when_speccode_unknown(testCase)
+% SPECCODE not found in the lookup table at all -- an unconfirmed/new code.
+% Must still error; there's no lookup entry to say TAXCODE is optional.
+config = make_config_for_taxcode_required('ZZZZ', false, NaN);
+data   = make_data('ZZZZ', NaN, 1, NaN);
+collector = narwc.validation.ErrorCollector();
+narwc.validation.rules.species_rules(data, collector, config);
+e = get_warnings_by_rule(collector, 'species_rules.taxcode_missing_for_sighting');
+testCase.assertGreaterThan(length(e), 0, ...
+    'Expected taxcode_missing_for_sighting error when SPECCODE is not in the lookup table at all');
+end
+
+
+function test_taxcode_optional_flag_disabled_reverts_to_erroring(testCase)
+% Same setup as the relaxed case (lookup TAXCODE genuinely blank), but with
+% taxcode_optional_when_lookup_blank explicitly disabled -- confirms the
+% flag is a real, working toggle for the future decision point.
+config = make_config_for_taxcode_required('RECV', true, NaN);
+config.taxcode_optional_when_lookup_blank = false;
+data   = make_data('RECV', NaN, 1, NaN);
+collector = narwc.validation.ErrorCollector();
+narwc.validation.rules.species_rules(data, collector, config);
+e = get_warnings_by_rule(collector, 'species_rules.taxcode_missing_for_sighting');
+testCase.assertGreaterThan(length(e), 0, ...
+    'Expected taxcode_missing_for_sighting error when taxcode_optional_when_lookup_blank is false');
+end
+
+
+%% =========================================================================
 %  HELPERS
 %% =========================================================================
 
@@ -172,6 +232,27 @@ config.right_whale_max_group           = 9999;  % suppress right-whale-specific 
 config.right_whale_max_calves          = 9999;
 config.lookup_table_dir                = '';    % prevent file loading
 config.allow_numcalf_exceeds_half      = false;
+end
+
+
+function config = make_config_for_taxcode_required(speccode, lookup_row_present, lookup_taxcode)
+% Build a config with require_taxcode_for_sightings enabled and a mock
+% SPECCODE lookup table that includes a TAXCODE column, for exercising the
+% taxcode_optional_when_lookup_blank exception in validate_taxcode.
+% lookup_row_present=false simulates a SPECCODE absent from the table
+% entirely (lookup_taxcode is ignored in that case).
+config = make_config(NaN, NaN, NaN, NaN);
+config.require_taxcode_for_sightings = true;
+if lookup_row_present
+    config.speccode_table = table({speccode}, NaN, NaN, lookup_taxcode, ...
+        'VariableNames', {'Value', 'typical_max_group', 'typical_max_calf', 'TAXCODE'});
+    config.speccode_map = containers.Map({speccode}, {1});
+else
+    config.speccode_table = table(cell(0, 1), zeros(0, 1), zeros(0, 1), zeros(0, 1), ...
+        'VariableNames', {'Value', 'typical_max_group', 'typical_max_calf', 'TAXCODE'});
+    config.speccode_map = containers.Map('KeyType', 'char', 'ValueType', 'double');
+end
+config.taxcode_optional_when_lookup_blank = true;
 end
 
 

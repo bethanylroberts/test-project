@@ -193,28 +193,22 @@ as out of range (hard error), making 1990 the more conservative choice.
 
 #### Species validation
 
-| Field                                       | Value                      | Notes                                                          |
-| ------------------------------------------- | -------------------------- | -------------------------------------------------------------- |
-| `validation.species.require_valid_speccode` | `true`                     | Unknown SPECCODEs are errors                                   |
-| `validation.species.require_valid_taxcode`  | `true`                     | Unknown TAXCODEs trigger a warning                             |
-| `validation.species.speccode_table_path`    | `data/tables/SPECCODE.csv` | Redundant with `paths`; passed for rules that read it directly |
-| `validation.species.taxcode_table_path`     | `data/tables/TAXCODE.csv`  | Same                                                           |
-
-**Note:** The `species_rules.m` function has additional configurable parameters with
-defaults in its own `default_config()`. These are not set in `validation_config_default.m`
-— the rule's own defaults are used. To override them, add a `validation.species.*` field
-to `user_config.m` or a batch config.
-
-Key species sub-config fields (all live in `validation.species.*`):
+All species sub-config fields (`validation.species.*`) are set in
+`validation_config_default.m` — there is no separate `default_config()` inside
+`species_rules.m` itself. `speccode_table_path`/`taxcode_table_path` exist as fields but
+are not currently read by `species_rules.m`; it resolves both lookup files from
+`lookup_table_dir` instead.
 
 | Field                                       | Default  | Notes                                                              |
 | ------------------------------------------- | -------- | ------------------------------------------------------------------ |
+| `lookup_table_dir`                          | `data/tables` | Directory `species_rules.m` reads `SPECCODE.csv`/`TAXCODE.csv` from |
 | `thresholds.group_size_default`             | `100000` | Fallback when neither SPECCODE nor TAXCODE provides a per-taxon threshold |
 | `thresholds.calf_count_default`             | `100`    | Fallback calf count threshold                                      |
 | `right_whale_max_group`                     | `50`     | Warning threshold for RIWH/NARW/SARW group size                   |
 | `right_whale_max_calves`                    | `5`      | Warning threshold for right whale calf count                       |
 | `require_speccode_for_sightings`            | `true`   | SPECCODE required on sighting records                              |
 | `require_taxcode_for_sightings`             | `true`   | TAXCODE required on sighting records                               |
+| `taxcode_optional_when_lookup_blank`        | `true`   | When `require_taxcode_for_sightings` is true, don't flag a missing TAXCODE if SPECCODE.csv has a real entry for the row's SPECCODE whose own TAXCODE is blank (vessels/debris/birds). A SPECCODE absent from the lookup entirely still requires TAXCODE. Deliberate, reversible relaxation pending a lookup-table content decision — see `PROJECT_STATUS.md` §8.4. |
 | `validate_speccode_lookup`                  | `true`   | Flag unknown SPECCODEs                                             |
 | `validate_taxcode_lookup`                   | `true`   | Flag unknown TAXCODEs                                              |
 | `validate_speccode_taxcode_match`           | `true`   | Flag TAXCODE mismatch against SPECCODE lookup                      |

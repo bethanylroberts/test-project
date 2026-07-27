@@ -283,6 +283,7 @@ Items surfaced during migration that require code or config changes (not yet imp
 | o112971: DDSOURCE unknown | May be resolved by copying IDSOURCE to DDSOURCE; confirm with Bob |
 | o121911: CONFIDNC row 444 = 90 → 0 | Invalid code; 0 is the correct value |
 | o123921: EVENT 159 TIME=003716/DAY=11; EVENT 211 TIME=001240/DAY=26; EVENT 212 TIME=005201/DAY=26; EVENT 283 LONG_DD=-71.93525 (missing negative sign) | Four discrete corrections; add to override CSV or apply_known_fixes |
+| SPECCODE.csv has blank TAXCODE for all `HUMAN`/`DEBRI`/`BIR` entries (vessels, fishing gear, debris, birds) | `species_rules.m` currently treats a blank-in-lookup TAXCODE as not-required (`validation.species.taxcode_optional_when_lookup_blank`, default `true`) rather than flagging it. Curator believes these object types should eventually get real TAXCODE values assigned in the lookup table; deferred pending that content decision — not a code change once decided, since the validation logic already re-requires TAXCODE the moment the lookup stops being blank. See `species_rules.m`'s `taxcode_optional_for_row()`. |
 
 ---
 
