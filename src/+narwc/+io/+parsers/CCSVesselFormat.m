@@ -89,7 +89,7 @@ classdef CCSVesselFormat < narwc.io.parsers.BaseParser
             % tolerates both 2023's unquoted layout and 2024's quoted-CSV
             % layout.
             import_opts = detectImportOptions(file_path, ...
-                'NumHeaderLines', 1, 'Delimiter', ',');
+                'NumHeaderLines', 0, 'Delimiter', ',');
         end
 
         function confidence = detectFormat(file_path)

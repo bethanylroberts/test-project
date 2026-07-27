@@ -89,7 +89,7 @@ classdef CCSAerialFormat < narwc.io.parsers.BaseParser
             % layout (with its extra leading blank/index column) without
             % hardcoding a fixed column count.
             import_opts = detectImportOptions(file_path, ...
-                'NumHeaderLines', 1, 'Delimiter', ',');
+                'NumHeaderLines', 0, 'Delimiter', ',');
         end
 
         function confidence = detectFormat(file_path)

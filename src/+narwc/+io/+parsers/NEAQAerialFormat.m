@@ -122,7 +122,7 @@ classdef NEAQAerialFormat < narwc.io.parsers.BaseParser
             % tolerates the trailing-column variation between flights
             % (TrackDist present/absent/replaced by distance_col).
             import_opts = detectImportOptions(file_path, ...
-                'NumHeaderLines', 1, 'Delimiter', ',');
+                'NumHeaderLines', 0, 'Delimiter', ',');
         end
 
         function confidence = detectFormat(file_path)

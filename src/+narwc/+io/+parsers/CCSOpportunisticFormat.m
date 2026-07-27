@@ -102,7 +102,7 @@ classdef CCSOpportunisticFormat < narwc.io.parsers.BaseParser
             % tolerates both the 2023 per-trip layout (split MONTH/DAY/YEAR)
             % and the 2024 aggregated layout (single DATE + CRUISENO).
             import_opts = detectImportOptions(file_path, ...
-                'NumHeaderLines', 1, 'Delimiter', ',');
+                'NumHeaderLines', 0, 'Delimiter', ',');
         end
 
         function confidence = detectFormat(file_path)

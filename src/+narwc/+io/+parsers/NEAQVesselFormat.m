@@ -65,7 +65,7 @@ classdef NEAQVesselFormat < narwc.io.parsers.BaseParser
             % import strip it so the first variable name comes back as
             % exactly 'EVENTNO', not a BOM-mangled variant.
             import_opts = detectImportOptions(file_path, ...
-                'NumHeaderLines', 1, 'Delimiter', ',', 'Encoding', 'UTF-8');
+                'NumHeaderLines', 0, 'Delimiter', ',', 'Encoding', 'UTF-8');
         end
 
         function confidence = detectFormat(file_path)
