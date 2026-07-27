@@ -33,6 +33,12 @@ classdef NEAQAerialFormat < narwc.io.parsers.BaseParser
     % gpssats, roll, pitch, yaw, maghead, notes, edits, glarev, ph_qual,
     % TrackDist -- nav/engineering + free-text fields) are correctly dropped
     % by remapToDatabase.
+    %
+    % sightno is auto-logged by the GPS/survey software on any marker-button
+    % press, not just animal sightings -- see
+    % StandardFormat.clearSpuriousSightno() (called at the end of parse())
+    % for the full explanation, and CCSAerialFormat.m's docstring for the
+    % real-data evidence that confirmed it.
 
     properties (Constant)
         FORMAT_NAME = 'NEAQ Aerial Format'
@@ -111,6 +117,7 @@ classdef NEAQAerialFormat < narwc.io.parsers.BaseParser
             raw_data.FILEID = repmat(fileid, height(raw_data), 1);
 
             data = narwc.io.parsers.StandardFormat.remapToDatabase(raw_data);
+            data = narwc.io.parsers.StandardFormat.clearSpuriousSightno(data);
 
             metadata.row_count = height(data);
             metadata.column_count = width(data);

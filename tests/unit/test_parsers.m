@@ -47,5 +47,33 @@ classdef test_parsers < matlab.unittest.TestCase
             testCase.verifyClass(parser, 'narwc.io.parsers.StandardFormat');
             testCase.verifyEqual(parser.FORMAT_NAME, 'Standard NARWC Format');
         end
+
+        function testClearSpuriousSightnoBlanksRowsWithoutSpeccode(testCase)
+            % SIGHTNO gets auto-logged by the GPS/survey software on any
+            % marker-button press, not just sightings (curator-confirmed) --
+            % clearSpuriousSightno must blank SIGHTNO wherever SPECCODE is
+            % blank, and leave real sightings (SPECCODE populated) alone.
+            data = TestFixtures.generate_mock_survey(3);
+            data.SIGHTNO = [1; 2; 3];
+            data.SPECCODE = {'RIWH'; ''; 'HUWH'};
+
+            result = narwc.io.parsers.StandardFormat.clearSpuriousSightno(data);
+
+            testCase.verifyEqual(result.SIGHTNO(1), 1, ...
+                'Real sighting (SPECCODE populated) must keep its SIGHTNO');
+            testCase.verifyTrue(isnan(result.SIGHTNO(2)), ...
+                'Row with no SPECCODE must have SIGHTNO cleared');
+            testCase.verifyEqual(result.SIGHTNO(3), 3, ...
+                'Real sighting (SPECCODE populated) must keep its SIGHTNO');
+        end
+
+        function testClearSpuriousSightnoNoOpWithoutRequiredColumns(testCase)
+            data = table();
+            data.EVENTNO = [1; 2];
+
+            result = narwc.io.parsers.StandardFormat.clearSpuriousSightno(data);
+
+            testCase.verifyEqual(result, data);
+        end
     end
 end

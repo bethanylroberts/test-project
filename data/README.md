@@ -239,6 +239,17 @@ None of this needs to be reconciled here — it's exactly what each contributor'
 (`src/+narwc/+io/+parsers/`) is responsible for normalizing into the canonical schema
 (`narwc.db.FieldDefinitions`).
 
+**SIGHTNO is not reliable as-delivered** (curator-confirmed, 2026-07-27): it's auto-logged by the
+GPS/survey software (e.g. Mysticetus) whenever the operator presses a marker button, for reasons
+that go well beyond marking an animal sighting — starting/ending watch, tracklines, correcting
+other fields, etc. — and operators don't go back and clear the stray SIGHTNO afterward. Confirmed
+against real CCS Aerial data (`CCS/2023 Aerial/CCS1000.csv`): of 211 rows with SIGHTNO populated
+but SPECCODE blank, the majority had `NOTES` narrating effort/watch status ("BEGIN WATCH, TRANSIT-
+ON WATCH", "START TRACKLINE"), not a sighting. Every parser with a SIGHTNO field calls
+`StandardFormat.clearSpuriousSightno()` after `remapToDatabase` to blank SIGHTNO on any row without
+a SPECCODE — otherwise `required_fields.m`/`species_rules.m` misclassify every stray marker press as
+a sighting missing its species code.
+
 ---
 
 ## Next steps: writing the parsers

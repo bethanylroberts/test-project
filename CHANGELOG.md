@@ -65,6 +65,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   fields (required when SPECCODE is populated, and a new
   `required_fields.forbidden_on_non_sighting` warning when populated on a
   non-sighting row instead). See `docs/configuration_reference.md`.
+- `StandardFormat.clearSpuriousSightno()`: blanks SIGHTNO on any row without
+  a SPECCODE. Curator-confirmed (2026-07-27): SIGHTNO is auto-logged by the
+  GPS/survey software on any marker-button press, not just animal sightings,
+  and operators don't clean up the stray values afterward — confirmed
+  against real CCS Aerial data, where most SIGHTNO-but-no-SPECCODE rows
+  turned out to be effort/watch narration, not sightings. Without this,
+  every stray marker press was misclassified as a sighting missing its
+  species code by `required_fields.m`/`species_rules.m`. Called by every
+  parser with a SIGHTNO field (all 5 new contributor parsers). See
+  `data/README.md`.
 
 ### Changed
 

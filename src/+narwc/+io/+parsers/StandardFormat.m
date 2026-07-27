@@ -148,6 +148,52 @@ classdef StandardFormat < narwc.io.parsers.BaseParser
             fileid = string(stem);
         end
 
+        function data = clearSpuriousSightno(data)
+            % CLEARSPURIOUSSIGHTNO Blank SIGHTNO on rows that don't
+            % correspond to an actual identified sighting.
+            %
+            % Field-confirmed cause (per curator feedback, 2026-07-27):
+            % SIGHTNO is auto-logged by the GPS/survey software (e.g.
+            % Mysticetus) whenever the operator presses a marker button --
+            % which happens for many reasons besides marking an animal
+            % sighting (starting/ending watch, tracklines, waypoints,
+            % correcting other fields...), and operators do not go back and
+            % clear the stray SIGHTNO afterward. Confirmed against real CCS
+            % Aerial data (data/surveys/raw/CCS/2023 Aerial/CCS1000.csv):
+            % of 211 rows with SIGHTNO populated but SPECCODE blank, the
+            % NOTES field showed effort/watch narration ("BEGIN WATCH,
+            % TRANSIT- ON WATCH", "START TRACKLINE") for the majority, not
+            % sighting cues -- a marker press, not a sighting.
+            %
+            % A SIGHTNO only reflects a real sighting once SPECCODE has
+            % been filled in for that row; any SIGHTNO on a row with no
+            % SPECCODE is leftover marker-press noise. Both
+            % narwc.validation.rules.required_fields and
+            % narwc.validation.rules.species_rules treat a populated
+            % SIGHTNO as a signal that a row is a sighting requiring
+            % SPECCODE/TAXCODE/etc. -- without this cleanup, every stray
+            % marker press was misclassified as a sighting missing its
+            % species code. Called after remapToDatabase (needs the
+            % canonical SIGHTNO/SPECCODE columns) by every parser whose
+            % native format carries a SIGHTNO field.
+            if ~ismember('SIGHTNO', data.Properties.VariableNames) || ...
+                    ~ismember('SPECCODE', data.Properties.VariableNames)
+                return;
+            end
+
+            speccode = data.SPECCODE;
+            if iscell(speccode)
+                has_speccode = ~cellfun(@isempty, speccode);
+            elseif isstring(speccode)
+                has_speccode = ~(ismissing(speccode) | strlength(speccode) == 0);
+            else
+                has_speccode = ~ismissing(speccode);
+            end
+
+            spurious = ~has_speccode;
+            data.SIGHTNO(spurious) = NaN;
+        end
+
         function confidence = detectFormat(file_path)
             % DETECTFORMAT Detect if file is in standard format
             

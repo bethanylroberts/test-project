@@ -18,6 +18,12 @@ classdef CCSVesselFormat < narwc.io.parsers.BaseParser
     % on otherwise. DEPTH has no canonical home (same gap as SPEED in
     % CCSAerialFormat) and is dropped by remapToDatabase; SURFTEMP is
     % canonical and passes through unchanged.
+    %
+    % SIGHTNO is auto-logged by the GPS/survey software on any marker-button
+    % press, not just animal sightings -- see
+    % StandardFormat.clearSpuriousSightno() (called at the end of parse())
+    % for the full explanation, and CCSAerialFormat.m's docstring for the
+    % real-data evidence that confirmed it.
 
     properties (Constant)
         FORMAT_NAME = 'CCS Vessel Format'
@@ -93,6 +99,7 @@ classdef CCSVesselFormat < narwc.io.parsers.BaseParser
             raw_data.FILEID = repmat(fileid, height(raw_data), 1);
 
             data = narwc.io.parsers.StandardFormat.remapToDatabase(raw_data);
+            data = narwc.io.parsers.StandardFormat.clearSpuriousSightno(data);
 
             metadata.row_count = height(data);
             metadata.column_count = width(data);

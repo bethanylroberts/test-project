@@ -26,6 +26,14 @@ classdef CCSAerialFormat < narwc.io.parsers.BaseParser
     % Raw files don't carry FILEID; one raw file is one survey (data/README.md),
     % so FILEID is derived from the filename via
     % StandardFormat.fileidFromFilename().
+    %
+    % SIGHTNO is auto-logged by the GPS/survey software whenever the
+    % operator presses a marker button -- not just for animal sightings
+    % (curator-confirmed, 2026-07-27) -- so parse() calls
+    % StandardFormat.clearSpuriousSightno() to blank SIGHTNO on any row
+    % without a SPECCODE, which otherwise gets misclassified as a sighting
+    % missing its species code. See that function's docstring for the full
+    % explanation and the real-data evidence that confirmed it.
 
     properties (Constant)
         FORMAT_NAME = 'CCS Aerial Format'
@@ -77,6 +85,7 @@ classdef CCSAerialFormat < narwc.io.parsers.BaseParser
             raw_data.FILEID = repmat(fileid, height(raw_data), 1);
 
             data = narwc.io.parsers.StandardFormat.remapToDatabase(raw_data);
+            data = narwc.io.parsers.StandardFormat.clearSpuriousSightno(data);
 
             metadata.row_count = height(data);
             metadata.column_count = width(data);

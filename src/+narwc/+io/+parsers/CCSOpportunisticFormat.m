@@ -31,6 +31,12 @@ classdef CCSOpportunisticFormat < narwc.io.parsers.BaseParser
     % extract) and CCS985K.csv (a speed-log sidecar to CCS985.csv) -- neither
     % is a real survey file. This parser doesn't special-case them; exclude
     % them at the file-selection step when converting this subfolder.
+    %
+    % SIGHTNO is auto-logged by the GPS/survey software on any marker-button
+    % press, not just animal sightings -- see
+    % StandardFormat.clearSpuriousSightno() (called at the end of parse())
+    % for the full explanation, and CCSAerialFormat.m's docstring for the
+    % real-data evidence that confirmed it.
 
     properties (Constant)
         FORMAT_NAME = 'CCS Opportunistic Format'
@@ -102,6 +108,7 @@ classdef CCSOpportunisticFormat < narwc.io.parsers.BaseParser
             end
 
             data = narwc.io.parsers.StandardFormat.remapToDatabase(raw_data);
+            data = narwc.io.parsers.StandardFormat.clearSpuriousSightno(data);
 
             metadata.row_count = height(data);
             metadata.column_count = width(data);

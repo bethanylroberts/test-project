@@ -16,6 +16,13 @@ classdef NEAQVesselFormat < narwc.io.parsers.BaseParser
     % Consistent across all sampled files per data/README.md. Note
     % LATITUDE/LONGITUDE (not LAT_DD/LONG_DD like most other contributors)
     % and EVENTNO first rather than last-ish.
+    %
+    % SIGHTNO is auto-logged by the GPS/survey software (e.g. Mysticetus,
+    % used by this program per its cover-sheet transmittal letters) on any
+    % marker-button press, not just animal sightings -- see
+    % StandardFormat.clearSpuriousSightno() (called at the end of parse())
+    % for the full explanation, and CCSAerialFormat.m's docstring for the
+    % real-data evidence that confirmed it.
 
     properties (Constant)
         FORMAT_NAME = 'NEAQ & CWI Vessel Format'
@@ -53,6 +60,7 @@ classdef NEAQVesselFormat < narwc.io.parsers.BaseParser
             raw_data.FILEID = repmat(fileid, height(raw_data), 1);
 
             data = narwc.io.parsers.StandardFormat.remapToDatabase(raw_data);
+            data = narwc.io.parsers.StandardFormat.clearSpuriousSightno(data);
 
             metadata.row_count = height(data);
             metadata.column_count = width(data);
