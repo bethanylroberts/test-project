@@ -89,8 +89,14 @@ classdef NEAQVesselFormat < narwc.io.parsers.BaseParser
                     return;
                 end
 
-                % Strip a UTF-8 BOM if fgetl didn't already.
-                header_line = regexprep(header_line, '^\xEF\xBB\xBF', '');
+                % Strip a UTF-8 BOM if fgetl didn't already. fgetl with
+                % 'UTF-8' encoding decodes the 3 raw BOM bytes into a single
+                % U+FEFF character, not the literal byte sequence -- a
+                % byte-pattern regexp never matches it, so compare the
+                % actual decoded character instead.
+                if ~isempty(header_line) && header_line(1) == char(65279)
+                    header_line = header_line(2:end);
+                end
                 header_fields = strtrim(strsplit(header_line, ','));
 
                 distinctive_fields = {'LATITUDE', 'LONGITUDE'};

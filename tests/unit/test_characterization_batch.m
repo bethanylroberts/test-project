@@ -429,25 +429,32 @@ end
 
 function survey = make_old_year_survey(fileid)
     % Minimal survey that triggers datetime_rules.year_too_old on EVENTNO=5.
-    % Omits FK-checked fields (DDSOURCE, IDSOURCE) so no FK errors occur.
+    % DDSOURCE/PLATFORM use codes confirmed valid in the real lookup tables
+    % (required_fields.m's universal list requires them present; chosen so
+    % they don't also trip an FK error). Omits IDSOURCE (not in the
+    % universal list) so no FK error occurs from that field.
     survey = table();
-    survey.FILEID  = {fileid};
-    survey.EVENTNO = 5;       % double; stored in warning for override matching
-    survey.LAT_DD  = 42.0;   % within survey area
-    survey.LONG_DD = -70.0;
-    survey.YEAR    = 1975;   % < year_warning (~1980) -> triggers year_too_old
-    survey.MONTH   = 6;
-    survey.DAY     = 15;
+    survey.FILEID   = {fileid};
+    survey.EVENTNO  = 5;       % double; stored in warning for override matching
+    survey.LAT_DD   = 42.0;   % within survey area
+    survey.LONG_DD  = -70.0;
+    survey.YEAR     = 1975;   % < year_warning (~1980) -> triggers year_too_old
+    survey.MONTH    = 6;
+    survey.DAY      = 15;
+    survey.DDSOURCE = {'CCS'};
+    survey.PLATFORM = 649;
 end
 
 function survey = make_old_year_survey_n(fileid, n)
     % n-row survey where every row triggers datetime_rules.year_too_old.
     survey = table();
-    survey.FILEID  = repmat({fileid}, n, 1);
-    survey.EVENTNO = (1:n)';
-    survey.LAT_DD  = repmat(42.0, n, 1);
-    survey.LONG_DD = repmat(-70.0, n, 1);
-    survey.YEAR    = repmat(1975, n, 1);
-    survey.MONTH   = repmat(6, n, 1);
-    survey.DAY     = repmat(15, n, 1);
+    survey.FILEID   = repmat({fileid}, n, 1);
+    survey.EVENTNO  = (1:n)';
+    survey.LAT_DD   = repmat(42.0, n, 1);
+    survey.LONG_DD  = repmat(-70.0, n, 1);
+    survey.YEAR     = repmat(1975, n, 1);
+    survey.MONTH    = repmat(6, n, 1);
+    survey.DAY      = repmat(15, n, 1);
+    survey.DDSOURCE = repmat({'CCS'}, n, 1);
+    survey.PLATFORM = repmat(649, n, 1);
 end

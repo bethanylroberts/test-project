@@ -9,6 +9,19 @@ classdef test_contributor_defaults < matlab.unittest.TestCase
 
     properties
         table_path
+        project_root
+    end
+
+    methods (TestClassSetup)
+        function setupProjectRoot(testCase)
+            % Computed relative to this test file's own location, not the
+            % current working directory -- cwd isn't guaranteed to stay at
+            % the repo root for the whole suite (other test classes use
+            % WorkingFolderFixture, which changes it for their duration).
+            here = fileparts(mfilename('fullpath'));
+            tests_root = fileparts(here);
+            testCase.project_root = fileparts(tests_root);
+        end
     end
 
     methods (TestMethodSetup)
@@ -91,7 +104,7 @@ classdef test_contributor_defaults < matlab.unittest.TestCase
             % Locks in the real, checked-in table's documented curator-
             % confirmation case (PROJECT_STATUS.md §8.7): the ambiguous
             % Tow Boat US charter file must resolve to no PLATFORM.
-            real_table = fullfile('data', 'tables', 'contributor_defaults.csv');
+            real_table = fullfile(testCase.project_root, 'data', 'tables', 'contributor_defaults.csv');
             testCase.assumeTrue(exist(real_table, 'file') == 2);
 
             overrides = narwc.ingestion.lookup_contributor_defaults('CCS', ...
@@ -101,7 +114,7 @@ classdef test_contributor_defaults < matlab.unittest.TestCase
         end
 
         function testRealSeededTableResolvesNeaqAerial(testCase)
-            real_table = fullfile('data', 'tables', 'contributor_defaults.csv');
+            real_table = fullfile(testCase.project_root, 'data', 'tables', 'contributor_defaults.csv');
             testCase.assumeTrue(exist(real_table, 'file') == 2);
 
             overrides = narwc.ingestion.lookup_contributor_defaults('NEAQ Aerial', ...

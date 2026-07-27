@@ -78,24 +78,20 @@ classdef CCSOpportunisticFormat < narwc.io.parsers.BaseParser
             if ~ismember('MONTH', raw_data.Properties.VariableNames) ...
                     && ismember('DATE', raw_data.Properties.VariableNames)
                 if isdatetime(raw_data.DATE)
-                    % See CCSVesselFormat.m's parse() for why this branch
-                    % exists: detectImportOptions often auto-detects a
-                    % dd-MMM-yy-shaped column as a native datetime already,
-                    % and round-tripping that through string()+re-parse with
-                    % a strict 2-digit-year InputFormat silently produces
-                    % garbage years for every row.
+                    % detectImportOptions can auto-detect a column this
+                    % date-like (dd-MMM-yy) as a native datetime already.
                     dates = raw_data.DATE;
                 else
-                    % 'PivotYear' set explicitly -- see CCSVesselFormat.m's
-                    % parse() for why: confirmed against real data that
-                    % datetime's default century window for a 2-digit-year
-                    % InputFormat does NOT reliably expand e.g. "22" to
-                    % 2022 on its own.
-                    dates = datetime(string(raw_data.DATE), 'InputFormat', 'dd-MMM-yy', 'PivotYear', 2000);
+                    dates = datetime(string(raw_data.DATE), 'InputFormat', 'dd-MMM-yy');
                 end
+                % See CCSVesselFormat.m's parse() for the fuller
+                % explanation: confirmed via direct inspection that for a
+                % 2-digit-year source, year() returns the literal number
+                % (23, not 2023) regardless of which branch above produced
+                % `dates` -- add the century directly.
+                raw_data.YEAR = year(dates) + 2000;
                 raw_data.MONTH = month(dates);
                 raw_data.DAY = day(dates);
-                raw_data.YEAR = year(dates);
             end
 
             if ismember('CRUISENO', raw_data.Properties.VariableNames)

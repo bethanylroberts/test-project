@@ -50,7 +50,11 @@ classdef test_neaq_vessel_format < matlab.unittest.TestCase
             fid = fopen(testCase.neaq_vessel_file, 'r', 'n', 'UTF-8');
             header_line = fgetl(fid);
             fclose(fid);
-            header_line = regexprep(header_line, '^\xEF\xBB\xBF', '');
+            % fgetl with 'UTF-8' encoding decodes the BOM's 3 raw bytes into
+            % a single U+FEFF character, not the literal byte sequence.
+            if ~isempty(header_line) && header_line(1) == char(65279)
+                header_line = header_line(2:end);
+            end
             header_fields = strsplit(header_line, ',');
 
             testCase.verifyEqual(header_fields{1}, 'EVENTNO');

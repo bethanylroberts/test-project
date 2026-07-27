@@ -25,15 +25,23 @@ function required_fields(data, collector, config)
         sighting_only = {'CONFIDNC', 'NUMBER', 'PHOTOS', 'SIGHTNO', 'SPECCODE', 'IDREL'};
     end
 
-    check_required(data, collector, universal, true(height(data), 1));
+    check_required(data, collector, universal, true(height(data), 1), true);
 
-    if ismember('SPECCODE', data.Properties.VariableNames)
+    has_speccode_column = ismember('SPECCODE', data.Properties.VariableNames);
+    if has_speccode_column
         is_sighting = ~is_blank(data.SPECCODE);
     else
         is_sighting = false(height(data), 1);
     end
 
-    check_required(data, collector, sighting_only, is_sighting);
+    % column_missing is only enforced for sighting_only fields when SPECCODE
+    % itself is present -- if a table doesn't even have a SPECCODE column,
+    % it isn't modeling sightings at all (e.g. a minimal effort-only table),
+    % so requiring SIGHTNO/CONFIDNC/etc. columns to exist would be
+    % meaningless noise rather than a real gap. Production survey tables
+    % always carry all 55 canonical columns (via remapToDatabase), so this
+    % only matters for hand-built minimal tables.
+    check_required(data, collector, sighting_only, is_sighting, has_speccode_column);
     check_forbidden_on_non_sighting(data, collector, sighting_only, is_sighting);
 end
 
@@ -55,14 +63,16 @@ function mask = is_blank(values)
     end
 end
 
-function check_required(data, collector, fields, row_mask)
+function check_required(data, collector, fields, row_mask, enforce_column_missing)
     for i = 1:length(fields)
         field = fields{i};
 
         if ~ismember(field, data.Properties.VariableNames)
-            collector.addError(field, [], ...
-                sprintf('Required field %s is missing', field), 'error', ...
-                'required_fields.column_missing');
+            if enforce_column_missing
+                collector.addError(field, [], ...
+                    sprintf('Required field %s is missing', field), 'error', ...
+                    'required_fields.column_missing');
+            end
             continue;
         end
 

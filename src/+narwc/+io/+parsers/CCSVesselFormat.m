@@ -69,27 +69,24 @@ classdef CCSVesselFormat < narwc.io.parsers.BaseParser
 
             if ismember('DATE', raw_data.Properties.VariableNames)
                 if isdatetime(raw_data.DATE)
-                    % detectImportOptions often auto-detects a column this
-                    % date-like (dd-MMM-yy) as a native datetime already --
-                    % use it directly. Round-tripping it through
-                    % string(datetime) and re-parsing with a strict 2-digit-
-                    % year InputFormat is fragile: string() renders using
-                    % datetime's default (4-digit-year) display format, which
-                    % a 'dd-MMM-yy' re-parse does not match correctly,
-                    % silently producing garbage years for every row.
+                    % detectImportOptions can auto-detect a column this
+                    % date-like (dd-MMM-yy) as a native datetime already.
                     dates = raw_data.DATE;
                 else
-                    % 'PivotYear' is set explicitly rather than relying on
-                    % datetime's default century window for a 2-digit-year
-                    % InputFormat -- confirmed against real data that the
-                    % implicit default does NOT reliably expand e.g. "22" to
-                    % 2022 (it silently produced literal year 22 for every
-                    % row instead). All CCS survey dates fall in 2000-2099.
-                    dates = datetime(string(raw_data.DATE), 'InputFormat', 'dd-MMM-yy', 'PivotYear', 2000);
+                    dates = datetime(string(raw_data.DATE), 'InputFormat', 'dd-MMM-yy');
                 end
+                % Confirmed via direct inspection against real data: for a
+                % 2-digit-year source ("21-Apr-23"), MATLAB's datetime does
+                % NOT expand it to a sensible century -- year() returns the
+                % literal number (23, not 2023) whether the datetime came
+                % from detectImportOptions's automatic parsing or from an
+                % explicit 'dd-MMM-yy' InputFormat re-parse ('PivotYear'
+                % does not help either; it only affects automatic format
+                % detection). All CCS survey dates fall in 2000-2099, so add
+                % the century directly rather than relying on datetime to.
+                raw_data.YEAR = year(dates) + 2000;
                 raw_data.MONTH = month(dates);
                 raw_data.DAY = day(dates);
-                raw_data.YEAR = year(dates);
             end
 
             fileid = narwc.io.parsers.StandardFormat.fileidFromFilename(file_path);
