@@ -124,21 +124,24 @@ are uploaded.
 
 **Rule ID prefix:** `required_fields`
 
-Checks that a configurable list of fields is not NULL or empty. The list is
-supplied via `config.required_fields`. The default list (from
-`get_config('validation')`) is the authoritative set; the stub
-`default_config()` inside the file is marked as inaccurate and should not be
-relied upon.
+Checks two configurable lists against the NARWC users guide's two requirement axes:
+`config.required_fields.universal` (checked on every row) and
+`config.required_fields.sighting_only` (checked only on sighting rows — SPECCODE
+populated — and required to be *blank* on non-sighting rows). Defaults live in
+`config/defaults/validation_config_default.m` — see `docs/configuration_reference.md`.
 
 | Check                                                  | Severity | Rule ID                          |
 | ------------------------------------------------------ | -------- | -------------------------------- |
 | Required column is entirely absent from the data table | error    | `required_fields.column_missing` |
 | Required field value is NULL/NaN/empty for a row       | error    | `required_fields.value_missing`  |
+| A sighting-only field is populated on a non-sighting row | warning | `required_fields.forbidden_on_non_sighting` |
 
-**Notes:** The schema enforces NOT NULL on FILEID and EVENTNO directly. This rule
-extends the NOT NULL check to additional fields that are logically required for a given
-survey type (e.g., YEAR, MONTH, DAY, LAT_DD, LONG_DD) but are nullable in the schema
-because requirements vary by survey type.
+**Notes:** The schema enforces NOT NULL on FILEID and EVENTNO directly (FILEID isn't in
+`universal` for that reason — it's also guaranteed present by construction once
+`SurveyFileWriter` has split by it). A third axis from the manual — fields required only
+for a specific survey type (aerial/shipboard/opportunistic) — is not yet implemented; see
+`PROJECT_STATUS.md`'s "Known follow-up" notes for why (no confirmed survey-type signal for
+modern FILEIDs) and the planned data-shape-based approach (LEGTYPE/ALT presence) once it is.
 
 ---
 
@@ -364,7 +367,7 @@ Validates SPECCODE, TAXCODE, NUMBER, NUMCALF, and cross-field consistency among 
 | Check                                   | Severity | Rule ID                                      | Notes                                                            |
 | --------------------------------------- | -------- | -------------------------------------------- | ---------------------------------------------------------------- |
 | TAXCODE value not in 0–9                | error    | `species_rules.taxcode_out_of_range`         | Valid codes per `config.valid_taxcodes` (default 0–9)            |
-| TAXCODE missing on a sighting record    | error    | `species_rules.taxcode_missing_for_sighting` | Only applies when `config.require_taxcode_for_sightings` is true |
+| TAXCODE missing on a sighting record    | error    | `species_rules.taxcode_missing_for_sighting` | Only applies when `config.require_taxcode_for_sightings` is true. Exception: not flagged when SPECCODE.csv has a real entry for the row's SPECCODE whose own `TAXCODE` column is blank (e.g. vessels/debris/birds, `Type=HUMAN`/`DEBRI`/`BIR`) — the lookup table itself is saying TAXCODE doesn't apply, not that this is an unconfirmed gap. Controlled by `config.taxcode_optional_when_lookup_blank` (default `true`); a SPECCODE absent from the lookup entirely still requires TAXCODE. Curator-flagged future work: these object types should eventually get real TAXCODE values assigned in SPECCODE.csv (see `PROJECT_STATUS.md` §8.4) — not a code change once decided, since this check re-requires TAXCODE automatically the moment the lookup stops being blank. |
 | TAXCODE not found in TAXCODE.csv lookup | warning  | `species_rules.taxcode_not_in_table`         | Softer check since 0–9 range is also enforced                    |
 
 #### SPECCODE/TAXCODE cross-check
@@ -456,7 +459,7 @@ enforced by a MATLAB validation rule; **Gap** = not yet implemented.
 | EVENTNO missing                                                 | **Schema** — `EVENTNO NOT NULL`                                                                                                                                                                |
 | YEAR missing                                                    | **MATLAB** — `required_fields` (in configured field list)                                                                                                                                      |
 | YEAR/FILEID cross-consistency (derives year from FILEID prefix) | **Gap** — not implemented                                                                                                                                                                      |
-| MONTH missing                                                   | **MATLAB** — `required_fields`; also **Schema** FK to MONTH table                                                                                                                              |
+| MONTH missing                                                   | **Schema** FK to MONTH table only — not in `required_fields`'s `universal` list; full-date requirement is survey-type-conditional per the manual (opportunistic sightings may omit it) and that axis isn't implemented yet, so it's deliberately left unenforced rather than checked unconditionally (see `PROJECT_STATUS.md`)                             |
 | LATDEG/LATMIN missing (degree+minute form)                      | **MATLAB** — `coordinate_rules` checks LAT_DD missing; degree/minute components not validated separately                                                                                       |
 | LONGDEG/LONGMIN missing (degree+minute form)                    | Same as above for LONG_DD                                                                                                                                                                      |
 | BEAUFORT > 7 (9 = missing sentinel)                             | **Partial gap** — `beaufort_rules` validates against Beaufort lookup; SAS treated 8 as an error and 9 as a "missing" sentinel; current MATLAB/schema allow 8 and do not interpret 9 as missing |
@@ -605,14 +608,14 @@ All checks from ChkCCSA apply (see above), plus:
 
 | SAS check                                                                  | New system coverage                                                                                                                                                                                      |
 | -------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| CONFIDNC missing                                                           | **MATLAB** — `required_fields` if configured; **Schema** FK allows NULL                                                                                                                                  |
+| CONFIDNC missing                                                           | **MATLAB** — `required_fields.value_missing` on sighting rows (`sighting_only`); `required_fields.forbidden_on_non_sighting` (warning) if populated on a non-sighting row instead; **Schema** FK allows NULL |
 | CONFIDNC > 11                                                              | **Schema** FK to Confidnc table; **MATLAB** `foreign_key_rules.confidnc_invalid`                                                                                                                         |
 | CONFIDNC too large for NUMBER (matrix: group size → max confidence)        | **Gap** — not implemented                                                                                                                                                                                |
 | CONFIDNC = 1 for NUMBER = 1 (±1 is illogical for a single animal)          | **Gap** — not implemented                                                                                                                                                                                |
 | CONFIDNC = 11 with non-missing NUMBER (no-count code with an actual count) | **Gap** — not implemented                                                                                                                                                                                |
 | NUMBER > 20 with CONFIDNC=0 for non-RECV/SPFV species                      | **Gap** — not implemented                                                                                                                                                                                |
 | DEPTH > 2000 m                                                             | **Gap** — DEPTH field is not validated                                                                                                                                                                   |
-| IDREL missing                                                              | **MATLAB** — `required_fields` if configured                                                                                                                                                             |
+| IDREL missing                                                              | **MATLAB** — `required_fields.value_missing` on sighting rows (`sighting_only`)                                                                                                                          |
 | IDREL = 0 or 4–8                                                           | **Schema** FK to IDREL table; **MATLAB** `foreign_key_rules.idrel_invalid`                                                                                                                               |
 | IDREL = 1 for unidentified species (SPECCODE starts with 'UN')             | **Gap** — not implemented                                                                                                                                                                                |
 | NUMBER missing when CONFIDNC ≠ 11                                          | **Gap** — conditional required-field check not implemented                                                                                                                                               |
@@ -620,7 +623,7 @@ All checks from ChkCCSA apply (see above), plus:
 | NUMBER too high by TAXCODE (per-taxcode matrix)                            | **Partial gap** — `species_rules.number_unusual` flags NUMBER exceeding the SPECCODE/TAXCODE/global-default cascade threshold (warning-only, data-driven, not a fixed number); per-taxcode thresholds from SAS (TAXCODE 1/2: > 30; TAXCODE 5: > 5; etc.) are not implemented |
 | NUMCALF ≥ 5                                                                | **Partial** — `species_rules.right_whale_high_calf_count` (warning at > 5 for right whales); generic `species_rules.numcalf_unusual` triggers at the SPECCODE/TAXCODE/global-default cascade threshold for all species                                |
 | NUMCALF not less than NUMBER                                               | **MATLAB** — `species_rules.numcalf_exceeds_total` (error)                                                                                                                                               |
-| PHOTOS missing                                                             | **MATLAB** — `required_fields` if configured                                                                                                                                                             |
+| PHOTOS missing                                                             | **MATLAB** — `required_fields.value_missing` on sighting rows (`sighting_only`)                                                                                                                          |
 | PHOTOS > 5                                                                 | **Schema** FK to PHOTOS table; **MATLAB** `foreign_key_rules.photos_invalid` and `photos_rules.photos_invalid`                                                                                           |
 
 ---
@@ -664,9 +667,12 @@ All checks from ChkCCSA apply (see above), plus:
    implemented.
 
 7. **Conditional required fields** — Several SAS checks require fields only when
-   certain conditions are met (ALT required for aerial, BEAUFORT/CLOUD/VISIBLTY
-   required when LEGSTAGE is non-missing, TIME required except for opportunistic
-   surveys). The `required_fields` rule is not yet parameterized for these conditions.
+   certain conditions are met. `required_fields.m` now handles the sighting/non-sighting
+   condition (CONFIDNC/NUMBER/PHOTOS/SIGHTNO/SPECCODE/IDREL required only on sighting
+   rows, forbidden otherwise). The survey-type condition is still unimplemented (ALT
+   required for aerial, BEAUFORT/CLOUD/VISIBLTY required when LEGSTAGE is non-missing,
+   TIME required except for opportunistic surveys) — blocked on a confirmed survey-type
+   signal (see `PROJECT_STATUS.md`'s "Known follow-up" notes).
 
 8. **CONFIDNC/NUMBER matrix** — ChkSight.sas validates that the confidence level is
    appropriate for the group size (e.g., CONFIDNC cannot be 8 for a group of 1). This

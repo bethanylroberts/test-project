@@ -62,15 +62,15 @@ itself, so the project can be moved without changing any paths manually.
 | `paths.tests_dir`     | `<root>/tests`                      | Test files                                    |
 | `paths.output_dir`    | `<root>/output`                     | Processed output (**stale** — see note below) |
 | `paths.tables_dir`    | `<root>/data/tables`                | Lookup table CSVs                             |
-| `paths.raw_dir`       | `<root>/data/raw`                   | Incoming raw survey files                     |
-| `paths.processed_dir` | `<root>/data/processed`             | Processed survey files                        |
+| `paths.raw_dir`       | `<root>/data/surveys/raw`           | Untouched raw survey files, every source      |
+| `paths.processed_dir` | `<root>/data/surveys/processed`     | Successfully uploaded survey files            |
 | `paths.user_config`   | `<root>/config/user_config.m`       | Per-user override file                        |
 
 **Stale note:** `paths.output_dir` points to `output/`, but `startup.m` creates
 `data/exports/` and `reports/` as the actual output destinations. The `output/`
-directory does not exist and is not created by startup. The `processing` section's
-`output_dir` inherits from `paths.processed_dir`, which is `data/processed/` — also
-not created by startup. This should be reconciled.
+directory does not exist and is not created by startup. This should be reconciled.
+(`paths.raw_dir`/`paths.processed_dir` above now match what `startup.m` actually
+creates under `data/surveys/`, unlike before.)
 
 #### Lookup table paths
 
@@ -115,17 +115,30 @@ individual rule functions.
 
 #### Required fields
 
-| Field                        | Value                                           |
-| ---------------------------- | ----------------------------------------------- |
-| `validation.required_fields` | `{'LAT_DD', 'LONG_DD', 'YEAR', 'MONTH', 'DAY'}` |
+Per the NARWC users guide (`ref/narwc_users_guide__v8_.pdf`), required fields split into two
+axes: fields required on every row (`universal`), and fields required only on sighting rows
+— SPECCODE populated — and forbidden (must be blank) on non-sighting rows (`sighting_only`).
 
-These five fields are checked for NULL/empty by `required_fields.m`. This is a minimal
-baseline; survey-type-specific required fields (FILEID, EVENTNO, TIME, BEAUFORT, etc.)
-are not yet added to this list.
+| Field                                    | Value                                                                |
+| ----------------------------------------- | --------------------------------------------------------------------- |
+| `validation.required_fields.universal`     | `{'LAT_DD', 'LONG_DD', 'YEAR', 'EVENTNO', 'PLATFORM', 'DDSOURCE'}`    |
+| `validation.required_fields.sighting_only` | `{'CONFIDNC', 'NUMBER', 'PHOTOS', 'SIGHTNO', 'SPECCODE', 'IDREL'}`    |
 
-**Note:** FILEID and EVENTNO are enforced as NOT NULL by the database schema directly,
-so they do not need to be in this list for the upload path. They may still be worth
-adding here for pre-upload reporting.
+`required_fields.m` checks `universal` against every row, `sighting_only` against sighting
+rows only, and additionally warns (`required_fields.forbidden_on_non_sighting`) when a
+`sighting_only` field is populated on a non-sighting row.
+
+**Not yet implemented**: a third axis — fields required only for a specific survey type
+(aerial/shipboard/opportunistic), e.g. `ALT` required for aerial only, `LEGTYPE`/`HEADING`
+forbidden for opportunistic sightings. This needs a reliable survey-type signal; FILEID's
+first-letter convention is not formally documented for modern FILEIDs (see
+`PROJECT_STATUS.md`'s "Known follow-up" notes), so it's deferred rather than guessed.
+
+**Note:** FILEID is not in `universal` — every row already has one by construction once
+`SurveyFileWriter` has split by it, so checking it is always a no-op. MONTH/DAY are not in
+`universal` either: the manual requires full date for aerial/shipboard survey data but is
+explicitly flexible for opportunistic sightings, which is exactly the deferred survey-type
+axis — enforcing them unconditionally today would be the wrong direction to over-fix.
 
 #### Behavioral validation
 
@@ -180,28 +193,22 @@ as out of range (hard error), making 1990 the more conservative choice.
 
 #### Species validation
 
-| Field                                       | Value                      | Notes                                                          |
-| ------------------------------------------- | -------------------------- | -------------------------------------------------------------- |
-| `validation.species.require_valid_speccode` | `true`                     | Unknown SPECCODEs are errors                                   |
-| `validation.species.require_valid_taxcode`  | `true`                     | Unknown TAXCODEs trigger a warning                             |
-| `validation.species.speccode_table_path`    | `data/tables/SPECCODE.csv` | Redundant with `paths`; passed for rules that read it directly |
-| `validation.species.taxcode_table_path`     | `data/tables/TAXCODE.csv`  | Same                                                           |
-
-**Note:** The `species_rules.m` function has additional configurable parameters with
-defaults in its own `default_config()`. These are not set in `validation_config_default.m`
-— the rule's own defaults are used. To override them, add a `validation.species.*` field
-to `user_config.m` or a batch config.
-
-Key species sub-config fields (all live in `validation.species.*`):
+All species sub-config fields (`validation.species.*`) are set in
+`validation_config_default.m` — there is no separate `default_config()` inside
+`species_rules.m` itself. `speccode_table_path`/`taxcode_table_path` exist as fields but
+are not currently read by `species_rules.m`; it resolves both lookup files from
+`lookup_table_dir` instead.
 
 | Field                                       | Default  | Notes                                                              |
 | ------------------------------------------- | -------- | ------------------------------------------------------------------ |
+| `lookup_table_dir`                          | `data/tables` | Directory `species_rules.m` reads `SPECCODE.csv`/`TAXCODE.csv` from |
 | `thresholds.group_size_default`             | `100000` | Fallback when neither SPECCODE nor TAXCODE provides a per-taxon threshold |
 | `thresholds.calf_count_default`             | `100`    | Fallback calf count threshold                                      |
 | `right_whale_max_group`                     | `50`     | Warning threshold for RIWH/NARW/SARW group size                   |
 | `right_whale_max_calves`                    | `5`      | Warning threshold for right whale calf count                       |
 | `require_speccode_for_sightings`            | `true`   | SPECCODE required on sighting records                              |
 | `require_taxcode_for_sightings`             | `true`   | TAXCODE required on sighting records                               |
+| `taxcode_optional_when_lookup_blank`        | `true`   | When `require_taxcode_for_sightings` is true, don't flag a missing TAXCODE if SPECCODE.csv has a real entry for the row's SPECCODE whose own TAXCODE is blank (vessels/debris/birds). A SPECCODE absent from the lookup entirely still requires TAXCODE. Deliberate, reversible relaxation pending a lookup-table content decision — see `PROJECT_STATUS.md` §8.4. |
 | `validate_speccode_lookup`                  | `true`   | Flag unknown SPECCODEs                                             |
 | `validate_taxcode_lookup`                   | `true`   | Flag unknown TAXCODEs                                              |
 | `validate_speccode_taxcode_match`           | `true`   | Flag TAXCODE mismatch against SPECCODE lookup                      |
@@ -361,15 +368,20 @@ Server. Change this to `'SQLServer'` when creating your `db_config.m`.
 
 ## `format_definitions.json` — Input file format definitions
 
-Defines the three recognized input file formats for the parser layer. Consumed by
-`narwc.io.parsers.ParserFactory` when auto-detecting the format of an incoming file.
+Documents each recognized input file format for the parser layer, one entry per
+contributor parser class. This is metadata/documentation only — `ParserFactory`
+deliberately does **not** auto-detect format from file content (see CLAUDE.md); the
+caller always selects a parser explicitly by name via `createByName()`. Each entry's
+`field_mapping` mirrors that parser class's in-code `FIELD_MAPPING`, but in the
+opposite direction: `format_definitions.json` maps *canonical → native*, while the
+in-code `FIELD_MAPPING` constant maps *native → canonical*.
 
 ### `standard`
 
 | Property      | Value                                     |
 | ------------- | ----------------------------------------- |
 | `name`        | `"Standard NARWC Format"`                 |
-| `delimiter`   | `"\t"` (tab)                              |
+| `delimiter`   | `","` (comma)                             |
 | `header_row`  | `1`                                       |
 | `parser`      | `StandardFormat`                          |
 | `description` | Tab-delimited with all 55 standard fields |
@@ -377,28 +389,44 @@ Defines the three recognized input file formats for the parser layer. Consumed b
 ### `legacy`
 
 | Property      | Value                                  |
-| ------------- | -------------------------------------- |
+| ------------- | --------------------------------------- |
 | `name`        | `"Legacy Format"`                      |
 | `delimiter`   | `","` (comma)                          |
 | `header_row`  | `1`                                    |
-| `parser`      | `LegacyFormat`                         |
+| `parser`      | `StandardFormat`                       |
 | `description` | Comma-delimited legacy database export |
 
-### `neaq`
+### `ccs_aerial`, `ccs_vessel`, `ccs_opportunistic`
 
-| Property        | Value                                                                  |
-| --------------- | ---------------------------------------------------------------------- |
-| `name`          | `"NEAQ Format"`                                                        |
-| `delimiter`     | `","` (comma)                                                          |
-| `header_row`    | `2`                                                                    |
-| `parser`        | `NEAQFormat`                                                           |
-| `description`   | New England Aquarium survey format                                     |
-| `field_mapping` | `LAT_DD → "Latitude"`, `LONG_DD → "Longitude"`, `SPECCODE → "Species"` |
+Center for Coastal Studies — one entry per platform schema (`CCSAerialFormat`,
+`CCSVesselFormat`, `CCSOpportunisticFormat`). All comma-delimited, `header_row: 1`.
+`field_mapping` for each is the `BEHAV1..BEHAV15 → "B1".."B15"` rename (see each
+class's `FIELD_MAPPING` for the exact confirmed real-file source).
 
-**Note:** The parsers named here (`StandardFormat`, `LegacyFormat`, `NEAQFormat`)
-must exist as classes in `src/+narwc/+io/+parsers/`. As of the current development
-phase, these classes may not all be fully implemented. See `CLAUDE.md` for the
-known-incomplete state of the parser layer.
+### `neaq_vessel`
+
+| Property        | Value                                                    |
+| --------------- | ---------------------------------------------------------- |
+| `name`          | `"NEAQ & CWI Vessel Format"`                               |
+| `delimiter`     | `","` (comma)                                              |
+| `header_row`    | `1`                                                         |
+| `parser`        | `NEAQVesselFormat`                                          |
+| `description`   | New England Aquarium & Canadian Whale Institute joint vessel-program CSV export |
+| `field_mapping` | `LAT_DD → "LATITUDE"`, `LONG_DD → "LONGITUDE"`              |
+
+### `neaq_aerial`
+
+| Property        | Value                                                                                    |
+| --------------- | ------------------------------------------------------------------------------------------ |
+| `name`          | `"NEAQ Aerial Format"`                                                                    |
+| `delimiter`     | `","` (comma)                                                                              |
+| `header_row`    | `1`                                                                                         |
+| `parser`        | `NEAQAerialFormat`                                                                          |
+| `description`   | New England Aquarium aerial survey CSV export (Wind Energy Area 2024, "_URI" schema)       |
+| `field_mapping` | Full lowercase-native → canonical map (`MONTH → "month"`, `LAT_DD → "lat"`, etc.) — see `NEAQAerialFormat.FIELD_MAPPING` for the complete confirmed list |
+
+**Note:** Every parser named here must exist as a class in `src/+narwc/+io/+parsers/`
+and be registered in `ParserFactory.getAvailableParsers()`.
 
 ---
 

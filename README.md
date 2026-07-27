@@ -47,7 +47,7 @@ NARWC-DB/
 │       ├── +ingestion/             # BatchUploader, SurveyExtractor, SurveyFileWriter,
 │       │                           # convert_contributor_batch, run_batch_upload
 │       ├── +db/                    # Connection, FieldDefinitions
-│       ├── +io/+parsers/           # StandardFormat, NEAQFormat, TemplateFormat, ParserFactory
+│       ├── +io/+parsers/           # StandardFormat, CCS*/NEAQ* contributor parsers, TemplateFormat, ParserFactory
 │       ├── +validation/            # SurveyValidator, ErrorCollector, +rules/
 │       ├── +processing/            # SurveyProcessor, ChangeTracker, +steps/
 │       └── +reports/               # ValidationReport, ProcessingReport, SummaryStatistics
@@ -75,10 +75,9 @@ validator = narwc.validation.SurveyValidator();
 [is_valid, results] = validator.validate(data);
 
 % Migration (run in order)
-config = load_config('migration');
-step1_extract_surveys(csv_file)
-step2_upload_surveys('Config', config)
-step3_validate_migration()
+summary = step1_extract_surveys(csv_file);
+step2_upload_surveys('BatchId', summary.batch_id);
+step3_validate_migration('BatchId', summary.batch_id);
 
 % Tests
 test_runner()                       % Run all tests
@@ -91,7 +90,8 @@ test_runner('unit', 'Verbose', true) % Unit tests only, verbose
 - [x] Phase 0: Validation framework (9 rule modules, override system)
 - [x] Phase 0: Migration pipeline (extract → validate → upload, transaction-safe)
 - [ ] Phase 1: Historical migration — pipeline ready; blocked on lookup table gaps and per-survey corrections
-- [ ] Phase 2: New-survey ingestion (NEAQFormat parser, curator GUI)
+- [x] Phase 2: Contributor parsers for CCS, NEAQ & CWI (vessels), NEAQ Aerial
+- [ ] Phase 2: Contributor parsers for NMFS-NEFSC, SEUS EWS; curator GUI
 
 See `PROJECT_STATUS.md` for the full active work list, open questions, and per-survey data issues.
 

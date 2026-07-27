@@ -8,8 +8,8 @@ classdef ParserFactory
     % Deliberately does NOT auto-detect format from file content -- the
     % caller (a migration script, or a routine-ingestion script mapping a
     % contributor's subfolder to its parser) always knows which parser to
-    % use. See CLAUDE.md and NEAQFormat.m for how per-contributor parsers
-    % plug into this.
+    % use. See CLAUDE.md and CCSAerialFormat.m for how per-contributor
+    % parsers plug into this.
 
     methods (Static)
         function parser = createByName(format_name)
@@ -22,8 +22,13 @@ classdef ParserFactory
             % GETAVAILABLEPARSERS Get list of available parser class names.
             parsers = {
                 'StandardFormat'
-                'NEAQFormat'
-                % TODO: Add more as contributor parsers are implemented.
+                'CCSAerialFormat'
+                'CCSVesselFormat'
+                'CCSOpportunisticFormat'
+                'NEAQVesselFormat'
+                'NEAQAerialFormat'
+                % TODO: Add more as contributor parsers are implemented
+                % (NMFS-NEFSC, SEUS EWS -- see PROJECT_STATUS.md).
             };
         end
 

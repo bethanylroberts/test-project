@@ -25,13 +25,14 @@ classdef BatchUploader < handle
         function obj = BatchUploader(connection, base_dir, options)
             % BATCHUPLOADER Constructor
             %
-            % Required fields list comes from get_config('validation').required_fields.
-            % required_fields.m has its own default_config() with a different list
-            % flagged as "not accurate" — that default is unused when called from here.
+            % Required fields (universal + sighting_only) come from
+            % load_config('validation').required_fields -- see
+            % src/+narwc/+validation/+rules/required_fields.m and
+            % config/defaults/validation_config_default.m.
 
             arguments
                 connection
-                base_dir char = 'data/legacy/surveys'
+                base_dir char = 'data/surveys'
                 options.TableName char = 'Master'
                 options.Config struct = struct()
             end
@@ -50,7 +51,7 @@ classdef BatchUploader < handle
             % ENSURE DIRECTORIES Create necessary directories
 
             % FIXME: pending has to exist or we do not know where the files are
-            dirs = {'pending', 'processed', 'failed', 'skipped'};
+            dirs = {'pending', 'processed', 'rejected', 'skipped'};
             for i = 1:length(dirs)
                 dir_path = fullfile(obj.base_dir, dirs{i});
                 if ~exist(dir_path, 'dir')
@@ -164,7 +165,13 @@ classdef BatchUploader < handle
             %       upload (default: true) 'StopOnError' - Stop on first error
             %       (default: false) 'AllowWarnings' - Upload despite warnings
             %       (default: false) 'AllowErrors' - Upload despite errors
-            %       (default: false)
+            %       (default: false) 'BatchId' - Only upload FILEIDs
+            %       belonging to this batch (looked up in the batch ledger,
+            %       see narwc.ingestion.append_batch_log), instead of
+            %       everything currently in pending/ (default: '', meaning
+            %       no filtering) 'SplitSummaryFile' - Same effect as
+            %       BatchId, but names the split-summary log directly
+            %       instead of looking it up via the ledger (default: '')
 
             % NOTE: this is primarily a loop that runs obj.uploadSurvey with this same options
 
@@ -175,6 +182,8 @@ classdef BatchUploader < handle
                 options.StopOnError logical = false
                 options.AllowWarnings logical = false
                 options.AllowErrors logical = false
+                options.BatchId char = ''
+                options.SplitSummaryFile char = ''
             end
 
             pending_dir = fullfile(obj.base_dir, 'pending');
@@ -183,7 +192,11 @@ classdef BatchUploader < handle
             % Remove summary file if present
             % NOTE: this should not be an issue since it is a txt not a csv
             pending_survey_files = pending_survey_files(~strcmp({pending_survey_files.name}, '_split_summary.txt'));
-            % TODO: add tracking for multiple runs
+
+            if ~isempty(options.BatchId) || ~isempty(options.SplitSummaryFile)
+                pending_survey_files = obj.filterToBatch(pending_survey_files, ...
+                    options.BatchId, options.SplitSummaryFile);
+            end
 
             obj.logger.info(sprintf('Found %d surveys to upload', length(pending_survey_files)));   % FIXME: remove sprintf if not necessary
             obj.resetStats();
@@ -205,8 +218,8 @@ classdef BatchUploader < handle
                             obj.logger.error(sprintf( ...
                                 '%s: FILEID has position 2 = ''T'' (test fixture). Skipping.', ...
                                 pending_survey_files(idx).name));
-                            obj.stats.failed = obj.stats.failed + 1;
-                            obj.moveFile(survey_file_path, 'failed');
+                            obj.stats.rejected = obj.stats.rejected + 1;
+                            obj.moveFile(survey_file_path, 'rejected');
                             continue;
                         end
                     end
@@ -250,8 +263,8 @@ classdef BatchUploader < handle
 
                     obj.logError(pending_survey_files(idx).name, ME, 'File processing error');
 
-                    obj.stats.failed = obj.stats.failed + 1;
-                    obj.moveFile(survey_file_path, 'failed');
+                    obj.stats.rejected = obj.stats.rejected + 1;
+                    obj.moveFile(survey_file_path, 'rejected');
 
                     if options.StopOnError
                         obj.logger.error('Stopping due to error');
@@ -297,9 +310,9 @@ classdef BatchUploader < handle
                 obj.logger.error(sprintf( ...
                     '%s: FILEID has position 2 = ''T'' (test fixture marker). Refusing upload.', ...
                     survey_id));
-                obj.stats.failed = obj.stats.failed + 1;
+                obj.stats.rejected = obj.stats.rejected + 1;
                 success = false;
-                category = 'failed';
+                category = 'rejected';
                 return;
             end
 
@@ -380,9 +393,9 @@ classdef BatchUploader < handle
                     obj.appendRunSummaryRow(survey_id, 'rejected', ...
                         results.summary.errors, warn_new, warn_ack, warn_ack_per_row, warn_ack_per_survey, notes);
 
-                    obj.stats.failed = obj.stats.failed + 1;
+                    obj.stats.rejected = obj.stats.rejected + 1;
                     success = false;
-                    category = 'failed';
+                    category = 'rejected';
                     return;
                 end
             end
@@ -472,9 +485,9 @@ classdef BatchUploader < handle
                         'Database upload error (non-atomic; data may be partial)');
                 end
 
-                obj.stats.failed = obj.stats.failed + 1;
+                obj.stats.rejected = obj.stats.rejected + 1;
                 success = false;
-                category = 'failed';
+                category = 'rejected';
             end
 
             % Restore AutoCommit state whether the operation succeeded or failed.
@@ -574,10 +587,10 @@ classdef BatchUploader < handle
                 fprintf(fid, '  Uploaded:  %d\n', obj.stats.uploaded);
                 fprintf(fid, '  Updated:   %d\n', obj.stats.updated);
                 fprintf(fid, '  Skipped:   %d\n', obj.stats.skipped);
-                fprintf(fid, '  Failed:    %d\n', obj.stats.failed);
+                fprintf(fid, '  Rejected:  %d\n', obj.stats.rejected);
 
                 total_processed = obj.stats.uploaded + obj.stats.updated;
-                total_attempted = total_processed + obj.stats.failed;
+                total_attempted = total_processed + obj.stats.rejected;
 
                 fprintf(fid, '\nWarnings:\n');
                 fprintf(fid, '  Acknowledged: %d (%d per-row, %d per-survey)\n', ...
@@ -633,6 +646,39 @@ classdef BatchUploader < handle
             end
         end
 
+        function filtered = filterToBatch(obj, pending_survey_files, batch_id, split_summary_file)
+            % FILTERTOBATCH Narrow pending_survey_files down to one batch's FILEIDs.
+            %
+            % Resolves the batch's split-summary log (directly via
+            % split_summary_file, or by looking up batch_id in the batch
+            % ledger), then keeps only the files whose FILEID (the filename
+            % stem) appears in that log's survey list. FILEID matching is
+            % case-insensitive, matching load_split_summary's own
+            % upper()-normalized counts map.
+
+            if isempty(split_summary_file)
+                ledger = narwc.ingestion.read_batch_log();
+                is_match = strcmp(ledger.stage, 'convert') & strcmp(ledger.batch_id, batch_id);
+                matches = ledger(is_match, :);
+                if height(matches) == 0
+                    error('narwc:ingestion:BatchUploader:UnknownBatchId', ...
+                        'No convert entry found in the batch ledger for batch_id ''%s''.', batch_id);
+                end
+                split_summary_file = matches.output{end};
+            end
+
+            [batch_source, ~] = narwc.ingestion.load_split_summary(split_summary_file);
+            batch_fileids = keys(batch_source.counts);
+
+            names = {pending_survey_files.name};
+            [~, stems] = cellfun(@fileparts, names, 'UniformOutput', false);
+            keep = ismember(upper(stems), batch_fileids);
+            filtered = pending_survey_files(keep);
+
+            obj.logger.info(sprintf('Batch filter matched %d/%d files in pending/', ...
+                nnz(keep), numel(names)));
+        end
+
         function moveFile(obj, source_path, category)
             % MOVE FILE Move file to appropriate category folder
 
@@ -667,7 +713,7 @@ classdef BatchUploader < handle
             obj.stats.uploaded                        = 0;
             obj.stats.updated                         = 0;
             obj.stats.skipped                         = 0;
-            obj.stats.failed                          = 0;
+            obj.stats.rejected                        = 0;
             obj.stats.warnings_new                    = 0;
             obj.stats.warnings_acknowledged           = 0;
             obj.stats.warnings_acknowledged_per_row   = 0;
@@ -713,11 +759,11 @@ classdef BatchUploader < handle
             fprintf('Uploaded: %d\n', obj.stats.uploaded);
             fprintf('Updated:  %d\n', obj.stats.updated);
             fprintf('Skipped:  %d\n', obj.stats.skipped);
-            fprintf('Failed:   %d\n', obj.stats.failed);
+            fprintf('Rejected: %d\n', obj.stats.rejected);
             fprintf('Total:    %d\n', obj.stats.uploaded + obj.stats.updated + ...
-                obj.stats.skipped + obj.stats.failed);
+                obj.stats.skipped + obj.stats.rejected);
 
-            if obj.stats.failed > 0
+            if obj.stats.rejected > 0
                 fprintf('\nError details logged to: %s\n', obj.error_log_file);
             end
 

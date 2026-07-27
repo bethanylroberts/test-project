@@ -20,7 +20,7 @@ every warning should be reviewed by a human before data goes into the database.
 ## The override workflow
 
 1. **Run validation.** Process surveys with `BatchUploader.uploadFromFolder()`.
-   Surveys with new warnings will be moved to `failed/` and logged to the
+   Surveys with new warnings will be moved to `rejected/` and logged to the
    run's `_errors_<timestamp>.log` (see "Reviewing the run log" below for
    its exact location).
 
@@ -160,9 +160,9 @@ fix the data or add proper override entries afterward.
 ## Reviewing the run log
 
 After each batch run, two files record what happened. They land one level
-above the `pending/`/`processed/`/`failed/` folders — e.g. if surveys live
-in `data/legacy/surveys/`, the logs land in `data/legacy/`
-(`BatchUploader.initializeErrorLog`), not inside `failed/` itself:
+above the `pending/`/`processed/`/`rejected/` folders — e.g. surveys live in
+`data/surveys/`, so the logs land in `data/`
+(`BatchUploader.initializeErrorLog`), not inside `rejected/` itself:
 
 - `_errors_<timestamp>.log` — Human-readable log, one entry per failed
   survey for that run. Each run gets its own timestamped file by default

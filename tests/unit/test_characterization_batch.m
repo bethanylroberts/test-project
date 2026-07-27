@@ -45,7 +45,7 @@ classdef test_characterization_batch < matlab.unittest.TestCase
 
         function testUploadFromFolderRejectsAllTestFixtures(testCase)
             % uploadFromFolder must reject every T-FILEID survey before any
-            % DB operation.  Both files go to failed/.
+            % DB operation.  Both files go to rejected/.
 
             import matlab.unittest.fixtures.WorkingFolderFixture
             testCase.applyFixture(WorkingFolderFixture);
@@ -66,17 +66,17 @@ classdef test_characterization_batch < matlab.unittest.TestCase
 
             stats = converter.getStats();
 
-            testCase.verifyEqual(stats.failed, 2, ...
-                'Both T-FILEID files must be counted as failed');
+            testCase.verifyEqual(stats.rejected, 2, ...
+                'Both T-FILEID files must be counted as rejected');
             testCase.verifyEqual(conn.insert_call_count, 0, ...
                 'No DB insert must occur for T-FILEID fixtures');
 
             testCase.verifyTrue( ...
-                exist(fullfile(base_dir, 'failed', 'fT00157.csv'), 'file') == 2, ...
-                'fT00157.csv must be moved to failed/');
+                exist(fullfile(base_dir, 'rejected', 'fT00157.csv'), 'file') == 2, ...
+                'fT00157.csv must be moved to rejected/');
             testCase.verifyTrue( ...
-                exist(fullfile(base_dir, 'failed', 'HT63070.csv'), 'file') == 2, ...
-                'HT63070.csv must be moved to failed/');
+                exist(fullfile(base_dir, 'rejected', 'HT63070.csv'), 'file') == 2, ...
+                'HT63070.csv must be moved to rejected/');
         end
 
         function testUploadFromFolderNoDbCallOnGuardrail(testCase)
@@ -234,7 +234,7 @@ classdef test_characterization_batch < matlab.unittest.TestCase
 
             % Verify run summary CSV gets split columns
             uploader.uploadFromFolder('Validate', false);
-            run_summary = fullfile(base_dir, 'failed', '_run_summary.csv');
+            run_summary = fullfile(base_dir, 'rejected', '_run_summary.csv');
             if exist(run_summary, 'file')
                 tbl = readtable(run_summary, 'Delimiter', ',', 'TextType', 'char', ...
                     'VariableNamingRule', 'preserve');
@@ -391,8 +391,8 @@ classdef test_characterization_batch < matlab.unittest.TestCase
 
             testCase.verifyFalse(success, ...
                 'upload must report failure when insert throws');
-            testCase.verifyEqual(category, 'failed', ...
-                'category must be ''failed'' when insert throws');
+            testCase.verifyEqual(category, 'rejected', ...
+                'category must be ''rejected'' when insert throws');
             testCase.verifyEqual(conn.rollback_count, 1, ...
                 'rollback must be called when insert fails');
             testCase.verifyEqual(conn.commit_count, 0, ...
@@ -429,25 +429,32 @@ end
 
 function survey = make_old_year_survey(fileid)
     % Minimal survey that triggers datetime_rules.year_too_old on EVENTNO=5.
-    % Omits FK-checked fields (DDSOURCE, IDSOURCE) so no FK errors occur.
+    % DDSOURCE/PLATFORM use codes confirmed valid in the real lookup tables
+    % (required_fields.m's universal list requires them present; chosen so
+    % they don't also trip an FK error). Omits IDSOURCE (not in the
+    % universal list) so no FK error occurs from that field.
     survey = table();
-    survey.FILEID  = {fileid};
-    survey.EVENTNO = 5;       % double; stored in warning for override matching
-    survey.LAT_DD  = 42.0;   % within survey area
-    survey.LONG_DD = -70.0;
-    survey.YEAR    = 1975;   % < year_warning (~1980) -> triggers year_too_old
-    survey.MONTH   = 6;
-    survey.DAY     = 15;
+    survey.FILEID   = {fileid};
+    survey.EVENTNO  = 5;       % double; stored in warning for override matching
+    survey.LAT_DD   = 42.0;   % within survey area
+    survey.LONG_DD  = -70.0;
+    survey.YEAR     = 1975;   % < year_warning (~1980) -> triggers year_too_old
+    survey.MONTH    = 6;
+    survey.DAY      = 15;
+    survey.DDSOURCE = {'CCS'};
+    survey.PLATFORM = 649;
 end
 
 function survey = make_old_year_survey_n(fileid, n)
     % n-row survey where every row triggers datetime_rules.year_too_old.
     survey = table();
-    survey.FILEID  = repmat({fileid}, n, 1);
-    survey.EVENTNO = (1:n)';
-    survey.LAT_DD  = repmat(42.0, n, 1);
-    survey.LONG_DD = repmat(-70.0, n, 1);
-    survey.YEAR    = repmat(1975, n, 1);
-    survey.MONTH   = repmat(6, n, 1);
-    survey.DAY     = repmat(15, n, 1);
+    survey.FILEID   = repmat({fileid}, n, 1);
+    survey.EVENTNO  = (1:n)';
+    survey.LAT_DD   = repmat(42.0, n, 1);
+    survey.LONG_DD  = repmat(-70.0, n, 1);
+    survey.YEAR     = repmat(1975, n, 1);
+    survey.MONTH    = repmat(6, n, 1);
+    survey.DAY      = repmat(15, n, 1);
+    survey.DDSOURCE = repmat({'CCS'}, n, 1);
+    survey.PLATFORM = repmat(649, n, 1);
 end

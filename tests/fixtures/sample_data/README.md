@@ -43,13 +43,13 @@ Real contributor codes in the production database never use `T`.
 `narwc.ingestion.BatchUploader.uploadSurvey()` rejects any FILEID with position 2 = `T`
 before attempting a database write.
 
-## `neaq_sample.csv`
+## Contributor-format fixtures (`ccs_*`, `neaq_*`)
 
-Unlike the other fixtures above, this file is **entirely hand-built, not
-derived from a real survey** — no real NEAQ-format file exists anywhere in
-this repo to anonymize. Its layout (a title line before the header, then
-`FILEID,Latitude,Longitude,Species`) is based only on the one confirmed lead
-in `config/format_definitions.json`'s `neaq` entry (`header_row: 2`, and the
-`field_mapping` renaming `Latitude`/`Longitude`/`Species`). Columns beyond
-those three plus `FILEID` are not confirmed against any real file. Replace
-this fixture once a real (anonymized) NEAQ export is available.
+Unlike the fixtures above, these are **hand-built to match a confirmed real header layout, not
+derived from an anonymized real survey** — the real raw files under `data/surveys/raw/` are
+gitignored and may contain real observer names/notes text, so fixtures are built with synthetic
+values against headers read directly off real files (see the docstring in each parser class for
+the exact source file sampled). None of these raw contributor files carry FILEID; each fixture's
+FILEID is whatever `narwc.io.parsers.StandardFormat.fileidFromFilename()` (or, for
+`CCSOpportunisticFormat`'s `CRUISENO` case, the fixture's own `CRUISENO` column) would derive from
+the fixture's own filename.

@@ -1,10 +1,12 @@
 _archive/
 
-# Data files — exclude runtime/generated subdirs but commit lookup tables
+# Data files — exclude runtime/generated subdirs but commit lookup tables and top-level docs
 data/*
 !data/tables
+!data/README.md
+!data/reorganize_data_folder.m
 reports/
-logs/
+# logs/
 handoffs/
 
 # MATLAB
