@@ -11,6 +11,7 @@ data/
 ├── README.md                  # this file (tracked)
 ├── overrides.example.csv      # template for warning-override CSVs (see docs/warning_overrides.md)
 ├── tables/                    # lookup-table snapshots, tracked — see data/tables/README.md
+│   └── contributor_defaults.csv  # per-contributor/subfolder DDSOURCE/IDSOURCE/PLATFORM defaults — see below
 ├── surveys/                   # one unified ingestion pipeline, every source
 │   ├── raw/                    #   untouched originals as delivered, never edited — see below
 │   │   ├── legacy/              #     the monolithic legacy CSV (one-time historical migration)
@@ -66,10 +67,31 @@ open it directly to see the full history of what's been converted/uploaded/valid
 
 This holds raw survey files exactly as delivered — by each contributor, and the legacy monolith
 CSV — before any parsing or splitting. **These are untouched originals — never edit them in
-place.** Only `legacy/` is wired into the pipeline today via the `StandardFormat` parser;
-`convert_contributor_batch.m` expects to find one contributor's raw files at
-`data/surveys/raw/<contributor>/` and run them through that contributor's parser, but most
-contributor parsers don't exist yet (see "Next steps" below).
+place.** `convert_contributor_batch.m` expects to find one contributor's raw files at
+`data/surveys/raw/<contributor>/` and run them through that contributor's parser.
+`legacy/` (`StandardFormat`), `CCS/` (`CCSAerialFormat`/`CCSVesselFormat`/`CCSOpportunisticFormat`),
+`NEAQ & CWI (vessels)/` (`NEAQVesselFormat`), and `NEAQ Aerial/` (`NEAQAerialFormat`) are wired up;
+`NMFS-NEFSC/` and `SEUS EWS/` still need parsers (see "Next steps" below).
+
+None of these raw files carry FILEID, DDSOURCE, IDSOURCE, or PLATFORM themselves — see the two
+notes below for how the CCS/NEAQ parsers fill those in.
+
+**FILEID convention**: for CCS and NEAQ & CWI, one raw file already is one survey (a csv + a
+cover-sheet docx per trip/survey day), so FILEID is derived from the source filename's stem via
+`narwc.io.parsers.StandardFormat.fileidFromFilename()`. The one exception is CCS Opportunistic's
+2024 aggregated annual file, which uses the per-row `CRUISENO` column instead (it points at the
+vessel survey each sighting was recorded during) — see `CCSOpportunisticFormat.m`.
+
+**DDSOURCE/IDSOURCE/PLATFORM convention**: per the NARWC users guide, these are curator/GSO-
+assigned fields, never supplied by contributors — so their absence from every raw file here is
+expected, not a gap in the raw data. `convert_contributor_batch` resolves and injects them per
+file via `narwc.ingestion.lookup_contributor_defaults()`, which matches the contributor name and
+file path against `data/tables/contributor_defaults.csv` (edit that CSV to add/correct a default,
+no code change needed — same philosophy as `data/tables/SPECCODE.csv`'s threshold columns). Pass
+`'FieldOverrides'` to `convert_contributor_batch` to override the table for a specific call. Three
+contributor/subfolder combinations are deliberately left unmapped in that table pending curator
+confirmation — see `PROJECT_STATUS.md` §8.7 — so `required_fields.m` flags them as missing rather
+than getting a guessed value.
 
 Five contributor folders, all still holding their as-delivered internal subfolder structure
 (by year, then platform/survey type):
@@ -221,27 +243,32 @@ None of this needs to be reconciled here — it's exactly what each contributor'
 
 ## Next steps: writing the parsers
 
-This directory only holds and documents the raw files — no parser reads from these contributor
-subfolders under `surveys/raw/` yet.
-To add one, follow CLAUDE.md's "Adding a New Contributor Parser": copy
+CCS, NEAQ & CWI (vessels), and NEAQ Aerial are done (see above). NMFS-NEFSC and SEUS EWS still
+need parsers. To add one, follow CLAUDE.md's "Adding a New Contributor Parser": copy
 `src/+narwc/+io/+parsers/TemplateFormat.m`, fill in `FIELD_MAPPING` only for columns confirmed
-against a real sample file (never invent unconfirmed mappings — see `NEAQFormat.m` for the
-pattern of implementing only what's verified), implement `createImportOptions()`/`detectFormat()`
-for that contributor's actual layout, and register it in `ParserFactory.getAvailableParsers()`.
+against a real sample file (never invent unconfirmed mappings — see `CCSAerialFormat.m`/
+`NEAQVesselFormat.m` for the pattern of implementing only what's verified), implement
+`createImportOptions()`/`detectFormat()` for that contributor's actual layout, and register it in
+`ParserFactory.getAvailableParsers()`. If the raw files don't carry FILEID (true of every
+contributor parsed so far) or DDSOURCE/IDSOURCE/PLATFORM, see the two conventions above.
 
 A few things the schema notes above imply for that work:
 
-- **CCS and NMFS-NEFSC need more than one parser each** (or a parser that branches internally) —
-  CCS by platform type (Aerial/Vessel/Opportunistic), NMFS-NEFSC by year (2023 vs. 2024 schema)
-  and by file kind (Aerial Consortium data vs. RWSAS sightings — genuinely different tables).
+- **NMFS-NEFSC needs more than one parser** (decided, not yet built): two separate classes for
+  the Aerial Consortium data — `NMFSNEFSCAerial2023Format`/`NMFSNEFSCAerial2024Format` — since the
+  schema genuinely differs (degree/decimal-minute + FILEID/DDSOURCE present in 2023 vs.
+  decimal-degree without them in 2024), not one branching parser (consistent with CCS's
+  one-parser-per-platform precedent). `RWSAS-Sightings` and the `Flights-Summary` log are out of
+  scope for `FieldDefinitions`-shaped parsers entirely — they're structurally different tables
+  (sightings-only reconnaissance report; flight log), not per-event effort data.
 - **`convert_contributor_batch.m` currently does a flat, non-recursive directory listing**
   (`dir(fullfile(input_dir, '*.csv'))`), so it won't see files nested under these contributors'
-  year/platform-type subfolders as-is. Either point `InputDir` at the specific leaf subfolder per
-  invocation, or extend the scan to recurse — not yet decided.
-  - Since contributor files here don't include their own source/contributor identification, this
-    is also where `DDSOURCE`/`PLATFORM`/contributor code will need to be injected by the parser or
-    conversion step (from `data/tables/Contrib.csv` / `PLATFORM.csv`), keyed off which subfolder
-    the file came from — the source files can't tell you this themselves.
-- **NEAQ Aerial**: pick one of the two per-flight CSV schemas (`NEAQ-A-*_URI.csv` recommended —
-  richer field set) rather than parsing both.
-- **SEUS EWS** needs a `.dbf` reader before anything else can happen.
+  year/platform-type subfolders as-is. The CCS/NEAQ parsers work around this today by pointing
+  `InputDir` at the specific leaf subfolder per invocation (one call per
+  contributor/year/platform-type combination) rather than the top-level contributor folder;
+  extending the scan to recurse instead is a separate future decision.
+- **NEAQ Aerial**: pick one of the two per-flight CSV schemas (`NEAQ-A-*_URI.csv`, the richer field
+  set) rather than parsing both — done, see `NEAQAerialFormat.m`.
+- **SEUS EWS** needs a `.dbf` reader before anything else can happen. Decided: MATLAB's Database
+  Toolbox dBASE driver (`database()`), not an `ogr2ogr`/GDAL shell-out — needs the driver confirmed
+  working in this environment before `SEUSFormat.m` can be written.

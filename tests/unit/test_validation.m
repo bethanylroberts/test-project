@@ -90,6 +90,91 @@ classdef test_validation < matlab.unittest.TestCase
             testCase.verifyGreaterThan(collector.getErrorCount('error'), 0);
         end
 
+        function testRequiredFieldsSightingOnlyFieldRequiredWhenSpeccodePresent(testCase)
+            % A sighting row (SPECCODE populated) missing a sighting-only
+            % field (CONFIDNC) must produce a required_fields.value_missing
+            % error for that field.
+            data = TestFixtures.generate_mock_survey(2);
+            data.CONFIDNC = [NaN; 1];  % row 1 missing, row 2 present
+
+            collector = narwc.validation.ErrorCollector();
+            config = load_config(); config = config.validation;
+            narwc.validation.rules.required_fields(data, collector, config);
+
+            errors = collector.getErrors('error');
+            confidnc_rows = [];
+            for k = 1:length(errors)
+                if strcmp(errors(k).field, 'CONFIDNC') ...
+                        && strcmp(errors(k).rule_id, 'required_fields.value_missing')
+                    confidnc_rows = [confidnc_rows; errors(k).row(:)]; %#ok<AGROW>
+                end
+            end
+            testCase.verifyTrue(ismember(1, confidnc_rows));
+            testCase.verifyFalse(ismember(2, confidnc_rows));
+        end
+
+        function testRequiredFieldsSightingOnlyFieldNotRequiredOnNonSightingRow(testCase)
+            % The same missing CONFIDNC on a non-sighting row (SPECCODE
+            % blank) must NOT produce a required_fields.value_missing error.
+            data = TestFixtures.generate_mock_survey(1);
+            data.SPECCODE = {''};
+            data.CONFIDNC = NaN;
+
+            collector = narwc.validation.ErrorCollector();
+            config = load_config(); config = config.validation;
+            narwc.validation.rules.required_fields(data, collector, config);
+
+            errors = collector.getErrors('error');
+            for k = 1:length(errors)
+                testCase.verifyFalse(strcmp(errors(k).field, 'CONFIDNC') ...
+                    && strcmp(errors(k).rule_id, 'required_fields.value_missing'), ...
+                    'CONFIDNC must not be required on a non-sighting row');
+            end
+        end
+
+        function testRequiredFieldsForbidsSightingOnlyFieldOnNonSightingRow(testCase)
+            % A non-sighting row (SPECCODE blank) with a sighting-only
+            % field populated (CONFIDNC) must produce a
+            % required_fields.forbidden_on_non_sighting warning.
+            data = TestFixtures.generate_mock_survey(1);
+            data.SPECCODE = {''};
+            data.CONFIDNC = 1;
+
+            collector = narwc.validation.ErrorCollector();
+            config = load_config(); config = config.validation;
+            narwc.validation.rules.required_fields(data, collector, config);
+
+            warnings = collector.getErrors('warning');
+            found = false;
+            for k = 1:length(warnings)
+                if strcmp(warnings(k).field, 'CONFIDNC') ...
+                        && strcmp(warnings(k).rule_id, 'required_fields.forbidden_on_non_sighting')
+                    found = true;
+                end
+            end
+            testCase.verifyTrue(found);
+        end
+
+        function testRequiredFieldsUniversalStillCheckedRegardlessOfSighting(testCase)
+            data = TestFixtures.generate_mock_survey(1);
+            data.SPECCODE = {''};
+            data.PLATFORM = NaN;
+
+            collector = narwc.validation.ErrorCollector();
+            config = load_config(); config = config.validation;
+            narwc.validation.rules.required_fields(data, collector, config);
+
+            errors = collector.getErrors('error');
+            found = false;
+            for k = 1:length(errors)
+                if strcmp(errors(k).field, 'PLATFORM') ...
+                        && strcmp(errors(k).rule_id, 'required_fields.value_missing')
+                    found = true;
+                end
+            end
+            testCase.verifyTrue(found, 'PLATFORM is a universal field and must always be required');
+        end
+
         function testDateTimeValidation(testCase)
             % Test datetime validation rules
 
@@ -266,8 +351,10 @@ classdef test_validation < matlab.unittest.TestCase
             config.year_max = year(datetime('today'));
             config.year_warning = 1990;
             
-            % Add required fields
-            config.required_fields = {'FILEID', 'YEAR'};
+            % Add required fields (struct shape -- see
+            % config/defaults/validation_config_default.m)
+            config.required_fields.universal = {'FILEID', 'YEAR'};
+            config.required_fields.sighting_only = {};
             
             % Create test data
             data = TestFixtures.generate_mock_survey(5);

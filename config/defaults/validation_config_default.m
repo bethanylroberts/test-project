@@ -11,7 +11,21 @@ function validation = validation_config_default()
     validation.taxcode_table_path  = fullfile('data', 'tables', 'TAXCODE.csv');
 
     % ----- Required fields -----
-    validation.required_fields = {'LAT_DD', 'LONG_DD', 'YEAR', 'MONTH', 'DAY'};
+    % Per the NARWC users guide (ref/narwc_users_guide__v8_.pdf): LAT_DD,
+    % LONG_DD, YEAR, EVENTNO, PLATFORM, DDSOURCE are "required for all
+    % records in all data types" -- universal fields. CONFIDNC, NUMBER,
+    % PHOTOS, SIGHTNO, SPECCODE, IDREL are "required for all sightings...
+    % and not allowed for non-sighting records" -- sighting-only fields,
+    % checked (and forbidden-when-absent-SPECCODE-checked) only on rows
+    % where SPECCODE is populated. MONTH/DAY are intentionally NOT in
+    % `universal`: the manual makes full date required for aerial/shipboard
+    % survey data but explicitly flexible for opportunistic sightings, and
+    % that distinction needs a confirmed survey-type signal not yet
+    % available (see PROJECT_STATUS.md's "Known follow-up" note on the
+    % required-fields survey-type axis) -- enforcing MONTH/DAY unconditionally
+    % today would be over-fixing in the wrong direction.
+    validation.required_fields.universal     = {'LAT_DD', 'LONG_DD', 'YEAR', 'EVENTNO', 'PLATFORM', 'DDSOURCE'};
+    validation.required_fields.sighting_only = {'CONFIDNC', 'NUMBER', 'PHOTOS', 'SIGHTNO', 'SPECCODE', 'IDREL'};
 
     % ----- Behavioral validation -----
     validation.behavioral.dead_behaviors              = [0, 1, 2, 3];

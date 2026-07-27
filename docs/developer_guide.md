@@ -22,8 +22,10 @@ src/
     │   ├── DataTypeConverter.m    # Type coercion before upload
     │   └── +parsers/
     │       ├── BaseParser.m       # Abstract base class
-    │       ├── StandardFormat.m   # Reference parser for the legacy CSV (no header, comma-delimited)
-    │       ├── NEAQFormat.m       # Reference parser for a per-contributor header-based format
+    │       ├── StandardFormat.m   # Reference parser for the legacy CSV (no header, comma-delimited); also holds fileidFromFilename()/remapToDatabase() shared helpers
+    │       ├── CCSAerialFormat.m / CCSVesselFormat.m / CCSOpportunisticFormat.m  # Center for Coastal Studies, one parser per platform schema
+    │       ├── NEAQVesselFormat.m # New England Aquarium & Canadian Whale Institute joint vessel program
+    │       ├── NEAQAerialFormat.m # New England Aquarium aerial ("Wind Energy Area 2024", lowercase headers)
     │       ├── TemplateFormat.m   # Copy this to add a new contributor parser
     │       └── ParserFactory.m    # Explicit createByName() selection — no auto-detection
     ├── +ingestion/
@@ -34,6 +36,8 @@ src/
     │   ├── BatchUploader.m            # Validates + uploads survey CSVs to SQL Server, transaction-safe
     │   ├── load_split_summary.m       # Parses a _split_summary_*.log (by dir or exact file path)
     │   ├── append_batch_log.m / read_batch_log.m / check_prior_conversion.m  # Batch ledger (data/surveys/batch_log.csv)
+    │   ├── apply_field_overrides.m    # Overlays constant field values (e.g. DDSOURCE/IDSOURCE/PLATFORM) onto a parsed survey table
+    │   └── lookup_contributor_defaults.m  # Resolves DDSOURCE/IDSOURCE/PLATFORM defaults from data/tables/contributor_defaults.csv
     ├── +validation/
     │   ├── SurveyValidator.m       # Orchestrates rule modules + override matching
     │   ├── FieldValidator.m        # Static field-level validators
@@ -107,7 +111,7 @@ hardcoded) validation rule.
 ## Adding a new contributor parser
 
 1. Copy `src/+narwc/+io/+parsers/TemplateFormat.m` to a new file in the same
-   directory (see `NEAQFormat.m` for a filled-in example).
+   directory (see `CCSAerialFormat.m`/`NEAQVesselFormat.m` for filled-in examples).
 2. Fill in `FIELD_MAPPING` with only the native→canonical column renames
    you've actually confirmed against a real sample file from that
    contributor — don't invent a full layout you haven't verified.

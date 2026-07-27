@@ -27,11 +27,19 @@ function summary = convert_contributor_batch(contributor, parser_name, options)
     % CONVERT_CONTRIBUTOR_BATCH Convert one contributor's batch into pending/
     %
     % Usage:
-    %   convert_contributor_batch('neaq', 'NEAQFormat')
-    %   convert_contributor_batch('neaq', 'NEAQFormat', 'InputDir', 'data/surveys/raw/neaq')
+    %   convert_contributor_batch('CCS', 'CCSAerialFormat', 'InputDir', 'data/surveys/raw/CCS/2023 Aerial')
     %   convert_contributor_batch('legacy', 'StandardFormat')
     %   convert_contributor_batch('legacy', 'StandardFormat', 'ChunkSize', 5000, 'Overwrite', true)
     %   convert_contributor_batch('legacy', 'StandardFormat', 'InputFile', 'data/surveys/RUSS_24_VALID.CSV')
+    %
+    % DDSOURCE/IDSOURCE/PLATFORM: curator-assigned fields never present in
+    % contributor raw files (see the NARWC manual and data/README.md).
+    % Resolved per input file by default from
+    % data/tables/contributor_defaults.csv (contributor + this file's path
+    % matched against that table's path_pattern column -- see
+    % narwc.ingestion.lookup_contributor_defaults); pass 'FieldOverrides' to
+    % override or supplement the table for this call, or
+    % 'UseContributorDefaults', false to ignore the table entirely.
 
     arguments
         contributor char
@@ -41,6 +49,8 @@ function summary = convert_contributor_batch(contributor, parser_name, options)
         options.OutputDir char = fullfile('data', 'surveys', 'pending')
         options.ChunkSize double = 10000
         options.Overwrite logical = false
+        options.FieldOverrides struct = struct()
+        options.UseContributorDefaults logical = true
     end
 
     if isempty(options.InputDir)
@@ -104,7 +114,23 @@ function summary = convert_contributor_batch(contributor, parser_name, options)
         summary = extractor.extractAll(options.OutputDir, 'Overwrite', options.Overwrite);
     else
         parser = narwc.io.parsers.ParserFactory.createByName(parser_name);
-        summary = narwc.ingestion.convert_contributor_batch(parser, input_files, options.OutputDir);
+
+        file_overrides = containers.Map('KeyType', 'char', 'ValueType', 'any');
+        for i = 1:numel(input_files)
+            file_path = input_files{i};
+            if options.UseContributorDefaults
+                resolved = narwc.ingestion.lookup_contributor_defaults(contributor, file_path);
+            else
+                resolved = struct();
+            end
+            explicit_fields = fieldnames(options.FieldOverrides);
+            for j = 1:numel(explicit_fields)
+                resolved.(explicit_fields{j}) = options.FieldOverrides.(explicit_fields{j});
+            end
+            file_overrides(file_path) = resolved;
+        end
+
+        summary = narwc.ingestion.convert_contributor_batch(parser, input_files, options.OutputDir, file_overrides);
     end
     summary.batch_id = batch_id;
 

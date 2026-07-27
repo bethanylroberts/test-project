@@ -132,6 +132,22 @@ classdef StandardFormat < narwc.io.parsers.BaseParser
             end
         end
         
+        function fileid = fileidFromFilename(file_path)
+            % FILEIDFROMFILENAME Derive a FILEID from a source filename's stem.
+            %
+            % Shared by contributor parsers whose raw files don't carry a
+            % FILEID column themselves but where one raw file corresponds to
+            % one survey (confirmed per-contributor in data/README.md) --
+            % e.g. CCSAerialFormat, CCSVesselFormat, NEAQVesselFormat,
+            % NEAQAerialFormat. SurveyFileWriter groups rows by FILEID and
+            % silently drops any row with a missing/empty one, so parsers
+            % for these contributors must call this (or an equivalent
+            % per-row identifier, see CCSOpportunisticFormat's CRUISENO
+            % handling) before remapToDatabase.
+            [~, stem, ~] = fileparts(file_path);
+            fileid = string(stem);
+        end
+
         function confidence = detectFormat(file_path)
             % DETECTFORMAT Detect if file is in standard format
             

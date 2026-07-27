@@ -38,3 +38,9 @@ live DB as codes are added or retired. Refresh them by running
 | sysdiagrams.csv | —                   | SQL Server system table snapshot; no validation use |
 | TAXCODE.csv     | TAXCODE             | Taxonomic-group codes                               |
 | WX.csv          | WX                  | Weather codes                                       |
+
+**`contributor_defaults.csv` is not a DB snapshot** — unlike everything else in this table, it's
+hand-curated ingestion config (contributor + raw-file-subfolder → DDSOURCE/IDSOURCE/PLATFORM
+defaults), sourced from real contributor cover sheets rather than `pull_lookup_tables.m`. Edit it
+directly; `push_lookup_tables.m`/`pull_lookup_tables.m` don't touch it. See `data/README.md` and
+`narwc.ingestion.lookup_contributor_defaults`.

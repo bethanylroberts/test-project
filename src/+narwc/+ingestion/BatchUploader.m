@@ -25,9 +25,10 @@ classdef BatchUploader < handle
         function obj = BatchUploader(connection, base_dir, options)
             % BATCHUPLOADER Constructor
             %
-            % Required fields list comes from get_config('validation').required_fields.
-            % required_fields.m has its own default_config() with a different list
-            % flagged as "not accurate" — that default is unused when called from here.
+            % Required fields (universal + sighting_only) come from
+            % load_config('validation').required_fields -- see
+            % src/+narwc/+validation/+rules/required_fields.m and
+            % config/defaults/validation_config_default.m.
 
             arguments
                 connection

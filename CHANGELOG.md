@@ -43,6 +43,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   migration-only `step3_validate_migration.m` — validates and reports on any
   batch, any source, writing to `reports/batches/<batch_id>/` so reports never
   get silently overwritten by a later run.
+- Five new contributor parsers, built from real raw files at `data/surveys/raw/`:
+  `CCSAerialFormat`, `CCSVesselFormat`, `CCSOpportunisticFormat` (Center for
+  Coastal Studies — one parser per platform schema), `NEAQVesselFormat` (New
+  England Aquarium & Canadian Whale Institute joint vessel program), and
+  `NEAQAerialFormat` (New England Aquarium aerial, "Wind Energy Area 2024").
+  `StandardFormat.fileidFromFilename()`: shared helper deriving FILEID from a
+  source filename's stem, since none of these raw files carry FILEID
+  themselves (one raw file is one survey for these contributors).
+- DDSOURCE/IDSOURCE/PLATFORM injection: `data/tables/contributor_defaults.csv`
+  (contributor + subfolder → curator-assigned defaults, seeded from real
+  cover-sheet data), `narwc.ingestion.lookup_contributor_defaults()`, and
+  `narwc.ingestion.apply_field_overrides()` — these fields are never present
+  in contributor raw files (confirmed curator/GSO-assigned per the NARWC
+  manual), so `convert_contributor_batch` now resolves and injects them
+  per-file, with an explicit `'FieldOverrides'` option to override the table.
+  Three contributor/subfolder combinations are deliberately left unmapped
+  pending curator confirmation — see `PROJECT_STATUS.md` §8.7.
+- `required_fields.m` now checks two axes from the NARWC users guide instead
+  of one flat field list: `universal` fields (every row) and `sighting_only`
+  fields (required when SPECCODE is populated, and a new
+  `required_fields.forbidden_on_non_sighting` warning when populated on a
+  non-sighting row instead). See `docs/configuration_reference.md`.
 
 ### Changed
 
@@ -61,10 +83,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `step2_upload_surveys.m`/`step3_validate_migration.m` are now thin wrappers
   over the shared `convert_contributor_batch.m`/`upload_contributor_batch.m`/
   `validate_batch.m`.
+- `config.validation.required_fields` changed shape from a flat cell array to
+  a struct (`.universal`/`.sighting_only`) — batch configs or callers setting
+  this directly need updating; see `docs/configuration_reference.md`.
+- `src/+narwc/+ingestion/convert_contributor_batch.m` (core) gained a 4th
+  `file_overrides` argument (default `struct()`, backward-compatible);
+  `scripts/ingestion/convert_contributor_batch.m` gained `'FieldOverrides'`/
+  `'UseContributorDefaults'` options.
 
 ### Deprecated
 
 ### Removed
+
+- `NEAQFormat.m` (and its test/fixture) — retired in favor of
+  `NEAQVesselFormat`/`NEAQAerialFormat`, built from real files instead of the
+  one confirmed lead available when the stub was written. See "Added" above.
 
 ### Fixed
 
@@ -73,5 +106,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `species_rules`/`datetime_rules` errors now carry `EVENTNO`, matching what
   `behavioral_rules` warnings already did, so error output is traceable to a
   specific event row.
+- `config/format_definitions.json`'s `"legacy"` entry pointed at a
+  `LegacyFormat` parser class that doesn't exist; corrected to `StandardFormat`,
+  what's actually registered in `ParserFactory` and used for legacy CSVs.
 
 ### Security
