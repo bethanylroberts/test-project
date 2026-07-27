@@ -19,10 +19,11 @@ classdef NEAQVesselFormat < narwc.io.parsers.BaseParser
     %
     % SIGHTNO is auto-logged by the GPS/survey software (e.g. Mysticetus,
     % used by this program per its cover-sheet transmittal letters) on any
-    % marker-button press, not just animal sightings -- see
-    % StandardFormat.clearSpuriousSightno() (called at the end of parse())
-    % for the full explanation, and CCSAerialFormat.m's docstring for the
-    % real-data evidence that confirmed it.
+    % marker-button press, not just animal sightings, and TAXCODE is never
+    % present either (curator/GSO-assigned) -- see
+    % StandardFormat.clearSpuriousSightno()/fillTaxcodeFromSpeccode() (both
+    % called at the end of parse()) and CCSAerialFormat.m's docstring for
+    % the full explanation and real-data evidence.
 
     properties (Constant)
         FORMAT_NAME = 'NEAQ & CWI Vessel Format'
@@ -61,6 +62,7 @@ classdef NEAQVesselFormat < narwc.io.parsers.BaseParser
 
             data = narwc.io.parsers.StandardFormat.remapToDatabase(raw_data);
             data = narwc.io.parsers.StandardFormat.clearSpuriousSightno(data);
+            data = narwc.io.parsers.StandardFormat.fillTaxcodeFromSpeccode(data);
 
             metadata.row_count = height(data);
             metadata.column_count = width(data);

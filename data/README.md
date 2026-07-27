@@ -250,6 +250,20 @@ ON WATCH", "START TRACKLINE"), not a sighting. Every parser with a SIGHTNO field
 a SPECCODE — otherwise `required_fields.m`/`species_rules.m` misclassify every stray marker press as
 a sighting missing its species code.
 
+**TAXCODE is never present in any of these raw files either** — like DDSOURCE/IDSOURCE/PLATFORM,
+it's curator/GSO-assigned rather than contributor-supplied (the NARWC users guide describes it as
+historically "assigned by a SAS macro... invisible to data contributors"). Unlike those three,
+though, TAXCODE is a deterministic function of SPECCODE — `data/tables/SPECCODE.csv` already maps
+every known species code to a taxonomic-group code — so it doesn't need a curator-provided default
+the way DDSOURCE/IDSOURCE/PLATFORM do. Every parser with a SPECCODE field calls
+`StandardFormat.fillTaxcodeFromSpeccode()` (right after `clearSpuriousSightno()`) to look up and
+fill in TAXCODE for any row with a SPECCODE the table recognizes. Confirmed against real data
+(2026-07-27): once the SIGHTNO cleanup above removed the marker-press noise, every remaining
+validation error across all 5 new parsers was `species_rules.taxcode_missing_for_sighting`, and
+every affected SPECCODE already had a TAXCODE in the lookup table. A SPECCODE the table doesn't
+recognize at all is left with no TAXCODE — that's a genuine lookup-table gap needing curator
+confirmation (see `PROJECT_STATUS.md` §8.4/§8.5), not something to guess at.
+
 ---
 
 ## Next steps: writing the parsers

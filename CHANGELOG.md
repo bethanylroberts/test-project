@@ -75,6 +75,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   species code by `required_fields.m`/`species_rules.m`. Called by every
   parser with a SIGHTNO field (all 5 new contributor parsers). See
   `data/README.md`.
+- `StandardFormat.fillTaxcodeFromSpeccode()`: fills in TAXCODE from
+  `data/tables/SPECCODE.csv` for any row with a recognized SPECCODE but no
+  TAXCODE. TAXCODE is curator/GSO-assigned like DDSOURCE/IDSOURCE/PLATFORM
+  (never supplied by contributor raw files) but, unlike those three, is a
+  deterministic function of SPECCODE, so it needs a lookup rather than a
+  curator-provided default. Confirmed against real data (2026-07-27): once
+  `clearSpuriousSightno()` removed the marker-press noise, 100% of the
+  remaining validation errors across all 5 new parsers were
+  `species_rules.taxcode_missing_for_sighting`, all for known SPECCODEs
+  with an existing TAXCODE in the lookup table. Called by every parser
+  with a SPECCODE field (all 5 new contributor parsers), right after
+  `clearSpuriousSightno()`. See `data/README.md`.
 
 ### Changed
 

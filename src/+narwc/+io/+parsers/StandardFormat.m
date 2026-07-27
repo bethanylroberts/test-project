@@ -194,6 +194,90 @@ classdef StandardFormat < narwc.io.parsers.BaseParser
             data.SIGHTNO(spurious) = NaN;
         end
 
+        function data = fillTaxcodeFromSpeccode(data)
+            % FILLTAXCODEFROMSPECCODE Fill in TAXCODE from
+            % data/tables/SPECCODE.csv for any row with a SPECCODE but no
+            % TAXCODE.
+            %
+            % TAXCODE is deterministic from SPECCODE -- SPECCODE.csv already
+            % maps every known species code to exactly one taxonomic-group
+            % code -- but per the NARWC users guide, TAXCODE is historically
+            % "assigned by a SAS macro... invisible to data contributors"
+            % (i.e. curator/GSO-side, like DDSOURCE/IDSOURCE/PLATFORM). None
+            % of the new contributor raw files carry TAXCODE, so without
+            % this, every sighting row failed
+            % species_rules.taxcode_missing_for_sighting even when SPECCODE
+            % was a perfectly valid, known code.
+            %
+            % Confirmed against real data (curator feedback, 2026-07-27):
+            % once clearSpuriousSightno() removed the GPS-marker-press
+            % noise, 100% of the remaining validation errors across all 5
+            % new parsers were this exact rule, and every affected SPECCODE
+            % value already had a populated TAXCODE in SPECCODE.csv.
+            %
+            % Species codes with no TAXCODE in SPECCODE.csv (birds, human
+            % activity/debris codes -- TAXCODE only applies to marine
+            % mammals) are left alone, as are SPECCODE values not found in
+            % the table at all (a genuinely unknown/new code -- that's a
+            % real lookup-table gap needing curator confirmation, not
+            % something to fabricate a TAXCODE for). Called after
+            % remapToDatabase (needs the canonical SPECCODE/TAXCODE
+            % columns) by every parser whose native format doesn't supply
+            % TAXCODE itself (i.e. every new contributor parser).
+            if ~ismember('SPECCODE', data.Properties.VariableNames) || ...
+                    ~ismember('TAXCODE', data.Properties.VariableNames)
+                return;
+            end
+
+            % Resolved relative to this file's own location (src/+narwc/
+            % +io/+parsers/StandardFormat.m -> repo root), not MATLAB's
+            % current working directory -- confirmed cwd is not reliably
+            % the repo root in every context this runs from (e.g. some
+            % automated/headless invocations), and a bare relative path
+            % would silently no-op (via the exist() check below) rather
+            % than error, which would be easy to miss.
+            here = fileparts(mfilename('fullpath'));                  % .../+parsers
+            project_root = fileparts(fileparts(fileparts(fileparts(here)))); % -> .../src/+narwc/+io -> +narwc -> src -> repo root
+            speccode_file = fullfile(project_root, 'data', 'tables', 'SPECCODE.csv');
+            if ~exist(speccode_file, 'file')
+                return;
+            end
+
+            try
+                opts = detectImportOptions(speccode_file);
+                opts = setvartype(opts, 'Value', 'char');
+                lookup = readtable(speccode_file, opts);
+            catch
+                return;
+            end
+
+            if ~ismember('Value', lookup.Properties.VariableNames) || ...
+                    ~ismember('TAXCODE', lookup.Properties.VariableNames)
+                return;
+            end
+
+            lookup_codes = lookup.Value;
+            if ~iscell(lookup_codes)
+                lookup_codes = cellstr(lookup_codes);
+            end
+            lookup_map = containers.Map(lookup_codes, num2cell(lookup.TAXCODE));
+
+            speccode = data.SPECCODE;
+            for i = 1:height(data)
+                if ~isnan(data.TAXCODE(i))
+                    continue;
+                end
+                code = char(speccode(i));
+                if isempty(code) || ~isKey(lookup_map, code)
+                    continue;
+                end
+                taxcode = lookup_map(code);
+                if ~isnan(taxcode)
+                    data.TAXCODE(i) = taxcode;
+                end
+            end
+        end
+
         function confidence = detectFormat(file_path)
             % DETECTFORMAT Detect if file is in standard format
             

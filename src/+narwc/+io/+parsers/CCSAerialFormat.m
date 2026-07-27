@@ -34,6 +34,12 @@ classdef CCSAerialFormat < narwc.io.parsers.BaseParser
     % without a SPECCODE, which otherwise gets misclassified as a sighting
     % missing its species code. See that function's docstring for the full
     % explanation and the real-data evidence that confirmed it.
+    %
+    % TAXCODE is never present in the raw file either (curator/GSO-assigned,
+    % same category as DDSOURCE/IDSOURCE/PLATFORM) -- parse() calls
+    % StandardFormat.fillTaxcodeFromSpeccode() to derive it from SPECCODE
+    % via data/tables/SPECCODE.csv wherever that table has an entry for the
+    % code. See that function's docstring for the full explanation.
 
     properties (Constant)
         FORMAT_NAME = 'CCS Aerial Format'
@@ -86,6 +92,7 @@ classdef CCSAerialFormat < narwc.io.parsers.BaseParser
 
             data = narwc.io.parsers.StandardFormat.remapToDatabase(raw_data);
             data = narwc.io.parsers.StandardFormat.clearSpuriousSightno(data);
+            data = narwc.io.parsers.StandardFormat.fillTaxcodeFromSpeccode(data);
 
             metadata.row_count = height(data);
             metadata.column_count = width(data);

@@ -75,5 +75,46 @@ classdef test_parsers < matlab.unittest.TestCase
 
             testCase.verifyEqual(result, data);
         end
+
+        function testFillTaxcodeFromSpeccodeUsesRealLookupTable(testCase)
+            % TAXCODE is curator/GSO-assigned, never present in contributor
+            % raw files -- fillTaxcodeFromSpeccode derives it from
+            % data/tables/SPECCODE.csv, which maps every known species code
+            % to a taxonomic-group code. RIWH/HUWH are confirmed real
+            % entries (TAXCODE=1 each, per data/tables/SPECCODE.csv).
+            % No assumeTrue guard needed -- fillTaxcodeFromSpeccode resolves
+            % the table's path relative to its own file location, not cwd,
+            % so the committed, always-present SPECCODE.csv is always found.
+            data = TestFixtures.generate_mock_survey(3);
+            data.SPECCODE = {'RIWH'; 'HUWH'; 'NOTAREALCODE'};
+            data.TAXCODE  = [NaN; NaN; NaN];
+
+            result = narwc.io.parsers.StandardFormat.fillTaxcodeFromSpeccode(data);
+
+            testCase.verifyEqual(result.TAXCODE(1), 1, 'RIWH must resolve to TAXCODE=1');
+            testCase.verifyEqual(result.TAXCODE(2), 1, 'HUWH must resolve to TAXCODE=1');
+            testCase.verifyTrue(isnan(result.TAXCODE(3)), ...
+                'Unrecognized SPECCODE must be left blank, not fabricated');
+        end
+
+        function testFillTaxcodeFromSpeccodeDoesNotOverwriteExisting(testCase)
+            data = TestFixtures.generate_mock_survey(1);
+            data.SPECCODE = {'RIWH'};
+            data.TAXCODE  = 9; % pretend something else already populated it
+
+            result = narwc.io.parsers.StandardFormat.fillTaxcodeFromSpeccode(data);
+
+            testCase.verifyEqual(result.TAXCODE(1), 9, ...
+                'An already-populated TAXCODE must not be overwritten');
+        end
+
+        function testFillTaxcodeFromSpeccodeNoOpWithoutRequiredColumns(testCase)
+            data = table();
+            data.EVENTNO = [1; 2];
+
+            result = narwc.io.parsers.StandardFormat.fillTaxcodeFromSpeccode(data);
+
+            testCase.verifyEqual(result, data);
+        end
     end
 end
