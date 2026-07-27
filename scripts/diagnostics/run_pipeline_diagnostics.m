@@ -147,6 +147,8 @@ function results = run_pipeline_diagnostics(options)
                 row.validation_errors = row.validation_errors + val_results.summary.errors;
                 row.validation_warnings = row.validation_warnings + ...
                     val_results.summary.warnings_new + val_results.summary.warnings_acknowledged;
+                print_error_breakdown('error', val_results.errors);
+                print_error_breakdown('warning', val_results.warnings);
             catch ME
                 fprintf('  [WARN] Validation could not run for %s: %s\n', fileids{j}, ME.message);
             end
@@ -245,6 +247,40 @@ function [input_file, used_fixture] = resolve_input_file(raw_dir, contributor, p
 
     input_file = candidates{1};
     used_fixture = false;
+end
+
+function print_error_breakdown(severity, entries)
+    % PRINT_ERROR_BREAKDOWN Group a SurveyValidator error/warning struct
+    % array by rule_id and print one line per distinct rule_id (count +
+    % one example message), so "N errors" is actually diagnosable instead
+    % of just a number.
+    if isempty(entries)
+        return;
+    end
+
+    rule_ids = {entries.rule_id};
+    unique_rule_ids = unique(rule_ids);
+
+    for k = 1:numel(unique_rule_ids)
+        rid = unique_rule_ids{k};
+        matching = entries(strcmp(rule_ids, rid));
+        example = matching(1);
+        affected_rows = 0;
+        for m = 1:numel(matching)
+            affected_rows = affected_rows + max(numel(matching(m).row), 1);
+        end
+        fprintf('    [%s] %s -- %d entr%s, ~%d row(s) affected -- e.g. field=%s: %s\n', ...
+            upper(severity), rid, numel(matching), plural_ies(numel(matching)), ...
+            affected_rows, example.field, example.message);
+    end
+end
+
+function suffix = plural_ies(n)
+    if n == 1
+        suffix = 'y';
+    else
+        suffix = 'ies';
+    end
 end
 
 function status = check_existence(conn, fileid)
