@@ -6,7 +6,7 @@ data/*
 !data/README.md
 !data/reorganize_data_folder.m
 reports/
-logs/
+# logs/
 handoffs/
 
 # MATLAB
@@ -95,3 +95,4 @@ octave-workspace
 
 handoffs/
 CLAUDE.md
+pub/NARWCDB-progress_report-20260721.pptx
