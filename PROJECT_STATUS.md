@@ -1,14 +1,14 @@
 # NARWC Database Project — Status
 
-_Branch: main | Last updated: 2026-07-20_
+_Branch: main | Last updated: 2026-07-27_
 
 ---
 
 ## 1. Current state
 
-The system can extract per-survey CSV files from a monolithic legacy flat-file (SAS-era export), validate each survey against 9 rule modules covering required fields, coordinates, datetime, species, environmental conditions, Beaufort sea state, behavior codes, photos, and foreign-key constraints, acknowledge specific validation warnings via a version-controlled override file (`config/overrides/<batch>_overrides.csv`, e.g. `migration_overrides.csv`), and upload validated surveys to a SQL Server `Master` table via transaction-safe inserts (rollback on failure). The override system supports per-row acknowledgements keyed on `(fileid, eventno, field, rule_id)` and per-survey acknowledgements (empty `eventno` to suppress a warning class across an entire survey). A second, routine-ingestion pipeline (`scripts/ingestion/`) now shares the same validate+upload code for per-contributor batches going forward. Test suite (as of 2026-07-20, `tests/unit`): 172 passing, 0 failing, 10 incomplete (DB-dependent tests self-skip without a live connection).
+The system can extract per-survey CSV files from a monolithic legacy flat-file (SAS-era export), validate each survey against 9 rule modules covering required fields, coordinates, datetime, species, environmental conditions, Beaufort sea state, behavior codes, photos, and foreign-key constraints, acknowledge specific validation warnings via a version-controlled override file (`config/overrides/<batch>_overrides.csv`, e.g. `migration_overrides.csv`), and upload validated surveys to a SQL Server `Master` table via transaction-safe inserts (rollback on failure). The override system supports per-row acknowledgements keyed on `(fileid, eventno, field, rule_id)` and per-survey acknowledgements (empty `eventno` to suppress a warning class across an entire survey). A second, routine-ingestion pipeline (`scripts/ingestion/`) now shares the same validate+upload code for per-contributor batches going forward. Test suite (as of 2026-07-27, `tests/unit`): 242 passing, 1 failing (pre-existing filesystem-mtime timing flakiness in `test_migration_statistics`, unrelated to any current work), 10 incomplete (DB-dependent tests self-skip without a live connection).
 
-What the system cannot do yet: provide a curator-facing GUI, or apply Bob's known bulk corrections automatically. The `NEAQFormat` parser is implemented as the reference contributor-parser (see `src/+narwc/+io/+parsers/NEAQFormat.m`), but only for the 3 field renames confirmed against `format_definitions.json` — no real NEAQ export file has been available to verify anything beyond that. Live SQL Server transaction behavior has not been verified end-to-end; the Mac-side mock tests verify control flow only.
+What the system cannot do yet: provide a curator-facing GUI, or apply Bob's known bulk corrections automatically. Contributor parsers are now written for the three CSV-only contributors with real raw files at `data/surveys/raw/` (2026-07-26) and merged to `main` (2026-07-27): `CCSAerialFormat`/`CCSVesselFormat`/`CCSOpportunisticFormat`, `NEAQVesselFormat`, and `NEAQAerialFormat` (see `src/+narwc/+io/+parsers/`). The earlier `NEAQFormat.m` stub — written before any real NEAQ file existed — has been retired; its assumptions (header row 2 with a preamble line, `Latitude`/`Longitude` casing) didn't match the real files. NMFS-NEFSC (xlsx, year-over-year schema change, plus two tables that aren't survey-effort data) and SEUS EWS (`.dbf` only, no reader available yet) still need parsers — see `data/README.md` and §6 below for the follow-up plan. Since none of these raw files carry FILEID or DDSOURCE/IDSOURCE/PLATFORM themselves, the new parsers derive FILEID from the source filename (data/README.md) and a new `data/tables/contributor_defaults.csv` + `narwc.ingestion.apply_field_overrides`/`lookup_contributor_defaults` mechanism injects curator-assigned DDSOURCE/IDSOURCE/PLATFORM per contributor/subfolder — three cases need Bob/curator confirmation before a default can be set; see §8.7. `required_fields.m` was also extended for the sighting/non-sighting requirement axis from the NARWC manual (`ref/narwc_users_guide__v8_.pdf`) — see §8.1. Live SQL Server transaction behavior has not been verified end-to-end; the Mac-side mock tests verify control flow only.
 
 ---
 
@@ -50,7 +50,13 @@ NARWC-DB/
 │       │   ├── SurveyExtractor.m           # Splits monolithic legacy CSV into per-survey CSV files
 │       │   ├── SurveyFileWriter.m          # Shared per-FILEID chunk writer, used by SurveyExtractor and convert_contributor_batch
 │       │   ├── convert_contributor_batch.m # Routine ingestion: parses a contributor's raw files, splits by FILEID
-│       │   └── run_batch_upload.m          # Shared connect->upload->stats->close, used by both pipelines
+│       │   ├── run_batch_upload.m          # Shared connect->upload->stats->close, every source
+│       │   ├── load_split_summary.m        # Parses a _split_summary_*.log (by dir-most-recent or exact file path)
+│       │   ├── append_batch_log.m          # Appends one row to the batch ledger (data/surveys/batch_log.csv)
+│       │   ├── read_batch_log.m            # Reads the batch ledger as a table
+│       │   ├── check_prior_conversion.m    # Looks up prior 'convert' ledger rows matching a raw input path
+│       │   ├── apply_field_overrides.m     # Overlays constant field values (e.g. DDSOURCE/IDSOURCE/PLATFORM) onto every row of a parsed survey table
+│       │   └── lookup_contributor_defaults.m  # Resolves DDSOURCE/IDSOURCE/PLATFORM defaults from data/tables/contributor_defaults.csv
 │       ├── +db/
 │       │   ├── Connection.m        # DB connection wrapper; includes beginTransaction/commit/rollback
 │       │   └── FieldDefinitions.m  # Single source of truth for all 55 field names and types
@@ -58,8 +64,9 @@ NARWC-DB/
 │       │   ├── DataTypeConverter.m     # Type coercion before sqlwrite()
 │       │   └── +parsers/
 │       │       ├── BaseParser.m        # Abstract base class for all parsers
-│       │       ├── StandardFormat.m    # Parser for 55-column legacy CSV (Phase 1)
-│       │       ├── NEAQFormat.m        # Reference contributor-parser implementation (header-row detection, confirmed field renames)
+│       │       ├── StandardFormat.m    # Parser for 55-column legacy CSV (Phase 1); also holds fileidFromFilename()/remapToDatabase() shared helpers
+│       │       ├── CCSAerialFormat.m, CCSVesselFormat.m, CCSOpportunisticFormat.m  # CCS parsers (one per platform schema)
+│       │       ├── NEAQVesselFormat.m, NEAQAerialFormat.m  # NEAQ & CWI vessels / NEAQ Aerial parsers
 │       │       ├── TemplateFormat.m    # Copy-this-file starting point for new contributor parsers
 │       │       └── ParserFactory.m     # Explicit createByName() selection — no content-based auto-detection
 │       ├── +validation/
@@ -97,17 +104,18 @@ NARWC-DB/
 │
 ├── scripts/
 │   ├── smoke_validate.m                # Quick end-to-end validation smoke test (TODO: move to tests)
-│   ├── migration/                       # One-time legacy migration
-│   │   ├── validate_csv_database_lines.m   # Step 0: per-line CSV sanity check
-│   │   ├── step1_extract_surveys.m         # Step 1: calls SurveyExtractor
-│   │   ├── step2_upload_surveys.m          # Step 2: calls shared run_batch_upload
-│   │   ├── step3_validate_migration.m      # Step 3: analyzes results, generates report
-│   │   ├── run_full_migration.m            # Runs steps 1–3 in sequence
-│   │   ├── generate_migration_report.m     # Produces markdown/HTML report + charts
+│   ├── migration/                       # One-time legacy migration -- thin wrappers + reporting/reconciliation
+│   │   ├── validate_csv_database_lines.m   # Step 0: per-line CSV sanity check on the raw legacy CSV
+│   │   ├── step1_extract_surveys.m         # Thin wrapper: convert_contributor_batch('legacy', 'StandardFormat', ...)
+│   │   ├── step2_upload_surveys.m          # Thin wrapper: upload_contributor_batch('Config', load_config('migration'), ...)
+│   │   ├── step3_validate_migration.m      # Thin wrapper: validate_batch('Source', 'legacy', 'ConfigProfile', 'migration', ...)
+│   │   ├── run_full_migration.m            # Runs step1 -> step2 -> step3, threading batch_id through
+│   │   ├── generate_migration_report.m     # Produces markdown/HTML report + charts (called by validate_batch)
 │   │   └── verify_migration_results.m      # Reconciles DB vs. split-summary source; FK integrity checks
-│   ├── ingestion/                       # Routine, per-contributor-season ingestion
-│   │   ├── convert_contributor_batch.m     # Resolves contributor parser, splits by FILEID into data/raw/pending/
-│   │   └── upload_contributor_batch.m      # Validates + uploads via shared run_batch_upload
+│   ├── ingestion/                       # One shared convert/upload/validate pipeline, every source
+│   │   ├── convert_contributor_batch.m     # Resolves parser (or, for 'legacy', chunked SurveyExtractor), splits by FILEID into data/surveys/pending/; mints batch_id, logs to the ledger
+│   │   ├── upload_contributor_batch.m      # Validates + uploads via shared run_batch_upload; optional BatchId scoping; logs to the ledger
+│   │   └── validate_batch.m                # Analyzes one batch's processed/rejected/pending files + DB, writes reports/batches/<batch_id>/report.<ext>; logs to the ledger
 │   ├── sql/                            # T-SQL schema and operational scripts — see scripts/sql/README.md
 │   │   ├── schema/                     # 01–06: create DB → tables → indexes → FKs → populate lookups
 │   │   ├── verification/               # Row counts, FK integrity checks
@@ -136,16 +144,23 @@ NARWC-DB/
 │       ├── test_characterization_batch.m
 │       ├── test_characterization_extractor.m
 │       ├── test_characterization_parser.m
-│       └── test_upload_guardrail.m
+│       ├── test_upload_guardrail.m
+│       ├── test_batch_log.m            # append_batch_log/read_batch_log/check_prior_conversion
+│       └── test_batch_scoped_upload.m  # BatchUploader.uploadFromFolder BatchId/SplitSummaryFile filtering
 │
 ├── lib/
 │   └── +logging/                       # Logging toolbox (Logger class + level functions)
 │
 ├── data/                               # Runtime data (mostly gitignored)
+│   ├── README.md                       # Full data/ layout + per-contributor raw-file notes (committed)
 │   ├── overrides.example.csv           # Example/template for overrides
 │   ├── tables/                         # Lookup table CSVs (committed)
-│   ├── legacy/                         # Source CSVs from SAS export
-│   └── raw/pending|processed|rejected/ # Staging dirs for new survey ingestion
+│   └── surveys/                        # One unified ingestion pipeline, every source
+│       ├── raw/
+│       │   ├── legacy/                 # Source CSV from SAS export (untouched original)
+│       │   └── <contributor>/          # Raw per-contributor files as delivered, awaiting a parser
+│       ├── pending|processed|rejected|skipped/ # Staging dirs, shared by every source
+│       └── batch_log.csv               # Append-only ledger: every convert/upload/validate run
 │
 ├── docs/                               # Architecture docs, rule guide, testing guide, override guide
 ├── scripts/sas/                        # SAS QC scripts (Chk*.sas) + legacy PRG/DBF files
@@ -165,13 +180,23 @@ NARWC-DB/
 - **Coordinate warning messages** — **done** (2026-06-29). `coordinate_rules.m` now includes the actual lat/lon value in all out-of-range and outside-survey-area warning messages.
 - **Package layout refactor** — rename `+io/` → `+ingestion/` (parsers), move `BatchUploader` to `+db/`, extract single-survey `Uploader` from `BatchUploader`; pre-August handoff goal
 - **SAS rule porting** — port SAS QC checks (`scripts/sas/Chk*.sas`) to MATLAB validation rules; TAXCODE-aware NUMBER thresholds implemented; remaining SAS checks TBD
-- **Opportunistic sighting field warnings** — `required_fields.m` raises 'error' for missing DAY/MONTH/TIME; these should be 'warning' for opportunistic sightings (identified by survey type prefix or explicit flag). Not yet implemented.
+- **Opportunistic sighting field warnings** — partially addressed (2026-07-26): `required_fields.m` no longer raises errors for missing MONTH/DAY at all (removed from the universal list, since the manual makes full date required for aerial/shipboard survey data but explicitly flexible for opportunistic sightings). Still open: MONTH/DAY/TIME aren't yet enforced as required for aerial/shipboard data either, since that needs a confirmed survey-type signal — see §6's required-fields survey-type-axis follow-up.
+- **Required fields, survey-type axis** — `required_fields.m` now covers the universal and sighting/non-sighting axes from the NARWC manual (2026-07-26). Fields required only for a specific survey type (e.g. `ALT` for aerial, `LEGTYPE`/`HEADING` forbidden for opportunistic) are not yet implemented — blocked on a reliable survey-type signal; FILEID's first-letter convention is not formally documented for modern FILEIDs (the manual's §8.A.12 CETAP letter table doesn't cover `c`, used by CCS). Planned approach once picked up: infer survey type from data shape (`LEGTYPE` + `ALT` present → aerial; `LEGTYPE` present, `ALT` absent → shipboard; `LEGTYPE` absent → opportunistic) rather than the FILEID prefix.
+- **Curator confirmation needed on 3 contributor-default ambiguities** — see §8.6: CCS's Tow Boat US charter platform code, NEAQ & CWI vessels' DDSOURCE=NEA (vs. the existing CWI code), and two distinct CWI RHIBs sharing one generic platform code. Until confirmed, `data/tables/contributor_defaults.csv` deliberately leaves these unmapped so `required_fields.m` flags them rather than guessing.
+- **Curator handoff for this round of changes (2026-07-27)** — `feature/contributor-parsers` (data-folder reorg, ingestion/migration unification, the 5 new parsers, TAXCODE/SIGHTNO validation fixes) merged to `main` and pushed. Curator hasn't seen any of this since her 2026-07-19 walkthrough; sent her a brief + sync instructions (`docs/software_update_2026-07-27.md`/`.pdf`). She still needs to pull `main` and run `data/reorganize_data_folder.m` on her machine (`data/` is gitignored, so the folder reorg didn't touch her local copy) — ideally before she leaves 2026-08-01.
 
 ---
 
 ## 5. Recent commits
 
 ```
+2026-07-27 b1b665b Merge contributor-parsers: data pipeline unification + 5 new parsers
+                   (data/surveys/ layout, batch ledger, CCS/NEAQ parsers) into main
+2026-07-27 56c0b7e Treat a genuinely-blank SPECCODE.csv TAXCODE as not required
+2026-07-26 2184823 Fill TAXCODE from SPECCODE lookup table
+2026-07-26 5a60b3f Clear spurious SIGHTNO markers from GPS/marker-button presses
+2026-07-26 23f5b27 Add contributor parsers for CCS, NEAQ & CWI vessels, NEAQ Aerial
+2026-07-26 de13eb6 Unify data/raw and data/legacy into one data/surveys pipeline; add batch tracking
 2026-06-29         Add typical_max_group/typical_max_calf to SPECCODE and TAXCODE;
                    validator NUMBER/NUMCALF rules now use SPECCODE → TAXCODE → global
                    threshold cascade. Curators adjust thresholds via CSV, no code change.
@@ -193,7 +218,9 @@ NARWC-DB/
 - **Phase B pattern overrides** (`fileid_pattern` glob matching) — allows a single override entry to suppress a warning across multiple surveys matching a pattern; extension point stubbed in `SurveyValidator.buildMatcherList()`; defer until real curator use surfaces the need
 - **GUI integration with override workflow** — Curator-friendly interface over the current CSV-based override mechanism; post-August
 - **Curator-friendly bypass UX** — simpler interface for the curator over the existing override/ingestion machinery; post-August
-- **NEAQFormat parser and new-survey ingestion pathway** — Phase 2b; `NEAQFormat.m` is currently a stub
+- **NMFS-NEFSC parsers** — `NMFSNEFSCAerial2023Format`/`NMFSNEFSCAerial2024Format` (two classes, not one branching parser — the xlsx schema genuinely differs: degree/decimal-minute + FILEID/DDSOURCE present in 2023 vs. decimal-degree without them in 2024). `RWSAS-Sightings` and the `Flights-Summary` log are out of scope for `FieldDefinitions`-shaped parsers entirely — structurally different tables (sightings-only reconnaissance report; flight log), not per-event effort data — needing a different table/ingestion path if pursued at all.
+- **SEUS EWS parser** — delivered only as `.dbf`; blocked on a working `.dbf` reader in this MATLAB environment (MATLAB's Database Toolbox dBASE driver via `database()`, not an `ogr2ogr`/GDAL shell-out) before `SEUSFormat.m` can be written. Also needs degree/decimal-minute → decimal-degree conversion (same as NMFS-NEFSC's 2023 schema).
+- **`convert_contributor_batch.m` directory nesting** — file discovery is flat (`dir(fullfile(input_dir, '*.csv'))`); doesn't see files nested under e.g. `raw/CCS/2023 Aerial/`. Not currently a blocker — point `InputDir` at the specific leaf subfolder per invocation (works today); making the scan recurse instead is a separate future decision.
 - **Manual correction tool** (`apply_manual_correction.m`) — interactive tool for Bob's one-off data corrections; post-August
 - **Historical SAS bulk corrections documentation** (`docs/historical_corrections.md`) — inventory what the PRG/DBF files in `scripts/sas/` historically did; out of scope to port
 - **Live SQL Server transaction verification** — must verify `beginTransaction` / `commit` / `rollback` behavior with the JDBC driver before the next production migration run
@@ -208,7 +235,6 @@ grep -rn 'TODO\|FIXME\|NOTE' src/ scripts/ tests/ --include='*.m'
 
 ## 7. Open questions
 
-- **`required_fields.m` accuracy**: `default_config()` lists `DDSOURCE, EVENTNO, FILEID, IDSOURCE, YEAR`; central config (`get_config`) lists `LAT_DD, LONG_DD, YEAR, MONTH, DAY`. Neither is confirmed against the database schema NOT NULL constraints. Blocks confidence in the required-field validation rule.
 - **`SurveyValidator` config split**: Resolved. `load_config('migration')` returns permissive thresholds for the legacy migration; `load_config()` returns strict defaults for routine ingestion. Override CSV path comes from the batch config. `validation_config.m` deleted.
 - **`visibility_allow_negative` split**: `BatchUploader` sets this to `false` (strict) by default, `true` only in `LegacyMode`. The global `get_config` default remains `true` for backwards compatibility. Callers that construct `SurveyValidator` directly still get the permissive value.
 - **`temportal_rules.m` filename typo**: Will cause issues on case-sensitive filesystems; rename pending.
@@ -265,6 +291,7 @@ Items surfaced during migration that require code or config changes (not yet imp
 | o112971: DDSOURCE unknown | May be resolved by copying IDSOURCE to DDSOURCE; confirm with Bob |
 | o121911: CONFIDNC row 444 = 90 → 0 | Invalid code; 0 is the correct value |
 | o123921: EVENT 159 TIME=003716/DAY=11; EVENT 211 TIME=001240/DAY=26; EVENT 212 TIME=005201/DAY=26; EVENT 283 LONG_DD=-71.93525 (missing negative sign) | Four discrete corrections; add to override CSV or apply_known_fixes |
+| SPECCODE.csv has blank TAXCODE for all `HUMAN`/`DEBRI`/`BIR` entries (vessels, fishing gear, debris, birds) | `species_rules.m` currently treats a blank-in-lookup TAXCODE as not-required (`validation.species.taxcode_optional_when_lookup_blank`, default `true`) rather than flagging it. Curator believes these object types should eventually get real TAXCODE values assigned in the lookup table; deferred pending that content decision — not a code change once decided, since the validation logic already re-requires TAXCODE the moment the lookup stops being blank. See `species_rules.m`'s `taxcode_optional_for_row()`. |
 
 ---
 
@@ -308,6 +335,22 @@ Known data quality issues in individual surveys. "Correction needed" items requi
 | o123921    | EVENT 159: TIME=003716/DAY=11; EVENT 211: TIME=001240/DAY=26; EVENT 212: TIME=005201/DAY=26; EVENT 283: LONG_DD=-71.93525 (missing negative sign) | Four corrections needed |
 | p3127214   | EVENT 540: LAT_DD=0, LONG_DD=0 (both missing in source data; printout shows interpolated 48.042/−63.714)               | Investigate — likely missing, not zero |
 | p905169G   | Large survey with many comments; suspected data corruption                                                              | Needs manual review before migration |
+
+---
+
+### 8.7 Contributor-default ambiguities (2026-07-26)
+
+Surfaced while sourcing `data/tables/contributor_defaults.csv`'s DDSOURCE/IDSOURCE/PLATFORM
+defaults from real contributor cover sheets (see `data/README.md`). These three are
+deliberately left unmapped in that table (rather than guessed) so `required_fields.m`
+flags any survey converted from these files as missing PLATFORM/DDSOURCE, instead of
+silently injecting a possibly-wrong value.
+
+| Contributor / subfolder | Issue | Status / Action |
+| ------------------------ | ----- | ---------------- |
+| CCS, `2023 Vessel/TB032223.csv` (+ the "Habitat 2023 Season" cover sheet, no matching data file) | Cover sheet gives an ambiguous platform code for the Tow Boat US(A) charter: `107, 583 (573)` | Confirm with Bob which code (107 R/V Shearwater, 583 merchant vessel, or 573 towboat/similar) applies |
+| NEAQ & CWI (vessels), all `Fundy*`/`GSL*` subfolders | Cover sheets record DDSOURCE=NEA for data physically collected by CWI (Canadian Whale Institute); a `CWI` DDSOURCE code exists in `data/tables/DDSOURCE.csv` but is never used in these cover sheets | Confirm with Bob/curator whether NEA is intentional (NEA as data-submission steward for a joint program) or should be CWI for some/all files |
+| NEAQ & CWI (vessels), Fundy's "Scratcher" RHIB and GSL's "FRC Charlie" RHIB | Both are coded PLATFORM=572, which is PLATFORM.csv's generic "Campobello Whale Rescue Boat" — a reused/unrelated code, not a true match for either vessel; no dedicated PLATFORM.csv row exists for either | Confirm with Bob/curator whether new PLATFORM codes should be added for these two RHIBs, or whether 572 is an acceptable generic stand-in |
 
 ---
 

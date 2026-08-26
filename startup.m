@@ -20,7 +20,7 @@ function startup()
     addpath(fullfile(project_root, 'tests'));
     
     % Add all script subdirectories
-    script_dirs = {'migration', 'ingestion', 'import', 'validation', 'maintenance', 'setup'};
+    script_dirs = {'migration', 'ingestion', 'import', 'validation', 'maintenance', 'setup', 'diagnostics'};
     for i = 1:length(script_dirs)
         script_path = fullfile(project_root, 'scripts', script_dirs{i});
         if exist(script_path, 'dir')
@@ -86,11 +86,11 @@ function startup()
     % Create necessary directories if they don't exist
     fprintf('\nChecking directory structure...\n');
     required_dirs = {
-        'data/raw/pending'
-        'data/raw/processed'
-        'data/raw/rejected'
-        'data/legacy/original_csv'
-        'data/legacy/extracted_surveys'
+        'data/surveys/raw'
+        'data/surveys/pending'
+        'data/surveys/processed'
+        'data/surveys/rejected'
+        'data/surveys/skipped'
         'data/exports/surveys'
         'data/exports/reports'
         'data/archives'
@@ -98,6 +98,7 @@ function startup()
         'reports/validation'
         'reports/migration'
         'reports/quality'
+        'reports/batches'
         'logs'
     };
     

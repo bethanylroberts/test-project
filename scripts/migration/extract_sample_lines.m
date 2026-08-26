@@ -24,20 +24,20 @@ function extract_sample_lines(input_file, output_file, num_lines, filter_field, 
     %
     % Examples:
     %   % Get 100 lines where BEHAV2 is not null
-    %   extract_sample_lines('data/legacy/original_csv/RUSS_24_VALID.CSV', ...
-    %                        'data/legacy/sample_behav2.csv', 100, 5, 'not_null')
+    %   extract_sample_lines('data/surveys/RUSS_24_VALID.CSV', ...
+    %                        'data/surveys/sample_behav2.csv', 100, 5, 'not_null')
     %
     %   % Get 100 lines where FILEID equals 'A179016'
-    %   extract_sample_lines('data/legacy/original_csv/RUSS_24_VALID.CSV', ...
-    %                        'data/legacy/sample_A179016.csv', 100, 25, 'equals', 'A179016')
+    %   extract_sample_lines('data/surveys/RUSS_24_VALID.CSV', ...
+    %                        'data/surveys/sample_A179016.csv', 100, 25, 'equals', 'A179016')
     %
     %   % Get 100 lines where FILEID contains 'A179'
-    %   extract_sample_lines('data/legacy/original_csv/RUSS_24_VALID.CSV', ...
-    %                        'data/legacy/sample_A179.csv', 100, 25, 'contains', 'A179')
+    %   extract_sample_lines('data/surveys/RUSS_24_VALID.CSV', ...
+    %                        'data/surveys/sample_A179.csv', 100, 25, 'contains', 'A179')
     %
     %   % Get first 100 lines (no filtering)
-    %   extract_sample_lines('data/legacy/original_csv/RUSS_24_VALID.CSV', ...
-    %                        'data/legacy/sample.csv', 100)
+    %   extract_sample_lines('data/surveys/RUSS_24_VALID.CSV', ...
+    %                        'data/surveys/sample.csv', 100)
     
     if nargin < 3
         num_lines = 100;  % Default to 100 lines

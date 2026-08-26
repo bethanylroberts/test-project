@@ -11,19 +11,79 @@
       "name": "Legacy Format",
       "delimiter": ",",
       "header_row": 1,
-      "parser": "LegacyFormat",
+      "parser": "StandardFormat",
       "description": "Comma-delimited legacy database export"
     },
-    "neaq": {
-      "name": "NEAQ Format",
+    "ccs_aerial": {
+      "name": "CCS Aerial Format",
       "delimiter": ",",
-      "header_row": 2,
-      "parser": "NEAQFormat",
-      "description": "New England Aquarium survey format",
+      "header_row": 1,
+      "parser": "CCSAerialFormat",
+      "description": "Center for Coastal Studies aerial survey CSV export",
       "field_mapping": {
-        "LAT_DD": "Latitude",
-        "LONG_DD": "Longitude",
-        "SPECCODE": "Species"
+        "BEHAV1": "B1", "BEHAV2": "B2", "BEHAV3": "B3", "BEHAV4": "B4",
+        "BEHAV5": "B5", "BEHAV6": "B6", "BEHAV7": "B7", "BEHAV8": "B8",
+        "BEHAV9": "B9", "BEHAV10": "B10", "BEHAV11": "B11", "BEHAV12": "B12",
+        "BEHAV13": "B13", "BEHAV14": "B14", "BEHAV15": "B15"
+      }
+    },
+    "ccs_vessel": {
+      "name": "CCS Vessel Format",
+      "delimiter": ",",
+      "header_row": 1,
+      "parser": "CCSVesselFormat",
+      "description": "Center for Coastal Studies vessel (R/V Shearwater) survey CSV export",
+      "field_mapping": {
+        "BEHAV1": "B1", "BEHAV2": "B2", "BEHAV3": "B3", "BEHAV4": "B4",
+        "BEHAV5": "B5", "BEHAV6": "B6", "BEHAV7": "B7", "BEHAV8": "B8",
+        "BEHAV9": "B9", "BEHAV10": "B10", "BEHAV11": "B11", "BEHAV12": "B12",
+        "BEHAV13": "B13", "BEHAV14": "B14", "BEHAV15": "B15"
+      }
+    },
+    "ccs_opportunistic": {
+      "name": "CCS Opportunistic Format",
+      "delimiter": ",",
+      "header_row": 1,
+      "parser": "CCSOpportunisticFormat",
+      "description": "Center for Coastal Studies opportunistic-sighting CSV export",
+      "field_mapping": {
+        "BEHAV1": "B1", "BEHAV2": "B2", "BEHAV3": "B3", "BEHAV4": "B4",
+        "BEHAV5": "B5", "BEHAV6": "B6", "BEHAV7": "B7", "BEHAV8": "B8",
+        "BEHAV9": "B9", "BEHAV10": "B10", "BEHAV11": "B11", "BEHAV12": "B12",
+        "BEHAV13": "B13", "BEHAV14": "B14", "BEHAV15": "B15"
+      }
+    },
+    "neaq_vessel": {
+      "name": "NEAQ & CWI Vessel Format",
+      "delimiter": ",",
+      "header_row": 1,
+      "parser": "NEAQVesselFormat",
+      "description": "New England Aquarium & Canadian Whale Institute joint vessel-program CSV export",
+      "field_mapping": {
+        "LAT_DD": "LATITUDE",
+        "LONG_DD": "LONGITUDE"
+      }
+    },
+    "neaq_aerial": {
+      "name": "NEAQ Aerial Format",
+      "delimiter": ",",
+      "header_row": 1,
+      "parser": "NEAQAerialFormat",
+      "description": "New England Aquarium aerial survey CSV export (Wind Energy Area 2024, \"_URI\" schema)",
+      "field_mapping": {
+        "MONTH": "month", "DAY": "day", "YEAR": "year", "EVENTNO": "eventno",
+        "TIME": "time", "LAT_DD": "lat", "LONG_DD": "long", "HEADING": "heading",
+        "ALT": "alt", "LEGTYPE": "legtype", "LEGSTAGE": "legstage", "LEGNO": "legno",
+        "VISIBLTY": "visiblty", "GLAREL": "glarel", "GLARER": "glarer",
+        "BEAUFORT": "beaufort", "CLOUD": "cloud", "WX": "wx", "SIGHTNO": "sightno",
+        "ANGLEL": "anglel", "ANGLER": "angler", "SPECCODE": "speccode",
+        "NUMBER": "number", "NUMCALF": "numcalf", "ANHEAD": "anhead",
+        "PHOTOS": "photos", "IDREL": "idrel", "CONFIDNC": "confidnc",
+        "BEHAV1": "b1", "BEHAV2": "b2", "BEHAV3": "b3", "BEHAV4": "b4",
+        "BEHAV5": "b5", "BEHAV6": "b6", "BEHAV7": "b7", "BEHAV8": "b8",
+        "BEHAV9": "b9", "BEHAV10": "b10", "BEHAV11": "b11", "BEHAV12": "b12",
+        "BEHAV13": "b13", "BEHAV14": "b14", "BEHAV15": "b15",
+        "BLOCK": "block", "STRATUM": "stratum"
       }
     }
   }

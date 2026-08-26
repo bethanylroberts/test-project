@@ -11,15 +11,15 @@
 % Requires a live database connection (config/local/db_config_local.m) and at
 % least one _split_summary_<timestamp>.log file from a prior extraction run,
 % written by SurveyFileWriter.finalize() directly inside the extraction
-% output directory (default: data/legacy/surveys/pending/).
+% output directory (default: data/surveys/pending/).
 %
 % Usage:
 %   results = verify_migration_results();
-%   results = verify_migration_results('SplitSummaryDir', 'data/legacy/surveys/pending');
+%   results = verify_migration_results('SplitSummaryDir', 'data/surveys/pending');
 
 function results = verify_migration_results(options)
     arguments
-        options.SplitSummaryDir char = 'data/legacy/surveys/pending'
+        options.SplitSummaryDir char = 'data/surveys/pending'
         options.ReportDir char = 'reports/migration'
         options.TableName char = 'Master'
         options.MaxListed double = 25   % cap on rows listed in the console summary

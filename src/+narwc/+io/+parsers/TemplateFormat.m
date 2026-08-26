@@ -3,9 +3,10 @@ classdef TemplateFormat < narwc.io.parsers.BaseParser
     % together, e.g. to CCSFormat.m / classdef CCSFormat) to add a new
     % contributor's format.
     %
-    % See narwc.io.parsers.NEAQFormat for a filled-in reference
-    % implementation of this exact pattern, and narwc.io.parsers.StandardFormat
-    % for the legacy-CSV parser this pattern was generalized from.
+    % See narwc.io.parsers.CCSAerialFormat or narwc.io.parsers.NEAQVesselFormat
+    % for filled-in reference implementations of this exact pattern, and
+    % narwc.io.parsers.StandardFormat for the legacy-CSV parser this pattern
+    % was generalized from.
     %
     % PATTERN NOTES (read before copying):
     %
@@ -20,23 +21,27 @@ classdef TemplateFormat < narwc.io.parsers.BaseParser
     %    thing proven to work end-to-end.
     %
     % 2. Don't hand-fabricate a full field layout you haven't verified
-    %    against a real file from this contributor. NEAQFormat.m only
-    %    implements the 3 fields confirmed in config/format_definitions.json
-    %    and reads the rest of the columns dynamically via
-    %    detectImportOptions() -- follow that example rather than guessing
-    %    a full column list, unless you have a real sample file in hand.
+    %    against a real file from this contributor -- see CCSAerialFormat.m/
+    %    NEAQVesselFormat.m for examples of FIELD_MAPPING built only from
+    %    confirmed real headers, with a comment citing the sample file used.
     %
-    % 3. Always end parse() with StandardFormat.remapToDatabase() -- this
+    % 3. If the raw files don't carry a FILEID column (true of every
+    %    contributor parsed so far), see
+    %    narwc.io.parsers.StandardFormat.fileidFromFilename() -- assign it
+    %    to every row before remapToDatabase, or SurveyFileWriter silently
+    %    drops the rows.
+    %
+    % 4. Always end parse() with StandardFormat.remapToDatabase() -- this
     %    is the shared helper that coerces any table into canonical
     %    FieldDefinitions.getDatabaseOrder() column order/typing,
     %    regardless of what the contributor's native columns look like.
     %
-    % 4. The MATLAB class name MUST exactly match the filename. Rename
+    % 5. The MATLAB class name MUST exactly match the filename. Rename
     %    both together, and do not leave a leading underscore or other
     %    non-letter-starting name -- MATLAB identifiers must start with a
     %    letter.
     %
-    % 5. Register the new parser name in
+    % 6. Register the new parser name in
     %    narwc.io.parsers.ParserFactory.getAvailableParsers() so it's
     %    selectable via ParserFactory.createByName().
 
@@ -93,8 +98,8 @@ classdef TemplateFormat < narwc.io.parsers.BaseParser
         function confidence = detectFormat(file_path)
             % DETECTFORMAT TODO: score confidence based on distinctive,
             % confirmed column names or other real markers of this
-            % contributor's format -- see NEAQFormat.detectFormat for the
-            % pattern (checks FIELD_MAPPING's native names against the
+            % contributor's format -- see NEAQVesselFormat.detectFormat for
+            % the pattern (checks FIELD_MAPPING's native names against the
             % header row).
 
             try

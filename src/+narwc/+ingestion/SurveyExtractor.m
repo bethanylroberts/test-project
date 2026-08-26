@@ -30,7 +30,7 @@ classdef SurveyExtractor < handle
             end
         end
         
-        function extractAll(obj, output_dir, options)
+        function summary = extractAll(obj, output_dir, options)
             % EXTRACTALL Extract all surveys to separate files (chunked)
             %
             % Inputs:
@@ -40,7 +40,7 @@ classdef SurveyExtractor < handle
             
             arguments
                 obj
-                output_dir char = 'data/legacy/extracted_surveys'
+                output_dir char = 'data/surveys/pending'
                 options.Overwrite logical = false
             end
             

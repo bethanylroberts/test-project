@@ -20,10 +20,14 @@
 % ???: should configuration options be exposed as function arguments or kept like this?
 
 %% Configuration
-input_csv = 'data/legacy/original_csv/RUSS_24.CSV';
-valid_output = 'data/legacy/original_csv/RUSS_24_VALID.CSV';
-invalid_output = 'data/legacy/original_csv/RUSS_24_INVALID.CSV';
-error_log = 'data/legacy/RUSS_24_ERRORS.txt';
+% NOTE: input_csv lives under raw/legacy/ (untouched original, never edited).
+% valid_output/invalid_output/error_log are derived artifacts and deliberately
+% do NOT go back into raw/ -- they land one level up alongside the other
+% pipeline stage folders instead.
+input_csv = 'data/surveys/raw/legacy/RUSS_24.CSV';
+valid_output = 'data/surveys/RUSS_24_VALID.CSV';
+invalid_output = 'data/surveys/RUSS_24_INVALID.CSV';
+error_log = 'data/surveys/RUSS_24_ERRORS.txt';
 
 % Expected number of fields (columns)
 expected_num_fields = 55;

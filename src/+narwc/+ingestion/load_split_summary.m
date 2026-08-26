@@ -1,33 +1,40 @@
-function [source, summary_file] = load_split_summary(split_summary_dir)
-    % LOAD_SPLIT_SUMMARY Find and parse the most recent split-summary log.
+function [source, summary_file] = load_split_summary(split_summary_path)
+    % LOAD_SPLIT_SUMMARY Find and parse a split-summary log.
     %
     % SurveyFileWriter.finalize() writes '_split_summary_<timestamp>.log'
     % directly inside the extraction output directory (e.g.
-    % 'data/legacy/surveys/pending/' — the same directory passed as
-    % SurveyExtractor.extractAll's output_dir / step1_extract_surveys'
-    % OutputDir). This is the shared reader for that file, used by both
-    % verify_migration_results.m (DB reconciliation) and
-    % step3_validate_migration.m (stage-funnel baseline).
+    % 'data/surveys/pending/' — the same directory passed as
+    % SurveyExtractor.extractAll's output_dir / convert_contributor_batch's
+    % OutputDir). This is the shared reader for that file, used by
+    % verify_migration_results.m (DB reconciliation), validate_batch.m
+    % (stage-funnel baseline), and BatchUploader (batch-scoped uploads).
     %
     % Inputs:
-    %   split_summary_dir - Directory to search for '_split_summary_*.log'
-    %                        (the same output_dir used at extraction time)
+    %   split_summary_path - Either a specific '_split_summary_*.log' file
+    %                        (e.g. the exact log recorded for a batch_id in
+    %                        the batch ledger, see append_batch_log), or a
+    %                        directory to search, in which case the most
+    %                        recently written '_split_summary_*.log' in it
+    %                        is used.
     %
     % Outputs:
     %   source - struct with fields: total_surveys, total_rows,
     %            elapsed_minutes, counts (containers.Map: sanitized FILEID -> row count)
     %   summary_file - full path to the log file that was parsed
 
-    files = dir(fullfile(split_summary_dir, '_split_summary_*.log'));
-    if isempty(files)
-        error('narwc:ingestion:load_split_summary:NoSplitSummary', ...
-            ['No _split_summary_*.log file found in %s. Run step1_extract_surveys ' ...
-             '(or convert_contributor_batch) first, or point at the directory that ' ...
-             'contains it.'], split_summary_dir);
-    end
+    if exist(split_summary_path, 'file') == 2
+        summary_file = split_summary_path;
+    else
+        files = dir(fullfile(split_summary_path, '_split_summary_*.log'));
+        if isempty(files)
+            error('narwc:ingestion:load_split_summary:NoSplitSummary', ...
+                ['No _split_summary_*.log file found in %s. Run convert_contributor_batch ' ...
+                 'first, or point at the directory that contains it.'], split_summary_path);
+        end
 
-    [~, idx] = max([files.datenum]);
-    summary_file = fullfile(files(idx).folder, files(idx).name);
+        [~, idx] = max([files.datenum]);
+        summary_file = fullfile(files(idx).folder, files(idx).name);
+    end
 
     source = struct();
     source.total_surveys = NaN;

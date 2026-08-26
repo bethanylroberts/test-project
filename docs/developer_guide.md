@@ -22,16 +22,22 @@ src/
     │   ├── DataTypeConverter.m    # Type coercion before upload
     │   └── +parsers/
     │       ├── BaseParser.m       # Abstract base class
-    │       ├── StandardFormat.m   # Reference parser for the legacy CSV (no header, comma-delimited)
-    │       ├── NEAQFormat.m       # Reference parser for a per-contributor header-based format
+    │       ├── StandardFormat.m   # Reference parser for the legacy CSV (no header, comma-delimited); also holds fileidFromFilename()/remapToDatabase() shared helpers
+    │       ├── CCSAerialFormat.m / CCSVesselFormat.m / CCSOpportunisticFormat.m  # Center for Coastal Studies, one parser per platform schema
+    │       ├── NEAQVesselFormat.m # New England Aquarium & Canadian Whale Institute joint vessel program
+    │       ├── NEAQAerialFormat.m # New England Aquarium aerial ("Wind Energy Area 2024", lowercase headers)
     │       ├── TemplateFormat.m   # Copy this to add a new contributor parser
     │       └── ParserFactory.m    # Explicit createByName() selection — no auto-detection
     ├── +ingestion/
-    │   ├── SurveyExtractor.m          # One-time legacy CSV split (migration)
-    │   ├── SurveyFileWriter.m         # Shared per-FILEID chunk writer (both pipelines)
-    │   ├── convert_contributor_batch.m # Routine ingestion: parse + split a contributor's batch
+    │   ├── SurveyExtractor.m          # Chunked CSV split, used only for the 'legacy' source
+    │   ├── SurveyFileWriter.m         # Shared per-FILEID chunk writer (every source)
+    │   ├── convert_contributor_batch.m # Parse + split one contributor's (or legacy's) batch
     │   ├── run_batch_upload.m         # Shared connect→upload→stats→close
-    │   └── BatchUploader.m            # Validates + uploads survey CSVs to SQL Server, transaction-safe
+    │   ├── BatchUploader.m            # Validates + uploads survey CSVs to SQL Server, transaction-safe
+    │   ├── load_split_summary.m       # Parses a _split_summary_*.log (by dir or exact file path)
+    │   ├── append_batch_log.m / read_batch_log.m / check_prior_conversion.m  # Batch ledger (data/surveys/batch_log.csv)
+    │   ├── apply_field_overrides.m    # Overlays constant field values (e.g. DDSOURCE/IDSOURCE/PLATFORM) onto a parsed survey table
+    │   └── lookup_contributor_defaults.m  # Resolves DDSOURCE/IDSOURCE/PLATFORM defaults from data/tables/contributor_defaults.csv
     ├── +validation/
     │   ├── SurveyValidator.m       # Orchestrates rule modules + override matching
     │   ├── FieldValidator.m        # Static field-level validators
@@ -55,7 +61,7 @@ src/
 ```matlab
 % Parse a raw file with an explicit, known parser (no auto-detection)
 parser = narwc.io.parsers.ParserFactory.createByName('StandardFormat');
-[data, metadata] = parser.parse('data/legacy/original_csv/survey.csv');
+[data, metadata] = parser.parse('data/surveys/raw/legacy/survey.csv');
 
 % Validate
 config = load_config('migration');   % or load_config() for strict defaults
@@ -74,10 +80,10 @@ if is_valid
 end
 ```
 
-In practice you rarely call `BatchUploader` directly — both pipelines drive
+In practice you rarely call `BatchUploader` directly — every source drives
 it through `narwc.ingestion.run_batch_upload()`, which handles the
-connect/upload/stats/close sequence (see `scripts/migration/step2_upload_surveys.m`
-and `scripts/ingestion/upload_contributor_batch.m` for the two callers).
+connect/upload/stats/close sequence (see `scripts/ingestion/upload_contributor_batch.m`,
+the single caller for both the legacy migration batch and routine contributor batches).
 
 ## Adding a new validation rule
 
@@ -105,7 +111,7 @@ hardcoded) validation rule.
 ## Adding a new contributor parser
 
 1. Copy `src/+narwc/+io/+parsers/TemplateFormat.m` to a new file in the same
-   directory (see `NEAQFormat.m` for a filled-in example).
+   directory (see `CCSAerialFormat.m`/`NEAQVesselFormat.m` for filled-in examples).
 2. Fill in `FIELD_MAPPING` with only the native→canonical column renames
    you've actually confirmed against a real sample file from that
    contributor — don't invent a full layout you haven't verified.

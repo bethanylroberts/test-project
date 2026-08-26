@@ -86,7 +86,7 @@ Where a field is constrained by a lookup table, the table filename and current r
 | Lookup  | —           |
 | Surveys | All         |
 
-8-character survey file identifier (see Section 2). All event records within a single submitted file share the same FILEID. Listed as required in `required_fields.m` (that rule file carries a FIXME noting the required-field list is incomplete).
+8-character survey file identifier (see Section 2). All event records within a single submitted file share the same FILEID. Not checked by `required_fields.m` — every row is guaranteed to have one by construction once `SurveyFileWriter` has split by it, so an explicit check would always be a no-op; enforced NOT NULL by the schema directly.
 
 #### EVENTNO
 |         |             |
@@ -96,7 +96,7 @@ Where a field is constrained by a lookup table, the table filename and current r
 | Lookup  | —           |
 | Surveys | All         |
 
-Sequential event number within a file, assigned by the data-logging program (Logger, D-Tracker, Mysticetus) or manually. Each keypress creating a record increments EVENTNO. Must be unique within a file; gaps are acceptable. Listed as required in `required_fields.m`.
+Sequential event number within a file, assigned by the data-logging program (Logger, D-Tracker, Mysticetus) or manually. Each keypress creating a record increments EVENTNO. Must be unique within a file; gaps are acceptable. Listed as a universal required field in `required_fields.m`.
 
 #### SIGHTNO
 |         |                                                          |
@@ -180,7 +180,7 @@ Code for the stage within a leg (e.g., beginning of watch, on watch, end of watc
 | Lookup  | `data/tables/DDSOURCE.csv` (48 rows) |
 | Surveys | All                                  |
 
-Data delivery source code, identifying the program or contributor that submitted the data. Listed as required in `required_fields.m`.
+Data delivery source code, identifying the program or contributor that submitted the data. Listed as a universal required field in `required_fields.m`. Per the manual, it's curator/GSO-assigned rather than contributor-supplied — for new contributor parsers it's populated by `narwc.ingestion.apply_field_overrides` from `data/tables/contributor_defaults.csv` (see `data/README.md`), not by the raw source files themselves.
 
 #### IDSOURCE
 |         |                                      |
@@ -190,7 +190,7 @@ Data delivery source code, identifying the program or contributor that submitted
 | Lookup  | `data/tables/IDSOURCE.csv` (53 rows) |
 | Surveys | All                                  |
 
-Identification source code, recording who or what made the species identification. Listed as required in `required_fields.m`.
+Identification source code, recording who or what made the species identification. Not currently in `required_fields.m`'s list — the manual gives it weaker justification than DDSOURCE/PLATFORM (it notes "we have discussed eliminating this field entirely"). Like DDSOURCE, it's curator/GSO-assigned rather than contributor-supplied, and for new contributor parsers is populated via `data/tables/contributor_defaults.csv` even though it isn't currently required.
 
 ---
 
@@ -654,24 +654,26 @@ The following rules are checked by validation modules in `src/+narwc/+validation
 | VISIBLTY must be ≥ 0 (configuration dependent; currently allow_negative=true) | VISIBLTY         | `environmental_rules.m` | error    |
 | VISIBLTY > 50 n.mi. is unusually high                                         | VISIBLTY         | `environmental_rules.m` | warning  |
 | SURFTEMP outside −2 to 35°C                                                   | SURFTEMP         | `environmental_rules.m` | warning  |
-| Required fields (currently LAT_DD, LONG_DD, YEAR, MONTH, DAY) non-NULL        | multiple         | `required_fields.m`     | error    |
+| Required fields: universal (LAT_DD, LONG_DD, YEAR, EVENTNO, PLATFORM, DDSOURCE) non-NULL | multiple | `required_fields.m` | error |
+| Required fields: sighting-only (CONFIDNC, NUMBER, PHOTOS, SIGHTNO, SPECCODE, IDREL) non-NULL on sighting rows, blank on non-sighting rows | multiple | `required_fields.m` | error / warning |
 
-The required-fields list is a genuinely open question, not settled fact — see
-`PROJECT_STATUS.md` §7 ("`required_fields.m` accuracy"). `required_fields.m`'s
-own fallback list (used when no `config.required_fields` override is supplied)
-is `{'LAT_DD', 'LONG_DD', 'YEAR', 'MONTH', 'DAY'}`, matching
-`validation_config_default.m`. This is a minimal baseline, not necessarily
-correct against the database schema's actual NOT NULL constraints (see
-`database_schema.md`'s Master Table section — only `FILEID`/`EVENTNO` are
-NOT NULL at the column level). Do not assume this list is final without
-checking the current code.
+Per the NARWC users guide (`ref/narwc_users_guide__v8_.pdf`), matching
+`config/defaults/validation_config_default.m`. A third axis — fields required only
+for a specific survey type (aerial/shipboard/opportunistic), e.g. ALT for aerial,
+LEGTYPE/HEADING forbidden for opportunistic — is not yet implemented; it needs a
+reliable survey-type signal the manual doesn't spell out for modern FILEIDs (see
+`PROJECT_STATUS.md`'s "Known follow-up" notes and the planned LEGTYPE/ALT-presence
+approach). Not necessarily correct against the database schema's actual NOT NULL
+constraints (see `database_schema.md`'s Master Table section — only `FILEID`/`EVENTNO`
+are NOT NULL at the column level). Do not assume this list is final without checking
+the current code.
 
 ### 4.2 Rules Documented in PDF but Not Enforced in Code
 
 | Rule                                                                | Fields                   | Assessment                                  |
 | ------------------------------------------------------------------- | ------------------------ | ------------------------------------------- |
-| SIGHTNO required for sightings; absent for non-sightings            | SIGHTNO                  | Possibly unimplemented                      |
-| SPECCODE required for sightings; absent for non-sightings           | SPECCODE                 | Possibly unimplemented                      |
+| SIGHTNO required for sightings; absent for non-sightings            | SIGHTNO                  | Implemented — `required_fields.m`'s `sighting_only` list (error if missing on a sighting row, `required_fields.forbidden_on_non_sighting` warning if populated on a non-sighting row) |
+| SPECCODE required for sightings; absent for non-sightings           | SPECCODE                 | Implemented — same as SIGHTNO above; SPECCODE is also the row's own sighting/non-sighting discriminator |
 | SIGHTNO must be unique within a file                                | SIGHTNO, FILEID          | Possibly unimplemented                      |
 | STRIP required when LEGTYPE=2 and LEGSTAGE=2; not allowed otherwise | STRIP, LEGTYPE, LEGSTAGE | Possibly unimplemented                      |
 | ANGLEL/ANGLER replace STRIP for NEAQ 2022+; not mixed with STRIP    | ANGLEL, ANGLER, STRIP    | No mutual-exclusion rule                    |

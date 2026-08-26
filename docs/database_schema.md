@@ -112,8 +112,9 @@ field applies to every event type — a non-sighting effort record has no SIGHTN
 SPECCODE; a ship survey has no ALT. Conditionally required fields (SIGHTNO, SPECCODE,
 LAT_DD, LONG_DD, TAXCODE, TIME, STRIP) cannot be declared NOT NULL at the column level
 because their requirement depends on record type — that's enforced by MATLAB validation
-instead (`required_fields.m` and friends), not the schema. See `PROJECT_STATUS.md` §7
-for an open question about exactly which fields that rule currently treats as required.
+instead (`required_fields.m` and friends), not the schema. See
+`docs/configuration_reference.md`'s "Required fields" section for exactly which fields
+that rule currently treats as required (universal vs. sighting-only).
 
 ---
 

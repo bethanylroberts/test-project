@@ -90,6 +90,91 @@ classdef test_validation < matlab.unittest.TestCase
             testCase.verifyGreaterThan(collector.getErrorCount('error'), 0);
         end
 
+        function testRequiredFieldsSightingOnlyFieldRequiredWhenSpeccodePresent(testCase)
+            % A sighting row (SPECCODE populated) missing a sighting-only
+            % field (CONFIDNC) must produce a required_fields.value_missing
+            % error for that field.
+            data = TestFixtures.generate_mock_survey(2);
+            data.CONFIDNC = [NaN; 1];  % row 1 missing, row 2 present
+
+            collector = narwc.validation.ErrorCollector();
+            config = load_config(); config = config.validation;
+            narwc.validation.rules.required_fields(data, collector, config);
+
+            errors = collector.getErrors('error');
+            confidnc_rows = [];
+            for k = 1:length(errors)
+                if strcmp(errors(k).field, 'CONFIDNC') ...
+                        && strcmp(errors(k).rule_id, 'required_fields.value_missing')
+                    confidnc_rows = [confidnc_rows; errors(k).row(:)]; %#ok<AGROW>
+                end
+            end
+            testCase.verifyTrue(ismember(1, confidnc_rows));
+            testCase.verifyFalse(ismember(2, confidnc_rows));
+        end
+
+        function testRequiredFieldsSightingOnlyFieldNotRequiredOnNonSightingRow(testCase)
+            % The same missing CONFIDNC on a non-sighting row (SPECCODE
+            % blank) must NOT produce a required_fields.value_missing error.
+            data = TestFixtures.generate_mock_survey(1);
+            data.SPECCODE = {''};
+            data.CONFIDNC = NaN;
+
+            collector = narwc.validation.ErrorCollector();
+            config = load_config(); config = config.validation;
+            narwc.validation.rules.required_fields(data, collector, config);
+
+            errors = collector.getErrors('error');
+            for k = 1:length(errors)
+                testCase.verifyFalse(strcmp(errors(k).field, 'CONFIDNC') ...
+                    && strcmp(errors(k).rule_id, 'required_fields.value_missing'), ...
+                    'CONFIDNC must not be required on a non-sighting row');
+            end
+        end
+
+        function testRequiredFieldsForbidsSightingOnlyFieldOnNonSightingRow(testCase)
+            % A non-sighting row (SPECCODE blank) with a sighting-only
+            % field populated (CONFIDNC) must produce a
+            % required_fields.forbidden_on_non_sighting warning.
+            data = TestFixtures.generate_mock_survey(1);
+            data.SPECCODE = {''};
+            data.CONFIDNC = 1;
+
+            collector = narwc.validation.ErrorCollector();
+            config = load_config(); config = config.validation;
+            narwc.validation.rules.required_fields(data, collector, config);
+
+            warnings = collector.getErrors('warning');
+            found = false;
+            for k = 1:length(warnings)
+                if strcmp(warnings(k).field, 'CONFIDNC') ...
+                        && strcmp(warnings(k).rule_id, 'required_fields.forbidden_on_non_sighting')
+                    found = true;
+                end
+            end
+            testCase.verifyTrue(found);
+        end
+
+        function testRequiredFieldsUniversalStillCheckedRegardlessOfSighting(testCase)
+            data = TestFixtures.generate_mock_survey(1);
+            data.SPECCODE = {''};
+            data.PLATFORM = NaN;
+
+            collector = narwc.validation.ErrorCollector();
+            config = load_config(); config = config.validation;
+            narwc.validation.rules.required_fields(data, collector, config);
+
+            errors = collector.getErrors('error');
+            found = false;
+            for k = 1:length(errors)
+                if strcmp(errors(k).field, 'PLATFORM') ...
+                        && strcmp(errors(k).rule_id, 'required_fields.value_missing')
+                    found = true;
+                end
+            end
+            testCase.verifyTrue(found, 'PLATFORM is a universal field and must always be required');
+        end
+
         function testDateTimeValidation(testCase)
             % Test datetime validation rules
 
@@ -266,8 +351,10 @@ classdef test_validation < matlab.unittest.TestCase
             config.year_max = year(datetime('today'));
             config.year_warning = 1990;
             
-            % Add required fields
-            config.required_fields = {'FILEID', 'YEAR'};
+            % Add required fields (struct shape -- see
+            % config/defaults/validation_config_default.m)
+            config.required_fields.universal = {'FILEID', 'YEAR'};
+            config.required_fields.sighting_only = {};
             
             % Create test data
             data = TestFixtures.generate_mock_survey(5);
@@ -905,27 +992,35 @@ end
 
 function data = make_survey_with_old_year(testCase) %#ok<INUSD>
     % Single-row survey with YEAR before year_warning threshold (~1980).
-    % Omits FK-checked fields (DDSOURCE, IDSOURCE) so no FK errors occur.
+    % DDSOURCE/PLATFORM use codes confirmed valid in the real lookup
+    % tables (data/tables/DDSOURCE.csv, PLATFORM.csv) -- present because
+    % required_fields.m's universal list requires them, but chosen so they
+    % don't also trip an FK error. Omits IDSOURCE (not in the universal
+    % list) so no FK error occurs from that field.
     data = table();
-    data.FILEID  = {'f_ovtest'};
-    data.EVENTNO = 7;          % numeric EVENTNO for override matching
-    data.LAT_DD  = 42.0;       % within survey area: no coordinate warning
-    data.LONG_DD = -70.0;
-    data.YEAR    = 1975;       % < year_warning (~1980) -> triggers year_too_old
-    data.MONTH   = 6;
-    data.DAY     = 15;
+    data.FILEID   = {'f_ovtest'};
+    data.EVENTNO  = 7;          % numeric EVENTNO for override matching
+    data.LAT_DD   = 42.0;       % within survey area: no coordinate warning
+    data.LONG_DD  = -70.0;
+    data.YEAR     = 1975;       % < year_warning (~1980) -> triggers year_too_old
+    data.MONTH    = 6;
+    data.DAY      = 15;
+    data.DDSOURCE = {'CCS'};
+    data.PLATFORM = 649;
 end
 
 function data = make_survey_two_old_years(testCase) %#ok<INUSD>
     % Two-row survey, both years trigger year_too_old warning.
     data = table();
-    data.FILEID  = {'f_ovtest2'; 'f_ovtest2'};
-    data.EVENTNO = [7; 8];
-    data.LAT_DD  = [42.0; 43.0];
-    data.LONG_DD = [-70.0; -71.0];
-    data.YEAR    = [1975; 1973];
-    data.MONTH   = [6; 7];
-    data.DAY     = [15; 20];
+    data.FILEID   = {'f_ovtest2'; 'f_ovtest2'};
+    data.EVENTNO  = [7; 8];
+    data.LAT_DD   = [42.0; 43.0];
+    data.LONG_DD  = [-70.0; -71.0];
+    data.YEAR     = [1975; 1973];
+    data.MONTH    = [6; 7];
+    data.DAY      = [15; 20];
+    data.DDSOURCE = {'CCS'; 'CCS'};
+    data.PLATFORM = [649; 649];
 end
 
 function write_override(filepath, fileid, eventno, field, rule_id)
@@ -949,13 +1044,15 @@ end
 function data = make_survey_n_old_years(n)
     % n-row survey with YEAR=1975 on all rows (each triggers year_too_old)
     data = table();
-    data.FILEID  = repmat({'f_ovtest_n'}, n, 1);
-    data.EVENTNO = (1:n)';
-    data.LAT_DD  = repmat(42.0, n, 1);
-    data.LONG_DD = repmat(-70.0, n, 1);
-    data.YEAR    = repmat(1975, n, 1);
-    data.MONTH   = repmat(6, n, 1);
-    data.DAY     = repmat(15, n, 1);
+    data.FILEID   = repmat({'f_ovtest_n'}, n, 1);
+    data.EVENTNO  = (1:n)';
+    data.LAT_DD   = repmat(42.0, n, 1);
+    data.LONG_DD  = repmat(-70.0, n, 1);
+    data.YEAR     = repmat(1975, n, 1);
+    data.MONTH    = repmat(6, n, 1);
+    data.DAY      = repmat(15, n, 1);
+    data.DDSOURCE = repmat({'CCS'}, n, 1);
+    data.PLATFORM = repmat(649, n, 1);
 end
 
 function data = make_survey_old_year_and_high_vis()
@@ -969,6 +1066,8 @@ function data = make_survey_old_year_and_high_vis()
     data.LONG_DD  = -70.0;
     data.YEAR     = 1975;
     data.MONTH    = 6;
+    data.DDSOURCE = {'CCS'};
+    data.PLATFORM = 649;
     data.DAY      = 15;
     data.VISIBLTY = 100;   % > visibility_max (50) -> warning
 end
