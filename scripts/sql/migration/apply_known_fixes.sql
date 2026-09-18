@@ -22,7 +22,7 @@
  * committing.
  */
 
-USE NARWC;
+USE NARWCDB;
 GO
 
 BEGIN TRANSACTION;

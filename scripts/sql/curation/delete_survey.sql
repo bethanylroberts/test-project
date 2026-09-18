@@ -15,7 +15,7 @@
  *   4. COMMIT if the count matches expectations; ROLLBACK otherwise.
  */
 
-USE NARWC;
+USE NARWCDB;
 GO
 
 DECLARE @fileid NVARCHAR(20) = N'PLACEHOLDER';   -- <FILL_IN> e.g. N'f098027'
