@@ -38,7 +38,7 @@ function tally = tally_validation_by_rule(csv_files, batch_config)
     tally.surveys_with_errors  = 0;
     tally.surveys_with_warnings = 0;
 
-    apply_fixes = true;
+    apply_fixes = false;
     if isfield(batch_config, 'pipeline') && isfield(batch_config.pipeline, 'known_fixes') && ...
             isfield(batch_config.pipeline.known_fixes, 'enabled')
         apply_fixes = batch_config.pipeline.known_fixes.enabled;

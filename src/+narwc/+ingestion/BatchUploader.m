@@ -225,9 +225,11 @@ classdef BatchUploader < handle
                     end
 
                     % Apply known Category C corrections before validation.
-                    % Gated by config.pipeline.known_fixes.enabled (default: true).
+                    % Gated by config.pipeline.known_fixes.enabled (default: false -- legacy-only,
+                    % enabled by the migration batch config; contributor-format quirks
+                    % belong in that contributor's parser instead).
                     % A log line fires only when at least one row was actually changed.
-                    apply_fixes = true;
+                    apply_fixes = false;
                     if isfield(obj.batch_config, 'pipeline') && ...
                             isfield(obj.batch_config.pipeline, 'known_fixes') && ...
                             isfield(obj.batch_config.pipeline.known_fixes, 'enabled')

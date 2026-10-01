@@ -3,7 +3,7 @@ function pipeline = pipeline_config_default()
 
     % ----- Batch upload -----
     pipeline.chunk_size          = 10000;
-    pipeline.known_fixes.enabled = true;
+    pipeline.known_fixes.enabled = false;   % Legacy-only; enabled by config/batches/migration.m
 
     % ----- Processing steps -----
     pipeline.processing.default_steps = {
