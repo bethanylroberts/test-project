@@ -87,6 +87,19 @@ classdef CCSAerialFormat < narwc.io.parsers.BaseParser
                 end
             end
 
+            % CCS Aerial records GLAREL/GLARER = 9 as a "not recorded"
+            % sentinel (GLARE lookup is 0-3 only). Confirmed against all 72
+            % 2023/2024 Aerial files: 9 is the only out-of-range value, it
+            % appears in GLAREL and GLARER on exactly the same rows, and no
+            % other field uses it. Handled here rather than in
+            % migration.apply_known_fixes, which is legacy-only.
+            for glare_field = {'GLAREL', 'GLARER'}
+                f = glare_field{1};
+                if ismember(f, raw_data.Properties.VariableNames) && isnumeric(raw_data.(f))
+                    raw_data.(f)(raw_data.(f) == 9) = NaN;
+                end
+            end
+
             fileid = narwc.io.parsers.StandardFormat.fileidFromFilename(file_path);
             raw_data.FILEID = repmat(fileid, height(raw_data), 1);
 

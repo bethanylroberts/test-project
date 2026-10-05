@@ -9,7 +9,7 @@
  * a parsing or migration issue for surveys in that year.
  */
 
-USE NARWC;
+USE NARWCDB;
 GO
 
 SELECT

@@ -113,8 +113,33 @@ classdef StandardFormat < narwc.io.parsers.BaseParser
                 field_name = db_order{i};
                 
                 if ismember(field_name, csv_data.Properties.VariableNames)
-                    % Field exists in CSV data
-                    db_data.(field_name) = csv_data.(field_name);
+                    % Field exists in CSV data. readtable can't infer a type
+                    % for a column that is blank on every row (e.g. the
+                    % sighting columns on an effort-only survey) and may
+                    % guess wrong, so force it to the canonical type --
+                    % downstream code assumes it.
+                    col = csv_data.(field_name);
+                    field_type = narwc.db.FieldDefinitions.getType(field_name);
+                    if strcmp(field_type, 'string') && ~iscell(col)
+                        if isnumeric(col)
+                            str = string(col);
+                            str(ismissing(str)) = "";
+                            col = cellstr(str);
+                        else
+                            col = cellstr(col);
+                        end
+                    elseif strcmp(field_type, 'double') && (iscell(col) || isstring(col))
+                        % Only convert when every non-blank value parses as
+                        % a number; otherwise leave the text in place so
+                        % validation reports it rather than silently NaN-ing it.
+                        str = strtrim(string(col));
+                        is_blank = ismissing(str) | strlength(str) == 0;
+                        num = str2double(str);
+                        if all(is_blank | ~isnan(num))
+                            col = num;
+                        end
+                    end
+                    db_data.(field_name) = col;
                 else
                     % Field doesn't exist - create empty column
                     field_defs = narwc.db.FieldDefinitions.getAll();

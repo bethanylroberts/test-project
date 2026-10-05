@@ -16,7 +16,7 @@
  * investigating.
  */
 
-USE NARWC;
+USE NARWCDB;
 GO
 
 SELECT

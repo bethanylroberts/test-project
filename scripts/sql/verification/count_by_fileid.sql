@@ -9,7 +9,7 @@
  * file to verify all records were loaded for each survey.
  */
 
-USE NARWC;
+USE NARWCDB;
 GO
 
 SELECT

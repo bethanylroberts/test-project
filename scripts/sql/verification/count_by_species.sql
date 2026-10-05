@@ -9,7 +9,7 @@
  * Unexpectedly absent codes may indicate a SPECCODE parsing issue.
  */
 
-USE NARWC;
+USE NARWCDB;
 GO
 
 SELECT

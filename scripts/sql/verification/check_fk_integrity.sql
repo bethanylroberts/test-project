@@ -16,7 +16,7 @@
  * optional fields).
  */
 
-USE NARWC;
+USE NARWCDB;
 GO
 
 -- ── SPECCODE ──────────────────────────────────────────────────────────────────

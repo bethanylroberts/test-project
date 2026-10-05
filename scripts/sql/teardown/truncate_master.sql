@@ -14,7 +14,7 @@
  * it is logged and can be rolled back within an explicit transaction.
  */
 
-USE NARWC;
+USE NARWCDB;
 GO
 
 BEGIN TRANSACTION;

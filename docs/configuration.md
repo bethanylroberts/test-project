@@ -77,7 +77,7 @@ The merged config has three top-level sections:
 | Field                              | Default  | Description                               |
 |------------------------------------|----------|-------------------------------------------|
 | `chunk_size`                       | 10000    | Rows per processing chunk                 |
-| `known_fixes.enabled`              | true     | Apply `apply_known_fixes.m` pre-validation |
+| `known_fixes.enabled`              | false    | Apply `apply_known_fixes.m` pre-validation (legacy-only; `migration` batch sets true) |
 | `logging.error_log_dir`            | `'logs/'`| Directory for log files                   |
 | `logging.use_datetime_filenames`   | true     | Stamp log filenames with run start time   |
 | `logging.level`                    | `'INFO'` | Logging verbosity                         |
